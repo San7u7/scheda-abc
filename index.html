@@ -401,10 +401,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610261427"></script>
-<script src="lib.js?v=202610261427"></script>
-<script src="ai.js?v=202610261427"></script>
-<script src="coach.js?v=202610261427"></script>
+<script src="seed-abc.js?v=202610261435"></script>
+<script src="lib.js?v=202610261435"></script>
+<script src="ai.js?v=202610261435"></script>
+<script src="coach.js?v=202610261435"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -1147,7 +1147,7 @@ async function finish(meta) {
   await persistSession({ id: "s" + Date.now(), date: new Date().toISOString(), day, items, ...meta });
   await persistState();
   delete S.drafts[day]; saveDrafts(); S.timer = null; S.day = null; S.tab = "oggi"; lsSet("tab2", S.tab);
-  S.savedHtml = `<h2>Seduta ${day} salvata</h2><p class="muted">${items.length} esercizi, ${items.reduce((a, e) => a + e.sets.length, 0)} serie.</p>` +
+  S.savedHtml = `<h2>Seduta ${day} salvata</h2><p class="muted">${items.length === 1 ? "1 esercizio" : items.length + " esercizi"}, ${items.reduce((a, e) => a + e.sets.length, 0)} serie.</p>` +
     (ups.length ? `<div class="card" style="background:var(--raised)"><b>La prossima volta sale il carico:</b><ul class="plain muted">${ups.map(u => `<li>${esc(u)}</li>`).join("")}</ul></div>` : `<p>Nessun range chiuso: la prossima volta punta a una ripetizione in più.</p>`) +
     `<p class="small muted">Prossima: seduta ${nextDay()}.</p>`;
   S.sheet = "saved"; window.scrollTo(0, 0); render();
@@ -1302,14 +1302,14 @@ document.addEventListener("keydown", e => {
 
 /* ---------- boot ---------- */
 function showHello(name, force) {
-  let last = 0; if (force) { try { sessionStorage.removeItem("hello"); } catch (_) {} } try { last = +sessionStorage.getItem("hello") || 0; } catch (_) {}
-  if (Date.now() - last < 6 * 3600e3) return;
-  try { sessionStorage.setItem("hello", String(Date.now())); } catch (_) {}
+  const today = new Date().toDateString(); let last = ""; if (force) { try { localStorage.removeItem(NS + "hello_day"); } catch (_) {} } try { last = localStorage.getItem(NS + "hello_day") || ""; } catch (_) {}
+  if (last === today) return;
+  try { localStorage.setItem(NS + "hello_day", today); } catch (_) {}
   const el = $("#hello");
-  el.innerHTML = `<div class="hello" role="dialog" aria-label="Benvenuto ${esc(name)}"><div class="stage"><svg class="logo" viewBox="56 86 400 340" aria-hidden="true"><g fill="var(--accent)"><polygon class="lg-a" points="226,92 286,92 400,420 334,420 256,178 178,420 112,420"/><rect class="lg-bar" x="70" y="290" width="372" height="22" rx="6"/><rect class="lg-pl" style="--dx:-70px" x="62" y="236" width="40" height="130" rx="10"/><rect class="lg-pl" style="--dx:70px" x="410" y="236" width="40" height="130" rx="10"/><rect class="lg-pl in" style="--dx:-50px" x="108" y="256" width="24" height="90" rx="8"/><rect class="lg-pl in" style="--dx:50px" x="380" y="256" width="24" height="90" rx="8"/></g></svg><div class="word">Askesis</div><div class="who">Ciao ${esc(name)}</div></div><div class="skip">Tocca per entrare</div></div>`;
+  el.innerHTML = `<div class="hello" role="dialog" aria-label="Benvenuto ${esc(name)}"><div class="stage"><svg class="logo" viewBox="56 86 400 340" aria-hidden="true"><g fill="var(--accent)"><polygon class="lg-a" points="226,92 286,92 400,420 334,420 256,178 178,420 112,420"/><rect class="lg-bar" x="70" y="290" width="372" height="22" rx="6"/><rect class="lg-pl" style="--dx:-70px" x="62" y="236" width="40" height="130" rx="10"/><rect class="lg-pl" style="--dx:70px" x="410" y="236" width="40" height="130" rx="10"/><rect class="lg-pl in" style="--dx:-50px" x="108" y="256" width="24" height="90" rx="8"/><rect class="lg-pl in" style="--dx:50px" x="380" y="256" width="24" height="90" rx="8"/></g></svg><div class="word">Askesis</div><div class="who">Ciao ${esc(name)}</div></div></div>`;
   setTimeout(() => { try { navigator.vibrate && navigator.vibrate([0, 20, 90, 30]); } catch (_) {} }, 760);
   const h = el.firstElementChild, go = () => { h.classList.add("out"); setTimeout(() => { el.innerHTML = ""; }, 650); };
-  h.addEventListener("click", go); setTimeout(go, 2900);
+  h.addEventListener("click", go); setTimeout(go, 2300);
 }
 applyAll();
 try { DAYS.forEach(k => { if (S.drafts[k]) draft(k); }); saveDrafts(); } catch (_) {}
@@ -1348,8 +1348,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610261427"></script>
-<script src="ux.js?v=202610261427"></script>
-<script src="hub.js?v=202610261427"></script><script src="board.js?v=202610261427"></script><script src="coachui.js?v=202610261427"></script><script src="gesture.js?v=202610261427"></script>
+<script src="exdb.js?v=202610261435"></script>
+<script src="ux.js?v=202610261435"></script>
+<script src="hub.js?v=202610261435"></script><script src="board.js?v=202610261435"></script><script src="coachui.js?v=202610261435"></script><script src="gesture.js?v=202610261435"></script>
 
 </body></html>

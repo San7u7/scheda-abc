@@ -3,24 +3,19 @@
    drag a sheet down to close it, swipe left/right between exercises during a session. Loaded last. */
 (function () {
   const standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
-  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail ? 1 : 0) + (S.sheet ? 1 : 0);
+  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro ? 1 : 0) + (S.sheet ? 1 : 0);
   const H = window.history;
-  let depth = 0, ignore = 0;
   function back() {
     if (S.sheet) { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }
     else if (S.hub) { S.hub = ""; window.scrollTo(0, 0); render(); }
+    else if (S.macro) { S.macro = null; window.scrollTo(0, 0); render(); }
     else if (S.detail) { S.detail = null; window.scrollTo(0, 0); render(); }
     else if (S.tab !== "oggi") { S.tab = "oggi"; lsSet("tab2", S.tab); window.scrollTo(0, 0); render(); }
   }
-  function sync() {
-    const d = level();
-    try {
-      if (d > depth) for (let i = depth; i < d; i++) H.pushState({ askesis: i + 1 }, "");
-      else if (d < depth) { ignore++; H.go(d - depth); }
-    } catch (_) {}
-    depth = d;
-  }
-  window.addEventListener("popstate", () => { if (ignore) { ignore--; return; } if (!level()) return; depth = Math.max(0, depth - 1); back(); depth = level(); });
+  // one guard entry in the history while inside the app: the system back (Safari swipe, Android) pops it and we go up one level
+  let pushed = false;
+  function sync() { if (level() > 0 && !pushed) { try { H.pushState({ askesis: 1 }, ""); pushed = true; } catch (_) {} } }
+  window.addEventListener("popstate", () => { pushed = false; if (level() > 0) back(); sync(); });
   const r0 = window.render, s0 = window.renderSheet;
   window.render = function () { r0(); sync(); };
   window.renderSheet = function () { s0(); sync(); };

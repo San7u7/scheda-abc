@@ -32,24 +32,29 @@
   window.coachContext = function () {
     const p = persona(), name = (S.profile && S.profile.nome) || "";
     const tone = { rassicurante: "calmo, caldo e rassicurante: normalizza le difficoltà e dai sicurezza", motivante: "energico e motivante: riconosci i progressi e spingi con entusiasmo misurato", tecnico: "diretto e tecnico: numeri, cause ed effetti, niente giri di parole" }[p.tono];
-    return `PERSONA DEL COACH: ti chiami ${p.nome}. Dai del tu${name ? " a " + name : ""}. Tono ${tone}. Risposte ${p.risposte === "brevi" ? "brevi (massimo 100 parole)" : "dettagliate ma ordinate (massimo 220 parole)"}. Obiettivo prioritario: ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}. Chiudi quando utile con un'azione concreta che l'app può aiutare a fare (es. «segna il pasto», «apri la seduta B»).\n\n` + baseCtx();
+    return `PERSONA DEL COACH: ti chiami ${p.nome}. Dai del tu${name ? " a " + name : ""}. Tono ${tone}. Risposte ${p.risposte === "brevi" ? "brevi (massimo 100 parole)" : "dettagliate ma ordinate (massimo 220 parole)"}. Obiettivo prioritario: ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}. Non nominare mai il modello o il fornitore dell'intelligenza artificiale: sei solo ${p.nome}. Chiudi quando utile con un'azione concreta che l'app può aiutare a fare (es. «segna il pasto», «apri la seduta B»).\n\n` + baseCtx();
   };
 
   /* ---------- engagement: streak, records, nudges ---------- */
-  function streak() {
-    let n = 0; for (let d = localISO(); ; d = addDays(d, -1)) {
-      const v = S.days[d], logged = v && (Object.values(v.meals || {}).some(Boolean) || Object.keys(v.custom || {}).length || (v.extra || []).length || v.peso || v.water);
-      const trained = S.sessions.some(s => localISO(new Date(s.date)) === d);
-      if (logged || trained) n++; else if (d !== localISO()) break; else continue;
-      if (n > 365) break;
-    }
-    return n;
-  }
   const bests = () => { const m = {}; for (const s of S.sessions) for (const e of s.items) for (const x of e.sets) if (x.kg != null && +x.kg > (m[e.name] || 0)) m[e.name] = +x.kg; return m; };
   function nudge(text) { const p = persona(); if (p.proattivo === "mai") return; S.nudge = { text, at: Date.now(), seen: false }; lsSet("nudge", S.nudge); paintFab(); }
   S.nudge = lsGet("nudge", null);
   const baseFinish = window.finish;
+  function suspicious() {
+    const day = activeDay(); if (!day) return [];
+    const b = bests(), d = draft(day), out = [];
+    for (const it of P[day].items) {
+      if (it.unit === "none") continue;
+      const prev = Math.max(b[exName(it)] || 0, +((S.state.ex[exKey(it)] || {}).kg) || 0); if (!prev) continue;
+      const kgs = (d.sets[it.id] || []).filter(x => x.done && x.kg !== "" && x.kg != null).map(x => +x.kg); if (!kgs.length) continue;
+      const mx = Math.max(...kgs); if (mx > prev * 1.5) out.push({ name: exName(it), kg: mx, prev });
+    }
+    return out;
+  }
   window.finish = async function (meta) {
+    const sus = meta && meta._ok ? [] : suspicious();
+    if (sus.length) { S.kgcheck = { meta, sus }; S.sheet = "kgcheck"; renderSheet(); return; }
+    if (meta) delete meta._ok;
     const before = bests(); await baseFinish(meta);
     const after = bests(), recs = Object.keys(after).filter(k => before[k] != null && after[k] > before[k]).map(k => `${short(k)} ${fmt(after[k])} kg (+${fmt(after[k] - before[k])})`);
     const last = S.sessions[S.sessions.length - 1];
@@ -57,10 +62,17 @@
     nudge(`Seduta ${last ? last.day : ""} salvata: bel lavoro${S.profile && S.profile.nome ? ", " + S.profile.nome : ""}. ${recs.length ? `Hai battuto ${recs.length === 1 ? "un record" : recs.length + " record"}: ${recs[0]}. ` : ""}Ricordati proteine e acqua nelle prossime ore.`);
   };
   function morning() {
-    const p = persona(), key = localISO(); if (p.proattivo !== "spesso" || lsGet("morning", "") === key || !S.profile) return;
+    const p = persona(), key = localISO(); if (p.proattivo === "mai" || lsGet("morning", "") === key || !S.profile) return;
     lsSet("morning", key);
-    const plain = coachLine().replace(/<[^>]+>/g, "");
-    nudge(`Ciao ${S.profile.nome || ""}! ${plain} Se vuoi, chiedimi come organizzare la giornata.`);
+    const nm = S.profile.nome ? " " + S.profile.nome : "", last = S.sessions.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0];
+    const gap = last ? Math.floor((Date.now() - new Date(last.date)) / 864e5) : 0, nd = nextDay(), dw = new Date().getDay();
+    const plan = {}; ((S.training && S.training.sedute) || []).forEach((x, i) => { if (x.dow != null && DAYS[i]) plan[x.dow] = DAYS[i]; });
+    const done = weekDone(), today = (dw + 6) % 7, DN = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+    const missed = Object.keys(plan).map(Number).filter(d => { const i = (d + 6) % 7; return i < today && !done[i]; });
+    if (gap >= 7) return nudge(`Bentornato${nm}. Ripartiamo con calma: nella prossima seduta usa circa il 90% dei carichi, poi si torna al ritmo di prima.`);
+    if (dw === 0) { const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length; return nudge(`Settimana chiusa: ${n} ${n === 1 ? "seduta" : "sedute"} su ${tot}. Su cosa vuoi concentrarti la prossima: proteine, sonno o carichi? Scrivimelo e ti preparo un piccolo obiettivo.`); }
+    if (missed.length && nd && !done[today]) return nudge(`${DN[missed[missed.length - 1]].charAt(0).toUpperCase() + DN[missed[missed.length - 1]].slice(1)} è saltato, capita. Oggi puoi fare la seduta ${nd}: la settimana si sistema da sola.`);
+    if (p.proattivo === "spesso") nudge(`Ciao${nm}! ${coachLine().replace(/<[^>]+>/g, "")}`);
   }
 
   /* ---------- floating coach button ---------- */
@@ -85,6 +97,14 @@
   }
   const prevSheet = window.renderSheet;
   window.renderSheet = function () {
+    if (S.sheet === "kgcheck") {
+      const k = S.kgcheck;
+      $("#overlay").innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="Controlla i carichi"><div class="grab"></div>
+        <h2>Controlla i carichi</h2><p class="muted">${k.sus.length === 1 ? "Questo carico è molto più alto" : "Questi carichi sono molto più alti"} dell'ultima volta. Se è giusto, è un record.</p>
+        <ul class="plain">${k.sus.map(x => `<li><b>${esc(short(x.name))}: ${fmt(x.kg)} kg</b>, giusto? <span class="muted">L'ultima volta ${fmt(x.prev)} kg.</span></li>`).join("")}</ul>
+        <button class="primary" data-act="kg-ok">Sì, è giusto: salva</button><button class="ghost" data-act="kg-fix">Correggi</button></div></div>`;
+      paintFab(); return;
+    }
     if (S.sheet !== "chat") { const r = prevSheet(); paintFab(); return r; }
     const o = $("#overlay"), p = persona(), msgs = S.chat.msgs, n = S.nudge;
     if (n) { n.seen = true; lsSet("nudge", n); }
@@ -109,14 +129,15 @@
     piano: ["Il centro di controllo", "Qui cambi la scheda, il piano alimentare, i tuoi alimenti, il profilo e il modo in cui ti parlo. Ogni modifica vale subito in tutta l'app."]
   };
   function guideHtml(tab) {
+    return ""; // replaced by one-line subtitles (psychologist review): guides pushed the content down
     const g = GUIDES[tab]; if (!g || lsGet("seen_" + tab, false)) return "";
     return `<div class="guide"><div class="g-h">${AVATAR(34)}<b>${g[0]}</b></div><p>${g[1]}</p><button class="ghost sm" data-act="guide-ok" data-v="${tab}">Ho capito</button></div>`;
   }
   function screenLine(tab) {
     const p = persona(); if (p.proattivo === "mai") return "";
     let t = "";
-    if (tab === "allenamento" && !(typeof activeDay === "function" && activeDay())) { const nd = nextDay(); if (nd) { const ups = P[nd].items.filter(x => plan(x).up).length; t = `Oggi ti consiglio la seduta ${nd}${ups ? `: ${ups} esercizi sono pronti a salire di carico` : ""}.`; } }
-    if (tab === "progressi") { const wk = Object.keys(weekDone()).length, st = streak(); t = `Questa settimana ${wk} di ${DAYS.length || 3} sedute${st > 1 ? `, e sei a ${st} giorni di fila con l'app` : ""}. Continua così.`; }
+    if (tab === "progressi") { const wk = Object.keys(weekDone()).length, tot = DAYS.length || 3, ws = window.weekStreak ? weekStreak() : { n: 0 };
+      t = wk >= tot ? `Settimana completa: ${wk} sedute su ${tot}.${ws.n >= 2 ? ` Sono ${ws.n} settimane complete di fila.` : ""}` : `Questa settimana ${wk} ${wk === 1 ? "seduta" : "sedute"} su ${tot}.${ws.n >= 2 ? ` Serie in corso: ${ws.n} settimane complete.` : ""}`; }
     if (tab === "piano") t = `Mi sono regolato in automatico sul tuo profilo e sui documenti caricati. Se vuoi, cambia come ti parlo nella card «Il tuo coach».`;
     return t ? `<button class="cline" data-act="coach-open">${AVATAR(30)}<span>${esc(t)}</span></button>` : "";
   }
@@ -124,12 +145,10 @@
 
   const vO = window.viewOggi;
   window.viewOggi = function () {
-    const st = streak(), html = vO();
-    const chip = st > 1 ? `<span class="streak"><b>${st}</b> giorni di fila</span>` : "";
-    return inject(html, (chip ? `<div class="streak-row">${chip}<span class="small muted">Registra qualcosa ogni giorno per non perdere la serie.</span></div>` : "") + guideHtml("oggi"));
+    return vO();
   };
   const vA = window.viewAllenamento;
-  window.viewAllenamento = function () { const html = vA(); if (typeof activeDay === "function" && activeDay()) return html; return S.detail ? html : inject(html, screenLine("allenamento") + guideHtml("allenamento")); };
+  window.viewAllenamento = function () { const html = vA(); if (typeof activeDay === "function" && activeDay()) return html; return html; };
   const vP = window.viewProgress;
   window.viewProgress = function () { return inject(vP(), screenLine("progressi") + guideHtml("progressi")); };
   const vH = window.viewPiano;
@@ -140,7 +159,7 @@
     const card = `<div class="block"><div class="hcard coach-card"><div class="hc-h">${AVATAR(42)}<div><h2>Il tuo coach: ${esc(p.nome)}</h2><p class="small muted">${OPTS.tono.find(x => x[0] === p.tono)[1]} · risposte ${p.risposte} · ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}</p></div></div>
       <p class="small muted">${p.custom ? "Impostazioni scelte da te." : "Impostato in automatico in base al profilo e ai documenti caricati: è un consiglio, puoi cambiarlo."}</p>
       <div class="hc-acts"><button class="primary go" data-act="hub" data-v="coach">Regola il coach</button><button class="ghost" data-act="coach-open">Parla con ${esc(p.nome)}</button></div></div></div>`;
-    return inject(html, guideHtml("piano") + card);
+    return inject(html, card);
   };
   function coachSettings() {
     const p = persona(), seg = (k, opts) => `<div class="seg wrap" role="group">${opts.map(([v, l]) => `<button data-act="coach-set" data-k="${k}" data-v="${v}" aria-pressed="${p[k] === v}">${l}</button>`).join("")}</div>`;
@@ -158,7 +177,9 @@
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const act = b.dataset.act, v = b.dataset.v;
-    if (act === "coach-open") { S.chatOpen = true; S.sheet = "chat"; renderSheet(); }
+    if (act === "kg-ok") { const m = S.kgcheck.meta || {}; S.sheet = null; S.kgcheck = null; finish({ ...m, _ok: true }); }
+    else if (act === "kg-fix") { S.sheet = null; S.kgcheck = null; renderSheet(); render(); }
+    else if (act === "coach-open") { S.chatOpen = true; S.sheet = "chat"; renderSheet(); }
     else if (act === "guide-ok") { lsSet("seen_" + v, true); render(); }
     else if (act === "coach-set") { savePersona({ [b.dataset.k]: v }); render(); toast("Coach aggiornato"); }
     else if (act === "coach-reset") { savePersona(null); render(); toast("Impostazione automatica ripristinata"); }
@@ -174,7 +195,8 @@
   .coach-fab:active { transform: scale(.94); }
   .coach-fab.insession { right: auto; left: calc(50% - 26px); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; }
   .coach-fab.insession svg { width: 48px; height: 48px; }
-  .fab-dot { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 999px; background: #ff4d4d; border: 3px solid #000; }
+  .fab-dot { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 999px; background: var(--accent); border: 3px solid #000; box-shadow: 0 0 0 2px var(--accent); }
+  .sync { display: none !important; }
   .wrap { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
   body.nobar .wrap { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   .coach-head { display: flex; align-items: center; gap: 12px; }

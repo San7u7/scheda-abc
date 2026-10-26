@@ -16,6 +16,7 @@
     time: '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
     up: '<svg viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>'
   };
+  window.TILE_ICONS = I;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const estMin = p => Math.max(10, Math.round(p.items.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5);
   const nameOf = () => (S.profile && S.profile.nome) || (typeof ownerName === "function" ? ownerName() : "");
@@ -23,6 +24,7 @@
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--raised)" stroke-width="7"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`; };
   const statTile = (ic, val, lab, bar, act, v, badge) => `<button class="stile" ${act ? `data-act="${act}"${v ? ` data-v="${v}"` : ""}` : "disabled"}${badge ? ' aria-label="' + lab + ': aggiungi un bicchiere da 250 ml"' : ""}><span class="ic">${ic}</span>${badge ? `<span class="badge-plus" aria-hidden="true">${badge}</span>` : ""}<span class="tv num">${val}</span><span class="tl">${lab}</span>${bar != null ? `<span class="tb"><i style="width:${Math.max(0, Math.min(100, bar))}%"></i></span>` : ""}</button>`;
 
+  window.statTile = statTile;
   /* ---------- OGGI ---------- */
   function supChips(v) {
     if (typeof supplements === "function") { const s = supplements(); return s.length ? s.map(x => `<button class="pill-t" data-act="sup" data-v="${x.id}" aria-pressed="${!!(v.sup && v.sup[x.id])}">${esc(x.name)}</button>`).join("") : ""; }
