@@ -314,18 +314,23 @@ label.ghost.file-btn { display: flex; align-items: center; justify-content: cent
 /* hello */
 .hello { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: transform .55s cubic-bezier(.7,0,.3,1); }
 .hello.out { transform: translateY(-100%); pointer-events: none; }
-.hello .stage { width: 100%; max-width: 560px; padding: 0 28px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; animation: shake .3s ease .78s; }
-.hello .hbar { height: 10px; width: 100%; background: var(--accent); border-radius: 2px; transform-origin: left; transform: scaleX(0); animation: bar .38s cubic-bezier(.7,0,.2,1) .05s forwards; }
-.hello .big { font-family: "Anton", "Impact", "Arial Black", sans-serif; font-size: clamp(130px, 46vw, 230px); line-height: .86; text-transform: uppercase; display: flex; color: #fff; }
-.hello .big span { display: inline-block; opacity: 0; animation: slam .34s cubic-bezier(.2,1.3,.4,1) forwards; }
-.hello .who { font-family: "Anton", "Impact", "Arial Black", sans-serif; font-size: clamp(40px, 12vw, 64px); line-height: 1; text-transform: uppercase; color: var(--accent); opacity: 0; transform: translateX(-40px); animation: slide .38s cubic-bezier(.2,1,.3,1) 1.0s forwards; }
+.hello .stage { display: flex; flex-direction: column; align-items: center; gap: 14px; animation: shake .28s ease 1s; }
+.hello .logo { width: min(64vw, 300px); height: auto; overflow: visible; }
+.hello .logo * { transform-box: fill-box; }
+.hello .lg-a { transform-origin: 50% 100%; transform: scaleY(0); animation: rise .45s cubic-bezier(.2,1,.3,1) .1s forwards; }
+.hello .lg-bar { transform-origin: 50% 50%; transform: scaleX(0); animation: bar .3s cubic-bezier(.7,0,.2,1) .5s forwards; }
+.hello .lg-pl { opacity: 0; animation: clamp .26s cubic-bezier(.2,1.5,.4,1) .74s forwards; }
+.hello .lg-pl.in { animation-delay: .86s; }
+.hello .word { font-family: "Anton", "Impact", "Arial Black", sans-serif; font-size: clamp(44px, 13vw, 64px); line-height: 1; letter-spacing: .16em; padding-left: .16em; text-transform: uppercase; color: #fff; margin-top: 10px; opacity: 0; transform: translateY(16px); animation: slide .4s cubic-bezier(.2,1,.3,1) 1.15s forwards; }
+.hello .who { font-size: 22px; font-weight: 600; color: var(--accent); opacity: 0; transform: translateY(12px); animation: slide .4s cubic-bezier(.2,1,.3,1) 1.4s forwards; }
 .hello .skip { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; text-align: center; color: var(--faint); font-size: 13px; }
+@keyframes rise { to { transform: none; } }
 @keyframes bar { to { transform: scaleX(1); } }
-@keyframes slam { 0% { opacity: 0; transform: scale(2.8); filter: blur(8px); } 65% { opacity: 1; transform: scale(.92); filter: blur(0); } 100% { opacity: 1; transform: none; filter: none; } }
+@keyframes clamp { 0% { opacity: 0; transform: translateX(var(--dx)); } 100% { opacity: 1; transform: none; } }
 @keyframes slide { to { opacity: 1; transform: none; } }
-@keyframes shake { 0%, 100% { transform: none; } 20% { transform: translate(-7px, 3px); } 40% { transform: translate(6px, -3px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+@keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateY(5px); } 55% { transform: translateY(-2px); } 80% { transform: translateY(1px); } }
 .greet-date { color: var(--muted); margin-top: 2px; }
-@media (prefers-reduced-motion: reduce) { .hello .stage, .hello .hbar, .hello .big span, .hello .who { animation: none; opacity: 1; transform: none; filter: none; } .hello { transition: opacity .3s; } .hello.out { transform: none; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hello .stage, .hello .logo *, .hello .word, .hello .who { animation: none; opacity: 1; transform: none; } .hello { transition: opacity .3s; } .hello.out { transform: none; opacity: 0; } }
 
 /* ---------- restyle «lime pieno» (riferimenti Pinterest 1 + 3) ---------- */
 :root { --radius-card: 26px; --lime-ink: #0a0a0a; }
@@ -396,10 +401,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610261414"></script>
-<script src="lib.js?v=202610261414"></script>
-<script src="ai.js?v=202610261414"></script>
-<script src="coach.js?v=202610261414"></script>
+<script src="seed-abc.js?v=202610261427"></script>
+<script src="lib.js?v=202610261427"></script>
+<script src="ai.js?v=202610261427"></script>
+<script src="coach.js?v=202610261427"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -704,7 +709,7 @@ function activeCard(it, d) {
 }
 
 /* ---------- PROGRESSI ---------- */
-function history() {
+function exHistory() {
   const h = {};
   for (const s of S.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1)) for (const e of s.items) {
     if (!e.sets.length) continue;
@@ -730,7 +735,7 @@ function viewProgress() {
   return `<h1>I tuoi <span class="hl">progressi</span></h1><div class="seg" style="margin-top:14px" role="group" aria-label="Tipo di progresso">${segs.map(([k, l]) => `<button data-act="psub" data-v="${k}" aria-pressed="${S.psub === k}">${l}</button>`).join("")}</div>${body}`;
 }
 function viewLoads() {
-  const h = history(), names = Object.keys(h), n = S.sessions.length;
+  const h = exHistory(), names = Object.keys(h), n = S.sessions.length;
   if (!n) return `<div class="block"><div class="empty"><h2>Nessuna seduta registrata</h2><p class="muted">Qui vedrai, per ogni esercizio, il carico migliore e il grafico rispetto ai valori di partenza della scheda. Si riempie quando concludi la prima seduta.</p><button class="ghost" data-act="tab" data-v="allenamento">Inizia la prima seduta</button></div></div>`;
   const rows = names.map(name => {
     const arr = h[name], it = ALL.find(x => x.name === name) || ALL.find(x => (S.state.subs[x.id] || {}).nome === name);
@@ -1301,10 +1306,10 @@ function showHello(name, force) {
   if (Date.now() - last < 6 * 3600e3) return;
   try { sessionStorage.setItem("hello", String(Date.now())); } catch (_) {}
   const el = $("#hello");
-  el.innerHTML = `<div class="hello" role="dialog" aria-label="Benvenuto ${esc(name)}"><div class="stage"><div class="hbar"></div><div class="big" aria-hidden="true">${[..."Ciao"].map((ch, i) => `<span style="animation-delay:${.32 + i * .09}s">${ch}</span>`).join("")}</div><div class="who">${esc(name)}</div></div><div class="skip">Tocca per entrare</div></div>`;
-  setTimeout(() => { try { navigator.vibrate && navigator.vibrate([0, 30, 60, 40]); } catch (_) {} }, 780);
+  el.innerHTML = `<div class="hello" role="dialog" aria-label="Benvenuto ${esc(name)}"><div class="stage"><svg class="logo" viewBox="56 86 400 340" aria-hidden="true"><g fill="var(--accent)"><polygon class="lg-a" points="226,92 286,92 400,420 334,420 256,178 178,420 112,420"/><rect class="lg-bar" x="70" y="290" width="372" height="22" rx="6"/><rect class="lg-pl" style="--dx:-70px" x="62" y="236" width="40" height="130" rx="10"/><rect class="lg-pl" style="--dx:70px" x="410" y="236" width="40" height="130" rx="10"/><rect class="lg-pl in" style="--dx:-50px" x="108" y="256" width="24" height="90" rx="8"/><rect class="lg-pl in" style="--dx:50px" x="380" y="256" width="24" height="90" rx="8"/></g></svg><div class="word">Askesis</div><div class="who">Ciao ${esc(name)}</div></div><div class="skip">Tocca per entrare</div></div>`;
+  setTimeout(() => { try { navigator.vibrate && navigator.vibrate([0, 20, 90, 30]); } catch (_) {} }, 760);
   const h = el.firstElementChild, go = () => { h.classList.add("out"); setTimeout(() => { el.innerHTML = ""; }, 650); };
-  h.addEventListener("click", go); setTimeout(go, 2600);
+  h.addEventListener("click", go); setTimeout(go, 2900);
 }
 applyAll();
 try { DAYS.forEach(k => { if (S.drafts[k]) draft(k); }); saveDrafts(); } catch (_) {}
@@ -1343,8 +1348,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610261414"></script>
-<script src="ux.js?v=202610261414"></script>
-<script src="hub.js?v=202610261414"></script><script src="coachui.js?v=202610261414"></script>
+<script src="exdb.js?v=202610261427"></script>
+<script src="ux.js?v=202610261427"></script>
+<script src="hub.js?v=202610261427"></script><script src="board.js?v=202610261427"></script><script src="coachui.js?v=202610261427"></script><script src="gesture.js?v=202610261427"></script>
 
 </body></html>
