@@ -37,12 +37,12 @@
   // the offer: once, on Oggi, after the greeting
   const offerOff = () => { layer.hidden = true; layer.innerHTML = ""; };
   function offer() {
-    if (lsGet("tour_seen", false) || !S.profile || S.ob || S.tab !== "oggi" || S.sheet || document.querySelector(".hello")) return;
+    if (lsGet("tour_seen", false) || !S.profile || S.ob || S.tab !== "oggi" || S.sheet || document.querySelector(".hello, .aistep")) return;
     layer.innerHTML = `<div class="t-dim"></div><div class="t-bub" role="dialog" aria-label="Tutorial" style="top:30%"><div class="t-h">${window.coachAvatar ? coachAvatar(36) : ""}<b>Ti faccio vedere come funziona?</b></div><p>Ci vogliono 30 secondi. Puoi rivederlo quando vuoi da Impostazioni › Come funziona.</p>
       <div class="t-acts"><button class="link small" data-tour="later">Dopo</button><button class="primary sm" data-tour="go">Sì, mostrami</button></div></div>`;
     layer.hidden = false;
   }
-  setTimeout(function wait() { if (document.querySelector(".hello")) return setTimeout(wait, 500); offer(); }, 1200);
+  setTimeout(function wait() { if (document.querySelector(".hello, .aistep")) return setTimeout(wait, 1500); offer(); }, 1200);
 
   // first-use hints for hidden gestures (one per screen, never during a set: only shown when the screen appears)
   const HINTS = {

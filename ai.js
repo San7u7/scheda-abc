@@ -60,12 +60,15 @@ function makeGemini(key) {
       let th = thinkingFor(m);
       for (let tries = 0; tries < 2; tries++) {
         const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
-        const r = await attempt(m, body, opts, opts.fast ? 25000 : 40000);
+        // physique photos (shirtless, underwear) trip the default filters: relax them for image requests
+        if (opts.images) body.safetySettings = ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map(category => ({ category, threshold: "BLOCK_NONE" }));
+        const r = await attempt(m, body, opts, opts.images ? 90000 : opts.fast ? 25000 : 40000);
         if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; break; }
         if (r.ok) {
           const d = await r.json(), c = (d.candidates || [])[0];
           const text = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("") || "";
-          if (!text) { last = { code: c && c.finishReason === "SAFETY" ? "refused" : "empty_completion", message: "Risposta vuota" }; break; }
+          const why = (d.promptFeedback && d.promptFeedback.blockReason) || (c && c.finishReason) || "";
+          if (!text) { last = { code: /SAFETY|PROHIBITED|BLOCK|SPII/i.test(why) ? "refused" : "empty_completion", message: "Risposta vuota " + why }; continue; }
           return { text, truncated: c.finishReason === "MAX_TOKENS", modelApplied: m };
         }
         const t = await r.text().catch(() => "");
@@ -121,9 +124,14 @@ function aiKeyBox() {
   const k = getAIKey();
   return k ? `<div class="card"><h2>AI attiva: Google Gemini</h2><p class="small muted">Coach, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
       <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`
-    : `<div class="card"><h2>Attiva l'AI gratis</h2><p class="small muted">Serve una chiave gratuita di Google Gemini: apri <b>aistudio.google.com/apikey</b>, accedi con un account Google, tocca «Create API key» e incollala qui. Resta solo su questo telefono. Sul piano gratuito Google può usare le richieste per migliorare i suoi modelli.</p>
-      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Incolla la chiave (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;font-size:16px;width:100%">
-      <button class="primary" data-act="ai-save">Attiva AI</button></div>`;
+    : `<div class="card aikey"><h2>Attiva l'AI, gratis</h2><p class="small muted" style="margin:0">Ti serve una chiave personale di Google: bastano due minuti.</p>
+      <ul class="plain ai-why"><li><b>Coach</b>: risponde su allenamento e alimentazione partendo dai tuoi dati.</li><li><b>Foto e documenti</b>: legge scheda, dieta ed etichette da foto o PDF, e valuta le foto dei progressi.</li><li><b>Pasti</b>: stima calorie e macro da una foto o da una descrizione.</li></ul>
+      <ol class="ai-steps"><li>Tocca «Apri Google AI Studio» e accedi con il tuo account Google.</li><li>Accetta i termini se te li chiede, poi tocca «Create API key».</li><li>Tocca l'icona di copia accanto alla chiave (inizia con «AIza»).</li><li>Torna qui: tocca «◀ Askesis» in alto a sinistra, oppure riapri l'app. Poi tocca «Incolla chiave».</li></ol>
+      <a class="primary go" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">Apri Google AI Studio</a>
+      ${navigator.clipboard && navigator.clipboard.readText ? `<button class="primary" data-act="ai-paste">Incolla chiave</button>` : ""}
+      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Oppure incollala qui (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;color:var(--text);font-size:16px">
+      <button class="ghost" data-act="ai-save">Attiva AI</button>
+      <p class="small muted" style="margin:0">La chiave resta solo su questo telefono: Askesis non ha server e non la vede. Le richieste vanno direttamente a Google. Il piano gratuito ha limiti giornalieri e Google può usare le richieste per migliorare i suoi modelli. Senza chiave funzionano comunque profilo, scheda e dieta inserite a mano, allenamenti e progressi.</p></div>`;
 }
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
@@ -135,8 +143,11 @@ document.addEventListener("click", async e => {
     if (k.length < 20) { toast("La chiave sembra incompleta: copiala di nuovo da AI Studio"); return; }
     b.disabled = true; b.textContent = "Verifico…";
     try { await geminiModels(k); setAIKey(k); await setupSite(); toast("AI attivata"); }
-    catch (err) { toast(err && err.code === "bad_key" ? "Google dice che la chiave non è valida: ricopiala da AI Studio" : "Non riesco a contattare Google: controlla la connessione e riprova"); }
+    catch (err) { toast(err && err.code === "bad_key" ? "Questa chiave non funziona. Ricopiala da AI Studio: deve iniziare con AIza." : err && err.code === "rate_limited" ? "Per oggi hai raggiunto il limite gratuito. Riprova più tardi." : "Google non risponde. Controlla la connessione e riprova."); }
     render();
+  } else if (act === "ai-paste") {
+    try { const t = await navigator.clipboard.readText(), el = document.getElementById("ai-key"); if (el) el.value = t || ""; if (!t) { toast("Gli appunti sono vuoti: copia la chiave in AI Studio"); return; } const sv = document.querySelector('[data-act="ai-save"]'); if (sv) sv.click(); }
+    catch (_) { toast("Non posso leggere gli appunti: tieni premuto nel campo e scegli «Incolla»"); }
   } else if (act === "ai-remove") { setAIKey(""); await setupSite(); render(); toast("Chiave rimossa"); }
   else if (act === "ai-test") {
     b.disabled = true; b.textContent = "Provo…";
