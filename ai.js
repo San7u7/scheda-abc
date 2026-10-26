@@ -2,7 +2,7 @@
 /* Site mode: Google Gemini with the user's own key (kept only on this device), local photo storage, file downloads.
    Exposes the same interface the app uses on claude.ai: sample(input, opts) -> {text}, sample.json(input, opts) -> value. */
 
-const AI_KEY = "gemini_key", AI_MODEL = "gemini_models_v2";
+const AI_KEY = "gemini_key", AI_MODEL = "gemini_models_v3";
 const GEM = "https://generativelanguage.googleapis.com/v1beta";
 function getAIKey() { try { return localStorage.getItem(AI_KEY) || ""; } catch (_) { return ""; } }
 function setAIKey(k) { try { k ? localStorage.setItem(AI_KEY, k) : (localStorage.removeItem(AI_KEY), localStorage.removeItem(AI_MODEL)); } catch (_) {} }
@@ -61,7 +61,8 @@ function makeGemini(key) {
     let last;
     const all = await getModels(), lite = all.filter(n => /lite/.test(n)), full = all.filter(n => !/lite/.test(n));
     // try the best models first, then a well-known stable one; images need a vision-capable full model
-    const order = [...new Set((opts.fast && !opts.images ? lite.concat(full) : full.concat(lite)).concat(["gemini-2.5-flash"]))].slice(0, 4);
+    const order = [...new Set(opts.fast && !opts.images ? lite.concat(full) : full.concat(lite))].slice(0, 3);
+    const errs = [];
     const SAFE = ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map(category => ({ category, threshold: "BLOCK_ONLY_HIGH" }));
     const gmsg = t => { try { return JSON.parse(t).error.message; } catch (_) { return String(t || "").slice(0, 160); } };
     for (const [mi, m] of order.entries()) {
@@ -86,12 +87,14 @@ function makeGemini(key) {
         }
         const t = await r.text().catch(() => "");
         if ((r.status === 400 && /API key|API_KEY_INVALID/i.test(t)) || r.status === 401 || r.status === 403) throw { code: "bad_key", message: "Chiave non valida" };
-        last = { code: r.status === 429 ? "rate_limited" : "upstream_error", message: `${m}: HTTP ${r.status} · ${gmsg(t)}` };
+        last = { code: r.status === 429 ? "rate_limited" : "upstream_error", message: `${m}: HTTP ${r.status} · ${gmsg(t)}` }; errs.push(last);
         if (r.status === 404) { models = null; try { localStorage.removeItem(AI_MODEL); } catch (_) {} nextModel = true; }
         if (r.status === 429) nextModel = true;
       }
     }
-    throw last || { code: "upstream_error", message: "Errore" };
+    // the first error is the informative one (best model); if every model failed, the cached list may be stale: refresh once
+    if (!opts._fresh && errs.length) { models = null; try { localStorage.removeItem(AI_MODEL); } catch (_) {} P.stage("Aggiorno l'elenco dei modelli"); return callInner(input, { ...opts, _fresh: true }, json, P); }
+    throw (errs[0] && last && last.code !== "timeout" && last.code !== "refused" ? errs[0] : last) || { code: "upstream_error", message: "Errore" };
   }
   const notify = e => {
     const msg = { bad_key: "Chiave Gemini non valida: controllala nelle impostazioni", rate_limited: "Limite gratuito di Gemini raggiunto per ora: riprova più tardi", timeout: "Gemini non ha risposto in tempo: riprova tra poco", truncated: "Documento troppo lungo per una volta sola: caricalo in due parti", network: "Connessione assente: riprova quando sei online" }[e && e.code];
