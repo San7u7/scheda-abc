@@ -21,7 +21,7 @@
   const nameOf = () => (S.profile && S.profile.nome) || (typeof ownerName === "function" ? ownerName() : "");
   const ring = (done, total, size = 64) => { const r = size / 2 - 5, c = 2 * Math.PI * r, f = total ? done / total : 0;
     return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--raised)" stroke-width="7"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`; };
-  const statTile = (ic, val, lab, bar, act, v) => `<button class="stile" ${act ? `data-act="${act}"${v ? ` data-v="${v}"` : ""}` : "disabled"}><span class="ic">${ic}</span><span class="tv num">${val}</span><span class="tl">${lab}</span>${bar != null ? `<span class="tb"><i style="width:${Math.max(0, Math.min(100, bar))}%"></i></span>` : ""}</button>`;
+  const statTile = (ic, val, lab, bar, act, v, badge) => `<button class="stile" ${act ? `data-act="${act}"${v ? ` data-v="${v}"` : ""}` : "disabled"}${badge ? ' aria-label="' + lab + ': aggiungi un bicchiere da 250 ml"' : ""}><span class="ic">${ic}</span>${badge ? `<span class="badge-plus" aria-hidden="true">${badge}</span>` : ""}<span class="tv num">${val}</span><span class="tl">${lab}</span>${bar != null ? `<span class="tb"><i style="width:${Math.max(0, Math.min(100, bar))}%"></i></span>` : ""}</button>`;
 
   /* ---------- OGGI ---------- */
   function supChips(v) {
@@ -35,7 +35,7 @@
     const tiles = `<div class="stiles">
       ${statTile(I.kcal, `${fmt(Math.round(it.eaten.kcal))}<small> / ${fmt(T)}</small>`, "Calorie", it.eaten.kcal / T * 100, "kcal-sheet")}
       ${statTile(I.pro, `${Math.round(it.eaten.p)}<small> / ${PLAN.pro} g</small>`, "Proteine", it.eaten.p / PLAN.pro * 100, "kcal-sheet")}
-      ${statTile(I.water, `${fmt(v.water * 0.25)}<small> / ${fmt(PLAN.waterL)} L</small>`, "Acqua · tocca per aggiungere", v.water * 0.25 / PLAN.waterL * 100, "water", "1")}
+      ${statTile(I.water, `${fmt(v.water * 0.25)}<small> / ${fmt(PLAN.waterL)} L</small>`, "Acqua", v.water * 0.25 / PLAN.waterL * 100, "water", "1", "+")}
       ${statTile(I.peso, v.peso ? `${fmt(v.peso)}<small> kg</small>` : "–", wt.rate != null ? `Peso · ${wt.rate >= 0 ? "+" : ""}${fmt(+wt.rate.toFixed(2))}%/sett` : "Peso · tocca per registrare", null, "sheet", "peso")}</div>`;
     let sess;
     if (!p) sess = `<div class="card"><h2>Nessuna scheda di allenamento</h2><p class="muted">Caricala come testo, foto o PDF, oppure fattene creare una di base.</p><button class="primary go" data-act="redo" data-v="2">Carica la scheda</button></div>`;
@@ -45,7 +45,7 @@
     else { const ups = p.items.filter(x => plan(x).up).length, d = a ? S.drafts[a] : null, all = d ? P[a].items.flatMap(x => d.sets[x.id]) : [];
       sess = `<div class="pcard" style="background-image:url(${photoFor(nd)})"><div class="pc-top"><span class="ph-tag">${a ? "In corso" : p.day || "Prossima"}</span>${a ? `<span class="pc-ring">${ring(all.filter(s => s.done).length, all.length, 46)}</span>` : ""}</div><div class="pc-bot">
         <div class="pc-title">Seduta <span class="hl">${nd}</span></div><p class="pc-sub">${esc(p.focus)}</p>
-        <div class="srow"><span><b>${p.items.length}</b>esercizi</span><span><b>${p.items.reduce((s, x) => s + x.sets, 0)}</b>serie</span><span><b>~${estMin(p)}</b>minuti</span>${ups ? `<span><b class="hl">${ups}</b>pronti a salire</span>` : ""}</div>
+        <div class="srow"><span><b>${p.items.length}</b>esercizi</span><span><b>${p.items.reduce((s, x) => s + x.sets, 0)}</b>serie</span><span><b>~${estMin(p)}</b>minuti</span>${ups ? `<span><b class="hl">${ups}</b>da alzare</span>` : ""}</div>
         <div class="row2"><button class="primary go" data-act="start" data-v="${nd}">${a ? "Riprendi" : "Inizia"}</button><button class="ghost dark" data-act="open-day" data-v="${nd}" aria-label="Dettaglio seduta ${nd}">Dettagli</button></div></div></div>`; }
     const meals = MEALS.map(([k, l]) => { const m = mealOf(dw, k), st = mealState(v, k), on = st === "plan" || st === "custom";
       const kc = st === "custom" ? v.custom[k].kcal : st === "skip" ? 0 : m ? nutOf(dw, k).kcal : null;
@@ -78,7 +78,7 @@
       return `<li><span class="dl-n">${esc(short(exName(it)))}${pl.up ? ` <span class="pill up">+${fmt(pl.kg - b.kg)} kg</span>` : ""}</span><span class="dl-m num">${it.sets}×${it.min}–${it.max}${it.unit === "zavorra" ? (pl.kg ? ` · +${fmt(pl.kg)} kg` : " · corpo libero") : b.kg != null && it.unit !== "none" ? ` · ${fmt(pl.kg)} kg` : ""}</span></li>`; }).join("");
     return `<button class="back" data-act="detail-back">${BACK}Sedute</button>
       <div class="dhero" style="background-image:url(${photoFor(k)})"><span class="ph-tag">${p.day || "Seduta"}</span><div class="dh-title">Seduta <span class="hl">${k}</span></div><p class="dh-sub">${esc(p.focus || "")}</p></div>
-      <div class="srow boxed"><span><b>${p.items.length}</b>esercizi</span><span><b>${p.items.reduce((s, x) => s + x.sets, 0)}</b>serie</span><span><b>~${estMin(p)}</b>minuti</span><span><b class="${ups ? "hl" : ""}">${ups}</b>pronti a salire</span></div>
+      <div class="srow boxed"><span><b>${p.items.length}</b>esercizi</span><span><b>${p.items.reduce((s, x) => s + x.sets, 0)}</b>serie</span><span><b>~${estMin(p)}</b>minuti</span><span><b class="${ups ? "hl" : ""}">${ups}</b>da alzare</span></div>
       <div class="block"><h2>Esercizi</h2><ul class="dlist">${rows}</ul></div>
       <p class="small muted">Prima del primo esercizio di ogni gruppo muscolare: 1 serie di avvicinamento al 50–60%.</p>
       <div class="sticky-cta"><button class="primary go" data-act="start" data-v="${k}">${activeDay() === k ? "Riprendi seduta" : "Inizia seduta " + k}</button></div>`;
@@ -184,6 +184,8 @@
   .stiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stile { text-align: left; border: 0; background: var(--surface); border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--text); }
   .stile:active { background: var(--raised); }
+  .stile { position: relative; }
+  .badge-plus { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 999px; background: var(--accent); color: var(--lime-ink); font-size: 20px; font-weight: 800; display: grid; place-items: center; line-height: 1; }
   .stile .ic { width: 34px; height: 34px; border-radius: 999px; background: var(--accent-soft); display: grid; place-items: center; }
   .stile .ic svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .stile .tv { font-size: 24px; line-height: 28px; font-weight: 800; letter-spacing: -0.03em; white-space: nowrap; }
@@ -247,7 +249,7 @@
   .dl-n { min-width: 0; font-weight: 600; }
   .dl-m { color: var(--muted); font-size: 13px; flex: none; }
   .pill.up { display: inline-block; background: var(--accent); color: var(--lime-ink); font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; margin-left: 4px; vertical-align: 2px; }
-  .sticky-cta { position: sticky; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); margin-top: 16px; padding-top: 10px; background: linear-gradient(180deg, rgba(0,0,0,0), #000 40%); }
+  .sticky-cta { position: sticky; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); margin-top: 16px; padding-top: 10px; background: var(--ground); }
   .fhead { display: flex; justify-content: space-between; align-items: center; }
   .fring { position: relative; width: 54px; height: 54px; }
   .fring span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
