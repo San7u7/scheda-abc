@@ -50,22 +50,29 @@ function makeGemini(key) {
     finally { clearTimeout(timer); if (opts.signal) opts.signal.removeEventListener("abort", onUser); }
   }
   async function call(input, opts = {}, json = false) {
+    const P = aiProgress(input, opts, json);
+    try { return await callInner(input, opts, json, P); } finally { P.end(); }
+  }
+  async function callInner(input, opts, json, P) {
+    P.stage(opts.images ? "Preparo le immagini" : "Preparo i tuoi dati");
     const contents = await toContents(input, opts.images);
     const base = { temperature: json ? 0.2 : 0.6, maxOutputTokens: json ? (opts.fast ? 4096 : 16384) : 1500 };
     if (json) base.responseMimeType = "application/json";
     let last;
     const all = await getModels(), lite = all.filter(n => /lite/.test(n)), full = all.filter(n => !/lite/.test(n));
     const order = (opts.fast ? lite.concat(full) : full.concat(lite)).slice(0, 2);
-    for (const m of order) {
+    for (const [mi, m] of order.entries()) {
+      if (mi) P.stage("Provo un altro modello");
       let th = thinkingFor(m);
       for (let tries = 0; tries < 2; tries++) {
         const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
         // physique photos (shirtless, underwear) trip the default filters: relax them for image requests
         if (opts.images) body.safetySettings = ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map(category => ({ category, threshold: "BLOCK_NONE" }));
-        const r = await attempt(m, body, opts, opts.images ? 90000 : opts.fast ? 25000 : 40000);
+        P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Gemini sta guardando le immagini" : "Gemini sta ragionando"), 900);
+        const r = await attempt(m, body, opts, opts.images ? 90000 : opts.fast ? 25000 : 40000); clearTimeout(slow);
         if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; break; }
         if (r.ok) {
-          const d = await r.json(), c = (d.candidates || [])[0];
+          P.stage("Leggo la risposta"); const d = await r.json(), c = (d.candidates || [])[0];
           const text = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("") || "";
           const why = (d.promptFeedback && d.promptFeedback.blockReason) || (c && c.finishReason) || "";
           if (!text) { last = { code: /SAFETY|PROHIBITED|BLOCK|SPII/i.test(why) ? "refused" : "empty_completion", message: "Risposta vuota " + why }; continue; }
@@ -157,3 +164,33 @@ document.addEventListener("click", async e => {
     b.disabled = false; b.textContent = "Prova la chiave";
   }
 });
+
+/* AI progress feedback, everywhere: what is happening, elapsed time, about how much is left. */
+function aiProgress(input, opts, json) {
+  const text = typeof input === "string" ? input : String((input[input.length - 1] || {}).content || "");
+  const task = opts.task || (opts.images && /etichett/i.test(text) ? "Leggo l'etichetta" : opts.images && /fisico|percorso|preparatore|livell/i.test(text) ? "Valuto le foto" : opts.images ? "Leggo l'immagine"
+    : /SCHEDA|scheda di allenamento/i.test(text) && json ? "Leggo la scheda" : /piano alimentare|dieta/i.test(text) && json && text.length > 2000 ? "Leggo il piano alimentare"
+    : /alternativ|sostitu/i.test(text) ? "Cerco alternative" : /calorie|macro/i.test(text) && json ? "Stimo calorie e macro" : json ? "Elaboro" : "Leo sta pensando");
+  const est = (opts.images ? (opts.fast ? 12 : 30) : json ? (opts.fast ? 8 : 20) : 10) * 1000;
+  const id = Date.now() + Math.random(), t0 = Date.now();
+  const st = { id, task, stage: "", t0, est };
+  aiProgress.list.set(id, st); aiProgress.paint();
+  return { stage(x) { st.stage = x; aiProgress.paint(); }, end() { aiProgress.list.delete(id); aiProgress.paint(true); } };
+}
+aiProgress.list = new Map();
+aiProgress.paint = function (ended) {
+  let el = document.getElementById("aiprog");
+  if (!el) { el = document.createElement("div"); el.id = "aiprog"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); document.body.appendChild(el);
+    const css = document.createElement("style"); css.textContent = `#aiprog { position: fixed; left: 12px; right: 12px; top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 90; max-width: 520px; margin: 0 auto; background: #1c1c1e; border: 1px solid var(--raised, #2a2a2a); border-radius: 18px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); color: var(--text, #fff); font-size: 14px; transition: opacity .25s, transform .25s; }
+    #aiprog[hidden] { display: block; opacity: 0; transform: translateY(-12px); pointer-events: none; }
+    #aiprog .ap-h { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; } #aiprog b { font-size: 15px; } #aiprog .ap-t { color: var(--muted, #aaa); font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+    #aiprog .ap-s { color: var(--muted, #aaa); font-size: 13px; margin-top: 2px; } #aiprog .ap-bar { height: 4px; border-radius: 99px; background: var(--raised, #333); margin-top: 8px; overflow: hidden; }
+    #aiprog .ap-bar span { display: block; height: 100%; background: var(--accent, #c6f24e); border-radius: 99px; transition: width .4s linear; }
+    @media (prefers-reduced-motion: reduce) { #aiprog, #aiprog .ap-bar span { transition: none; } }`; document.head.appendChild(css); }
+  const cur = [...aiProgress.list.values()].pop();
+  if (!cur) { if (ended && !el.hidden) { el.querySelector("b") && (el.querySelector("b").textContent = "Fatto"); const sp = el.querySelector(".ap-bar span"); if (sp) sp.style.width = "100%"; setTimeout(() => { if (!aiProgress.list.size) el.hidden = true; }, 500); } else el.hidden = true; clearInterval(aiProgress.tick); aiProgress.tick = null; return; }
+  const t = Date.now() - cur.t0, frac = Math.min(.95, 1 - Math.exp(-t / (cur.est * .7))), left = Math.round((cur.est - t) / 1000);
+  el.hidden = false;
+  el.innerHTML = `<div class="ap-h"><b>${cur.task}…</b><span class="ap-t">${Math.round(t / 1000)} s${left > 0 ? ` · circa ${left} s` : ""}</span></div><div class="ap-s">${cur.stage || ""}${left <= 0 ? (cur.stage ? " · " : "") + "ci vuole un po' più del solito" : ""}</div><div class="ap-bar"><span style="width:${(frac * 100).toFixed(0)}%"></span></div>`;
+  if (!aiProgress.tick) aiProgress.tick = setInterval(() => aiProgress.paint(), 500);
+};
