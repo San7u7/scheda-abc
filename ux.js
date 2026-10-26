@@ -183,6 +183,8 @@
   /* ---------- styles ---------- */
   const css = document.createElement("style");
   css.textContent = `
+  html, body { overscroll-behavior: none; }
+  body.nobar .wrap { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   .hello-row h1 { margin-top: 2px; }
   .stiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stile { text-align: left; border: 0; background: var(--surface); border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--text); }
@@ -268,6 +270,9 @@
   `;
   document.head.appendChild(css);
 
+  /* no rubber-band scrolling; no tab-bar padding on screens without the bar */
+  const baseRender = window.render;
+  window.render = function () { baseRender(); const bar = document.getElementById("bar"); document.body.classList.toggle("nobar", !(bar && bar.innerHTML.trim())); };
   /* re-render with the new views once every module in this file has loaded */
   setTimeout(() => render(), 0);
 })();
