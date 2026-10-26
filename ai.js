@@ -2,7 +2,7 @@
 /* Site mode: Google Gemini with the user's own key (kept only on this device), local photo storage, file downloads.
    Exposes the same interface the app uses on claude.ai: sample(input, opts) -> {text}, sample.json(input, opts) -> value. */
 
-const AI_KEY = "gemini_key", AI_MODEL = "gemini_model";
+const AI_KEY = "gemini_key", AI_MODEL = "gemini_models_v2";
 const GEM = "https://generativelanguage.googleapis.com/v1beta";
 function getAIKey() { try { return localStorage.getItem(AI_KEY) || ""; } catch (_) { return ""; } }
 function setAIKey(k) { try { k ? localStorage.setItem(AI_KEY, k) : (localStorage.removeItem(AI_KEY), localStorage.removeItem(AI_MODEL)); } catch (_) {} }
@@ -20,7 +20,9 @@ async function geminiModels(key) {
     .filter(n => /^gemini-[\d.]+-flash/.test(n) && !/image|tts|audio|live|embedding|thinking-exp|exp-\d/.test(n));
   const ver = n => parseFloat((/gemini-([\d.]+)/.exec(n) || [])[1] || 0);
   const score = n => ver(n) * 10 - (/lite/.test(n) ? 3 : 0) - (/preview|exp/.test(n) ? 1 : 0);
-  return [...new Set(list)].sort((a, b) => score(b) - score(a)).slice(0, 4);
+  const sorted = [...new Set(list)].sort((a, b) => score(b) - score(a));
+  const full = sorted.filter(n => !/lite/.test(n)).slice(0, 2), lite = sorted.filter(n => /lite/.test(n)).slice(0, 1);
+  return full.concat(lite);
 }
 
 function makeGemini(key) {
@@ -52,7 +54,9 @@ function makeGemini(key) {
     const base = { temperature: json ? 0.2 : 0.6, maxOutputTokens: json ? 8192 : 1500 };
     if (json) base.responseMimeType = "application/json";
     let last;
-    for (const m of (await getModels()).slice(0, 2)) {
+    const all = await getModels(), lite = all.filter(n => /lite/.test(n)), full = all.filter(n => !/lite/.test(n));
+    const order = (opts.fast ? lite.concat(full) : full.concat(lite)).slice(0, 2);
+    for (const m of order) {
       let th = thinkingFor(m);
       for (let tries = 0; tries < 2; tries++) {
         const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
@@ -134,7 +138,8 @@ document.addEventListener("click", async e => {
   } else if (act === "ai-remove") { setAIKey(""); await setupSite(); render(); toast("Chiave rimossa"); }
   else if (act === "ai-test") {
     b.disabled = true; b.textContent = "Provo…";
-    try { const r = await S.sample("Rispondi solo con: ok"); toast(`Funziona (${r.modelApplied})`); } catch (_) {}
+    const t0 = Date.now();
+    try { const r = await S.sample("Rispondi solo con: ok", { fast: true }); toast(`Funziona: ${r.modelApplied}, ${((Date.now() - t0) / 1000).toFixed(1)} s`); } catch (_) {}
     b.disabled = false; b.textContent = "Prova la chiave";
   }
 });
