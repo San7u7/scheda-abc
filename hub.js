@@ -239,3 +239,49 @@
   document.addEventListener("click", e => { const b = e.target.closest('[data-act="backup"]'); if (b) backup().catch(() => toast("Non sono riuscito a creare la copia.")); });
   document.addEventListener("change", e => { const i = e.target; if (i.dataset && i.dataset.act === "restore" && i.files && i.files[0]) { restore(i.files[0]); i.value = ""; } });
 })();
+
+/* My foods everywhere: suggestions while typing a meal, and the estimate uses the saved label values. */
+(function () {
+  const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ");
+  const toks = s => norm(s).split(/\s+/).filter(w => w.length >= 3);
+  function matches(text) {
+    const words = toks(text); if (!words.length) return [];
+    const has = t => words.some(w => w.startsWith(t.slice(0, Math.max(4, t.length - 2))) || t.startsWith(w.slice(0, Math.max(4, w.length - 2))));
+    const taken = new Set(((S.food && S.food.items) || []).map(x => x.fid).filter(Boolean));
+    return S.foods.filter(f => !taken.has(f.id)).map(f => { const t = toks(f.nome), n = t.filter(has).length; return { f, n, ok: n >= 2 || (n === 1 && (t.length === 1 || t.some(x => has(x) && x.length >= 5))) }; })
+      .filter(x => x.ok).sort((a, b) => b.n - a.n || (b.f.used || 0) - (a.f.used || 0)).slice(0, 4).map(x => x.f);
+  }
+  const sugg = () => { const el = document.getElementById("fsugg"), ta = document.getElementById("ftext"); if (!el || !ta) return; const m = matches(ta.value);
+    el.innerHTML = m.length ? `<p class="small muted" style="margin:0 0 6px">Dai tuoi alimenti, con i valori dell'etichetta:</p><div class="chips">${m.map(f => `<button class="primary sm" data-act="fadd-s" data-v="${f.id}">+ ${esc(f.nome)} · ${fmt(f.porzione || 100)} g</button>`).join("")}</div>` : ""; };
+  const prev = window.renderSheet;
+  window.renderSheet = function () { prev(); if (S.sheet === "food") { const ta = document.getElementById("ftext"); if (ta && !document.getElementById("fsugg")) { ta.insertAdjacentHTML("afterend", '<div id="fsugg"></div>'); sugg(); } } };
+  document.addEventListener("input", e => { if (e.target && e.target.id === "ftext") { if (S.food) S.food.text = e.target.value; sugg(); } });
+  document.addEventListener("click", e => { const b = e.target.closest('[data-act="fadd-s"]'); if (!b) return; e.stopPropagation();
+    const fo = S.foods.find(x => x.id === b.dataset.v); if (!fo || !S.food) return;
+    const ta = document.getElementById("ftext"); if (ta) S.food.text = ta.value;
+    S.food.items.push({ nome: fo.nome, per100: fo.per100, g: fo.porzione || 100, src: "lib", fid: fo.id }); renderSheet(); }, true);
+
+  // estimate: the AI must reuse the saved label values when the text names a saved food
+  window.estimateFood = async function () {
+    const f = S.food, t = (($("#ftext") || {}).value || "").trim(); f.text = t;
+    if (!t) { f.err = "Scrivi cosa hai mangiato, con le quantità se le sai."; renderSheet(); return; }
+    blurAll(); f.busy = "text"; f.err = null; renderSheet();
+    const lib = S.foods.slice().sort((x, y) => (y.used || 0) - (x.used || 0)).slice(0, 40);
+    const extra = lib.length ? `\n\nALIMENTI SALVATI DALL'UTENTE (valori per 100 g letti dall'etichetta). Se la descrizione nomina uno di questi, anche in modo approssimativo, usa ESATTAMENTE questi valori, metti il suo "id" e i "grammi" mangiati (se la quantità manca usa la porzione abituale):\n${lib.map(x => `${x.id} | ${x.nome} | ${x.per100.kcal} kcal, P ${x.per100.p}, C ${x.per100.c}, G ${x.per100.f} per 100 g | porzione abituale ${x.porzione || 100} g`).join("\n")}\nPer questi aggiungi all'oggetto anche "id":"…" e "grammi":0.` : "";
+    try {
+      f.ac = new AbortController(); const t0 = Date.now(); clearInterval(f.tick); f.tick = setInterval(() => { const el = document.getElementById("f-busy"); if (el) el.textContent = `Sto stimando… ${Math.round((Date.now() - t0) / 1000)} s`; }, 1000);
+      const out = await S.sample.json(NUT_PROMPT + extra + "\n\nDESCRIZIONE:\n" + t, { modelTier: "quick", fast: true, signal: f.ac.signal });
+      const items = (out && Array.isArray(out.alimenti) ? out.alimenti : []).map(x => {
+        const fo = x.id && S.foods.find(y => y.id === x.id);
+        if (fo) return { nome: fo.nome, per100: fo.per100, g: num(x.grammi) || gramsOf(x.quantita) || fo.porzione || 100, src: "stima", fid: fo.id };
+        return { nome: String(x.nome || "Alimento"), quantita: String(x.quantita || ""), g: gramsOf(x.quantita), kcal: num(x.kcal), p: num(x.p), c: num(x.c), f: num(x.f), src: "stima" };
+      });
+      if (!items.length || !items.some(x => x.kcal > 0 || x.per100)) throw new Error("vuoto");
+      f.items = f.items.filter(x => x.src !== "stima").concat(items);
+      const used = items.filter(x => x.fid).length; f.note = (used ? `${used === 1 ? "Un alimento preso" : used + " alimenti presi"} dalle tue etichette. ` : "") + (out.note || "");
+    } catch (e) {
+      f.err = e && e.code === "cancelled" ? "Stima annullata." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova, oppure scrivi tu i valori." : "Non sono riuscito a stimare: riprova o aggiungi dai tuoi alimenti.";
+    }
+    clearInterval(f.tick); f.busy = false; renderSheet();
+  };
+})();
