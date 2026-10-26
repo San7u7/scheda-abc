@@ -24,6 +24,7 @@
     if (a.type === "icon" && ICONS[a.icon]) return `<span class="uav" style="${st}" aria-hidden="true"><svg viewBox="0 0 24 24" width="${size * .55}" height="${size * .55}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[a.icon]}</svg></span>`;
     return `<span class="uav" style="${st};font-size:${Math.round(size * .38)}px" aria-hidden="true">${esc(initials())}</span>`;
   };
+  const preview = (a, size) => { const keep = S.profile.avatar; S.profile.avatar = a; const h = userAvatar(size); S.profile.avatar = keep; return h; };
   const saveProfile = patch => { S.profile = { ...S.profile, ...patch }; persistDoc("profile", S.profile); applyAll(); render(); };
 
   /* ---------- Profilo tab ---------- */
@@ -64,21 +65,23 @@
       <h2 class="set-h">Aiuto</h2><div class="block"><div class="hcard"><button class="setrow link-row" data-act="set-sub" data-v="help"><span><b>Come funziona</b><small>Sezioni, gesti, regole di allenamento e il tour</small></span><span class="hl">›</span></button></div></div>`;
   }
   function avatarView() {
-    const a = (S.profile && S.profile.avatar) || { type: "initials" }, c = S.crop;
+    const saved = (S.profile && S.profile.avatar) || { type: "initials" }, a = S.avPick || saved, c = S.crop, changed = !!S.avPick && JSON.stringify(S.avPick) !== JSON.stringify(saved);
     return `<button class="back" data-act="set-sub" data-v="main">${BACK}Impostazioni</button><h1>La tua <span class="hl">immagine</span></h1>
       <p class="muted" style="margin-top:4px">Compare nel profilo e nel saluto di Oggi. Una foto in cui ti riconosci, non per giudicarti.</p>
       ${c ? `<div class="block"><div class="hcard"><div class="crop" id="crop"><img src="${c.src}" alt="" style="width:${c.w * Math.max(280 / c.w, 280 / c.h)}px;height:${c.h * Math.max(280 / c.w, 280 / c.h)}px;transform:translate(${c.x}px,${c.y}px) scale(${c.z})" draggable="false"></div>
         <input type="range" class="pp-range" min="1" max="3" step="0.01" value="${c.z}" data-crop="z" aria-label="Zoom"><p class="small muted" style="margin:0">Trascina per centrare il viso, usa la barra per lo zoom.</p>
         <div class="row2"><button class="primary" data-act="crop-ok">Usa questa foto</button><button class="ghost" data-act="crop-no">Annulla</button></div></div></div>` : `
-      <div class="block"><div class="hcard"><div style="display:flex;justify-content:center">${userAvatar(96)}</div>
-        <label class="primary file-btn" style="text-align:center">Usa una tua foto<input type="file" accept="image/*" data-act="av-photo"></label>
+      <div class="block"><div class="hcard"><div style="display:flex;justify-content:center">${preview(a, 96)}</div>
+        ${changed ? `<div class="row2"><button class="primary" data-act="av-ok">Conferma</button><button class="ghost" data-act="av-cancel">Annulla</button></div>` : ""}
+        <label class="${changed ? "ghost" : "primary"} file-btn" style="text-align:center">Usa una tua foto<input type="file" accept="image/*" data-act="av-photo"></label>
         <p class="small muted" style="margin:8px 0">Oppure scegli un simbolo</p>
         <div class="avgrid">${Object.keys(ICONS).map(k => `<button class="avopt ${a.type === "icon" && a.icon === k ? "on" : ""}" data-act="av-icon" data-v="${k}" aria-label="${k}"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg></button>`).join("")}</div>
-        <button class="ghost" data-act="av-initials">Solo iniziali (${esc(initials())})</button></div></div>`}`;
+        <button class="ghost" data-act="av-initials" aria-pressed="${a.type === "initials"}">Solo iniziali (${esc(initials())})</button></div></div>`}`;
   }
 
   const r0 = window.render;
-  window.render = function () { r0(); if (S.settings && S.profile && !S.ob) { const v = $("#view"); if (v) v.innerHTML = view(); document.querySelectorAll('.tabs [aria-current]').forEach(x => x.removeAttribute("aria-current")); } badge(); };
+  const LOGO = `<svg viewBox="56 86 400 340" width="26" height="22" aria-hidden="true"><g fill="var(--accent)"><polygon points="226,92 286,92 400,420 334,420 256,178 178,420 112,420"/><rect x="70" y="290" width="372" height="22" rx="6"/><rect x="62" y="236" width="40" height="130" rx="10"/><rect x="410" y="236" width="40" height="130" rx="10"/><rect x="108" y="256" width="24" height="90" rx="8"/><rect x="380" y="256" width="24" height="90" rx="8"/></g></svg><span class="logo-w">Askesis</span>`;
+  window.render = function () { r0(); const mk = document.querySelector(".top .mark"); if (mk && !mk.querySelector(".logo-w")) { mk.innerHTML = LOGO; mk.classList.add("logo"); mk.setAttribute("aria-label", "Askesis"); } if (S.settings && S.profile && !S.ob) { const v = $("#view"); if (v) v.innerHTML = view(); document.querySelectorAll('.tabs [aria-current]').forEach(x => x.removeAttribute("aria-current")); } badge(); };
 
   /* ---------- crop ---------- */
   async function loadPhoto(file) {
@@ -166,13 +169,15 @@
     if (b.classList.contains("gear")) { e.preventDefault(); e.stopPropagation(); S.settings = S.settings ? null : "main"; S.macro = null; S.boardEdit = false; window.scrollTo(0, 0); render(); return; }
     if (act === "tab" || act === "redo") S.settings = null;
     if (act === "set-close") { e.stopPropagation(); S.settings = null; S.crop = null; window.scrollTo(0, 0); render(); }
-    else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar", "help"].includes(v) ? v : "main"; S.crop = null; window.scrollTo(0, 0); render(); }
+    else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar", "help"].includes(v) ? v : "main"; S.crop = null; S.avPick = null; window.scrollTo(0, 0); render(); }
     else if (act === "days") { e.stopPropagation(); setPref("days", v); render(); toast(v === "flex" ? "Ti alleni quando vuoi" : "Giorni fissi della scheda"); }
     else if (act === "pref") { e.stopPropagation(); const p = pref(); setPref(v, !p[v]); render(); }
     else if (act === "accent") { e.stopPropagation(); saveProfile({ colore: v }); }
     else if (act === "ics") { e.stopPropagation(); ics(); }
-    else if (act === "av-icon") { e.stopPropagation(); saveProfile({ avatar: { type: "icon", icon: v } }); }
-    else if (act === "av-initials") { e.stopPropagation(); saveProfile({ avatar: { type: "initials" } }); }
+    else if (act === "av-icon") { e.stopPropagation(); S.avPick = { type: "icon", icon: v }; render(); }
+    else if (act === "av-initials") { e.stopPropagation(); S.avPick = { type: "initials" }; render(); }
+    else if (act === "av-ok") { e.stopPropagation(); const p = S.avPick; S.avPick = null; saveProfile({ avatar: p }); toast("Immagine aggiornata"); }
+    else if (act === "av-cancel") { e.stopPropagation(); S.avPick = null; render(); }
     else if (act === "crop-ok") { e.stopPropagation(); cropSave(); }
     else if (act === "crop-no") { e.stopPropagation(); S.crop = null; render(); }
     else if (act === "backup") lsSet("backup_at", Date.now());
@@ -190,6 +195,8 @@
 
   const st = document.createElement("style");
   st.textContent = `
+  .top .mark.logo { display: inline-flex; align-items: center; gap: 8px; }
+  .logo-w { font-family: "Anton", "Impact", "Arial Black", sans-serif; font-weight: 400; font-size: 20px; letter-spacing: .14em; text-transform: uppercase; color: var(--text); line-height: 1; }
   .set-idx { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; scrollbar-width: none; } .set-idx::-webkit-scrollbar { display: none; }
   .set-idx button { flex: none; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--raised); color: var(--text); font-size: 14px; font-weight: 600; }
   .link.small { min-height: 44px; display: inline-flex; align-items: center; }
