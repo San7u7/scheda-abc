@@ -66,12 +66,12 @@
     lsSet("morning", key);
     const nm = S.profile.nome ? " " + S.profile.nome : "", last = S.sessions.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0];
     const gap = last ? Math.floor((Date.now() - new Date(last.date)) / 864e5) : 0, nd = nextDay(), dw = new Date().getDay();
-    const plan = {}; ((S.training && S.training.sedute) || []).forEach((x, i) => { if (x.dow != null && DAYS[i]) plan[x.dow] = DAYS[i]; });
+    const plan = window.weekPlanMap ? weekPlanMap() : {};
     const done = weekDone(), today = (dw + 6) % 7, DN = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
     const missed = Object.keys(plan).map(Number).filter(d => { const i = (d + 6) % 7; return i < today && !done[i]; });
     if (gap >= 7) return nudge(`Bentornato${nm}. Ripartiamo con calma: nella prossima seduta usa circa il 90% dei carichi, poi si torna al ritmo di prima.`);
     if (dw === 0) { const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length; return nudge(`Settimana chiusa: ${n} ${n === 1 ? "seduta" : "sedute"} su ${tot}. Su cosa vuoi concentrarti la prossima: proteine, sonno o carichi? Scrivimelo e ti preparo un piccolo obiettivo.`); }
-    if (missed.length && nd && !done[today]) return nudge(`${DN[missed[missed.length - 1]].charAt(0).toUpperCase() + DN[missed[missed.length - 1]].slice(1)} è saltato, capita. Oggi puoi fare la seduta ${nd}: la settimana si sistema da sola.`);
+    if (missed.length && nd && !done[today]) return nudge(`${DN[missed[missed.length - 1]].charAt(0).toUpperCase() + DN[missed[missed.length - 1]].slice(1)} è saltato, capita. Oggi puoi fare la seduta ${nd}, oppure tocca «Sposta la settimana» in Oggi e le sistemo io.`);
     if (p.proattivo === "spesso") nudge(`Ciao${nm}! ${coachLine().replace(/<[^>]+>/g, "")}`);
   }
 

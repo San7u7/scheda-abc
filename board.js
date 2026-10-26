@@ -42,7 +42,40 @@
   const ic = k => `<span class="mb-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg></span>`;
 
   /* ---------- data helpers ---------- */
-  const planMap = () => { const m = {}; ((S.training && S.training.sedute) || []).forEach((s, i) => { if (s.dow != null && DAYS[i]) m[s.dow] = DAYS[i]; }); return m; };
+  /* week plan: the scheda's days, or this week's override after a move (dow 0=Sunday -> session key) */
+  const monKey = () => localISO(mondayOf(new Date()));
+  const basePlan = () => { const m = {}; ((S.training && S.training.sedute) || []).forEach((s, i) => { if (s.dow != null && DAYS[i]) m[s.dow] = DAYS[i]; }); return m; };
+  const shift = () => { const x = lsGet("shift", null); return x && x.week === monKey() ? x.map : null; };
+  const planMap = () => shift() || basePlan();
+  window.weekPlanMap = planMap;
+  const idx = dw => (dw + 6) % 7; // Monday-first index used by weekDone()
+  function missedDays() { const m = planMap(), done = weekDone(), t = idx(new Date().getDay()); return Object.keys(m).map(Number).filter(dw => idx(dw) < t && !done[idx(dw)]); }
+  function autoShift() { // put the sessions not done yet on today and the following days, with a rest day between when there is room
+    const done = Object.values(weekDone()), m = planMap(), t = idx(new Date().getDay());
+    const left = Object.keys(m).map(Number).sort((a, b) => idx(a) - idx(b)).map(dw => m[dw]).filter(d => !done.includes(d));
+    const days = []; for (let i = t; i < 7; i++) days.push((i + 1) % 7);
+    const n = days.length, k = Math.min(left.length, n), out = {}; // spread evenly over the days left
+    left.slice(0, k).forEach((d, i) => { out[days[k === 1 ? 0 : Math.round(i * (n - 1) / (k - 1))]] = d; });
+    Object.keys(m).map(Number).filter(dw => idx(dw) < t && done.includes(m[dw])).forEach(dw => { out[dw] = m[dw]; });
+    lsSet("shift", { week: monKey(), map: out });
+    return left.length - Object.values(out).filter(d => left.includes(d)).length;
+  }
+  function syncLabels() { // session cards show this week's day after a move
+    const sh = shift();
+    DAYS.forEach(k => { const p = P[k]; if (!p) return; if (!("_day" in p)) { p._day = p.day; p._dow = p.dow; }
+      if (sh) { const dw = Object.keys(sh).map(Number).find(x => sh[x] === k); p.day = dw != null ? DOW[dw] : "Fuori settimana"; p.dow = dw != null ? dw : null; }
+      else { p.day = p._day; p.dow = p._dow; } });
+  }
+  const r0 = window.render; window.render = function () { try { syncLabels(); } catch (_) {} r0(); };
+  const baseNext = window.nextDay;
+  window.nextDay = function () {
+    const a = activeDay(); if (a) return a;
+    const sh = shift(); if (!sh) return baseNext();
+    const done = Object.values(weekDone()), t = idx(new Date().getDay());
+    if (sh[new Date().getDay()] && !doneToday()) return sh[new Date().getDay()];
+    const up = Object.keys(sh).map(Number).filter(dw => idx(dw) > t && !done.includes(sh[dw])).sort((x, y) => idx(x) - idx(y));
+    return up.length ? sh[up[0]] : baseNext();
+  };
   function nextPlanned() { const m = planMap(), nd = nextDay(); if (!nd) return null; for (let i = 0; i < 7; i++) { const dw = (new Date().getDay() + i) % 7; if (m[dw] === nd) return { day: nd, when: i === 0 ? "oggi" : i === 1 ? "domani" : DOWL[dw] }; } return { day: nd, when: "" }; }
   function weekStreak() { // consecutive complete weeks (all planned sessions done); the current week counts only once complete
     const need = Math.max(1, DAYS.length); let n = 0, best = 0, run = 0;
@@ -67,9 +100,12 @@
   function weekCard() {
     const done = weekDone(), m = planMap(), today = (new Date().getDay() + 6) % 7, plan = {}; Object.entries(m).forEach(([dw, d]) => { plan[(+dw + 6) % 7] = d; });
     const cells = ["L", "M", "M", "G", "V", "S", "D"].map((l, i) => { const d = done[i], p = plan[i], cls = d ? "on" : p ? (i < today ? "miss" : "plan") : "rest";
-      return `<div class="wk ${cls} ${i === today ? "today" : ""}"><span class="wk-l">${l}</span><span class="wk-d">${d || p || "·"}</span></div>`; }).join("");
-    const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length, ws = weekStreak();
+      const edit = !d && i >= today;
+      return `<${edit ? `button data-act="wk-day" data-v="${(i + 1) % 7}" aria-label="Cambia ${["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"][i]}"` : "div"} class="wk ${cls} ${i === today ? "today" : ""} ${edit ? "ed" : ""}"><span class="wk-l">${l}</span><span class="wk-d">${d || p || "·"}</span></${edit ? "button" : "div"}>`; }).join("");
+    const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length, ws = weekStreak(), miss = missedDays();
     return `<div class="card"><div class="block-h"><h2>La tua <span class="hl">settimana</span></h2><span class="small muted num">${n} di ${tot}</span></div><div class="wkrow">${cells}</div>
+      ${miss.length ? `<button class="primary go" data-act="wk-auto">Sposta la settimana</button>` : ""}
+      <p class="small muted" style="margin:0">Tocca un giorno da oggi in poi per cambiare seduta o mettere riposo. Vale solo per questa settimana.${shift() ? ` <button class="link small" data-act="wk-reset" style="padding:0">Torna alla scheda</button>` : ""}</p>
       <p class="small muted" style="margin:0">${ws.n >= 2 ? `${ws.n} settimane complete di fila${ws.best > ws.n ? ` (migliore: ${ws.best})` : ""}.` : ws.best ? `La tua serie migliore: ${ws.best} settimane complete. Completa questa e riparte.` : "Completa tutte le sedute della settimana per iniziare una serie."}</p></div>`;
   }
   function weightCard() {
@@ -99,6 +135,9 @@
     else if (np && np.when === "oggi" && !dt0) { const ups = P[np.day].items.filter(it => plan(it).up).length;
       t = `Oggi tocca alla seduta <span class="hl-ink">${np.day}</span>`; s = ups ? `${ups === 1 ? "Un esercizio è pronto" : ups + " esercizi sono pronti"} a salire di carico.` : "Punta a una ripetizione in più per serie.";
       acts = `<button class="primary now-go" data-act="start" data-v="${np.day}">Inizia</button><button class="ghost dark" data-act="open-day" data-v="${np.day}">Dettagli</button>`; }
+    else if (missedDays().length && lsGet("shift_no", "") !== monKey() && !dt0) { const DN = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"], md = missedDays(), last = md.sort((x, y) => idx(x) - idx(y))[md.length - 1];
+      t = `${DN[last]} è saltato, capita`; s = `Sposto le sedute che restano nei prossimi giorni, con un giorno di riposo in mezzo quando c'è spazio?`;
+      acts = `<button class="primary now-go" data-act="wk-auto">Sposta la settimana</button><button class="ghost dark" data-act="wk-no">Lascia così</button>`; }
     else if (meal && mo) { t = `Prossimo: <span class="hl-ink">${meal[1].toLowerCase()}</span>`; s = esc(mo.t) + "." + (dt0 ? ` Seduta ${dt0.day} fatta: ora contano proteine e acqua.` : np ? ` Prossima seduta: ${np.day}, ${np.when}.` : "");
       acts = `<button class="primary now-go" data-act="meal" data-v="${meal[0]}">L'ho mangiato</button><button class="ghost dark" data-act="meal-open" data-v="${meal[0]}">Ho mangiato altro</button>`; }
     else { t = dt0 ? `Seduta ${dt0.day} fatta` : "Giornata in ordine"; s = np ? `Prossima seduta: ${np.day}, ${np.when}. Riposo e sonno fanno il resto.` : "Hai registrato tutto per oggi."; acts = ""; }
@@ -153,6 +192,14 @@
 
   const prevSheet = window.renderSheet;
   window.renderSheet = function () {
+    if (S.sheet === "wkday") {
+      const dw = S.wkday, DN = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"], cur = planMap()[dw] || "", done = Object.values(weekDone());
+      $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="Cosa fai ${DN[dw]}"><div class="grab"></div>
+        <h2>Cosa fai <span class="hl">${DN[dw]}</span>?</h2><p class="muted">Vale solo per questa settimana. Se scegli una seduta già in programma un altro giorno, i due giorni si scambiano.</p>
+        <div class="seg wrap" role="group">${DAYS.map(d => `<button data-act="wk-set" data-v="${d}" aria-pressed="${cur === d}" ${done.includes(d) ? "disabled" : ""}>Seduta ${d}${done.includes(d) ? " (fatta)" : ""}</button>`).join("")}<button data-act="wk-set" data-v="" aria-pressed="${!cur}">Riposo</button></div>
+        <button class="ghost" data-act="close" style="margin-top:14px">Chiudi</button></div></div>`;
+      return;
+    }
     if (S.sheet === "tiles") {
       const t = tileCfg();
       $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet full" role="dialog" aria-modal="true" aria-label="Modifica i riquadri"><div class="grab"></div>
@@ -178,6 +225,13 @@
     if (act === "tab") S.macro = null;
     if (act === "macro") { e.stopPropagation(); if (v === "prog") { S.macro = null; S.tab = "progressi"; lsSet("tab2", S.tab); } else S.macro = v || null; window.scrollTo(0, 0); render(); }
     else if (act === "board-edit") { S.sheet = "board"; renderSheet(); }
+    else if (act === "wk-day") { S.wkday = +v; S.sheet = "wkday"; renderSheet(); }
+    else if (act === "wk-set") { const m = { ...planMap() }, dw = S.wkday, prev = m[dw]; const other = v ? Object.keys(m).map(Number).find(x => x !== dw && m[x] === v) : null;
+      if (other != null) { if (prev) m[other] = prev; else delete m[other]; } if (v) m[dw] = v; else delete m[dw];
+      lsSet("shift", { week: monKey(), map: m }); S.sheet = null; renderSheet(); render(); toast("Settimana aggiornata"); }
+    else if (act === "wk-auto") { const lost = autoShift(); render(); toast(lost ? `Spostate. ${lost === 1 ? "Una seduta non ci sta" : lost + " sedute non ci stanno"} più questa settimana: riparti lunedì.` : "Settimana spostata: guarda i nuovi giorni in Allenamento."); }
+    else if (act === "wk-no") { lsSet("shift_no", monKey()); render(); }
+    else if (act === "wk-reset") { lsSet("shift", null); render(); toast("Tornata la settimana della scheda"); }
     else if (act === "tiles-edit") { S.sheet = "tiles"; renderSheet(); }
     else if (act === "tile-set") { const t = tileCfg().slice(), i = +b.dataset.i, j = t.indexOf(v); if (j >= 0 && j !== i) t[j] = t[i]; t[i] = v; lsSet("tiles", t); renderSheet(); render(); }
     else if (act === "tiles-reset") { lsSet("tiles", ["kcal", "pro", "fat", "water"]); renderSheet(); render(); }
@@ -229,6 +283,9 @@
   .wk.plan .wk-d { box-shadow: inset 0 0 0 2px var(--accent); background: none; color: var(--accent); }
   .wk.miss .wk-d { box-shadow: inset 0 0 0 2px var(--control); background: none; color: var(--muted); }
   .wk.today .wk-l { color: var(--text); font-weight: 700; }
+  button.wk { background: none; border: 0; padding: 0; color: inherit; font: inherit; }
+  .wk.ed .wk-d { position: relative; }
+  .wk.ed.rest .wk-d { box-shadow: inset 0 0 0 1px var(--control); }
   .spark { width: 100%; display: block; }
   .blist { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 4px; }
   .brow { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border-radius: 16px; padding: 8px 8px 8px 12px; }
