@@ -2,7 +2,7 @@
 /* UX v3 (cards, detail screens, focus session, dashboard). Loaded AFTER the main script: it replaces views by assignment. */
 (function () {
   const isGen = typeof setTraining === "function";
-  const PHOTOS = isGen ? ["img/climb.jpg", "img/rack.jpg", "img/hero.jpg"] : ["img/bench.jpg", "img/rack.jpg", "img/hero.jpg"];
+  const PHOTOS = isGen && !(window.APP && APP.ns === "abc:") ? ["img/climb.jpg", "img/rack.jpg", "img/hero.jpg"] : ["img/bench.jpg", "img/rack.jpg", "img/hero.jpg"];
   const photoFor = k => PHOTOS[Math.max(0, DAYS.indexOf(k)) % PHOTOS.length];
   const ARROW = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   const BACK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -94,13 +94,16 @@
       <div class="dgrid">${DAYS.map(k => dayCard(k, k === nd)).join("")}</div>`;
   };
   function viewFocus(a) {
-    const d = draft(a), items = P[a].items, idx = items.findIndex(x => x.id === d.cur.id), it = items[idx];
+    const d = draft(a), items = P[a].items; if (!items.some(x => x.id === d.cur.id)) { d.cur = firstOpen(a, d); saveDrafts(); }
+    const idx = items.findIndex(x => x.id === d.cur.id), it = items[idx];
     const all = items.flatMap(x => d.sets[x.id]), doneN = all.filter(s => s.done).length, allDone = doneN === all.length;
     const exDone = items.filter(x => d.sets[x.id].every(s => s.done)).length;
     return `<div class="fhead"><button class="back" data-act="exlist">${'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>'}Elenco</button>
         <div class="fring">${ring(doneN, all.length, 54)}<span class="num">${exDone}/${items.length}</span></div></div>
       <p class="small muted" style="margin:6px 0 10px">Esercizio ${idx + 1} di ${items.length} · Seduta ${a}</p>
       ${allDone ? `<div class="card lime" style="margin-bottom:12px"><p class="coach-line">Tutte le serie fatte. Ottimo lavoro!</p><button class="primary go" style="background:#000;color:var(--accent)" data-act="finish">Concludi seduta</button></div>` : ""}
+      ${demoBox(it)}
+      ${(S.sample || (window.LIB && it.lib && window.LIB[it.lib])) ? `<button class="swapbar" data-act="alts"><span>Attrezzo occupato o vuoi cambiare?</span><b>Sostituisci ${'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>'}</b></button>` : ""}
       ${activeCard(it, d)}
       <div class="fnav"><button class="ghost" data-act="ex-step" data-v="-1" ${idx === 0 ? "disabled" : ""}>‹ Precedente</button><button class="ghost" data-act="ex-step" data-v="1" ${idx === items.length - 1 ? "disabled" : ""}>Successivo ›</button></div>
       <div class="block"><button class="link small" data-act="finish" style="align-self:center">Concludi seduta</button></div>`;
@@ -260,9 +263,81 @@
   .rc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .rcard .dc-go { position: static; }
   .xrow[aria-current="true"] { outline: 2px solid var(--accent); }
+  .swapbar { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1.5px dashed var(--control); background: transparent; color: var(--muted); border-radius: 16px; padding: 10px 14px; margin-bottom: 10px; text-align: left; font-size: 13px; }
+  .swapbar b { color: var(--accent); display: inline-flex; gap: 6px; align-items: center; font-size: 14px; flex: none; }
   `;
   document.head.appendChild(css);
 
-  /* original Oggi weight/start actions keep working; re-render with the new views */
-  render();
+  /* re-render with the new views once every module in this file has loaded */
+  setTimeout(() => render(), 0);
+})();
+
+/* ---------- exercise demos (Free Exercise DB, public domain) and rotating tips ---------- */
+(function () {
+  const IMG = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/";
+  const BY_ID = { A1: "Leverage_Incline_Chest_Press", A2: "Hack_Squat", A3: "Butterfly", A4: "Leg_Extensions", A5: "Low_Cable_Crossover", A6: "Barbell_Hip_Thrust", A7: "Seated_Leg_Curl", A8: "Triceps_Pushdown", A9: "Standing_Calf_Raises", A10: "Hanging_Leg_Raise",
+    B1: "Romanian_Deadlift", B2: "Pullups", B3: "Seated_One-arm_Cable_Pulley_Rows", B4: "Cable_Seated_Lateral_Raise", B5: "Reverse_Machine_Flyes", B6: "Machine_Bicep_Curl", B7: "Standing_Calf_Raises", B8: "Hanging_Leg_Raise", B9: "Cable_Rope_Overhead_Triceps_Extension",
+    C1: "Incline_Dumbbell_Press", C2: "Leg_Press", C3: "Machine_Shoulder_Military_Press", C4: "Lying_Leg_Curls", C5: "Wide-Grip_Lat_Pulldown", C6: "Seated_Cable_Rows", C7: "Cable_Crossover", C8: "Lying_One-Arm_Lateral_Raise", C9: "Hanging_Leg_Raise" };
+  // Italian gym words -> English tokens used by the dataset
+  const IT = [[/sopra la testa|overhead/, "cable rope overhead triceps extension"], [/skull|french/, "ez-bar skullcrusher"], [/squat bulgaro|split squat/, "split squat"], [/croci.*cavi|crossover/, "cable crossover"], [/croci|\bfly\b|pec ?deck|peck|butterfly/, "butterfly"],
+    [/panca piana|distensioni/, "barbell bench press medium grip"], [/panca inclinata|inclinata/, "incline dumbbell press"], [/chest press|spinte? (al|alla) macchina/, "machine bench press"],
+    [/lat ?machine|lat pulldown|pulldown/, "wide-grip lat pulldown"], [/trazion|pull.?up/, "pullups"], [/pulley|rematore (ai )?cavi|seated row/, "seated cable rows"], [/rematore.*manubri/, "one-arm dumbbell row"], [/rematore|\brow\b/, "bent over barbell row"],
+    [/stacco rumeno|romanian/, "romanian deadlift"], [/stacco/, "barbell deadlift"], [/hack/, "hack squat"], [/squat/, "barbell squat"], [/leg press|pressa/, "leg press"], [/leg extension/, "leg extensions"],
+    [/leg curl.*sedut|seated leg curl/, "seated leg curl"], [/leg curl|nordic/, "lying leg curls"], [/affond|lunge/, "dumbbell lunges"], [/hip thrust|ponte/, "barbell hip thrust"], [/polpacci|calf/, "standing calf raises"],
+    [/alzate laterali|\blateral raise/, "side lateral raise"], [/alzate frontali/, "front dumbbell raise"], [/reverse|posterior/, "reverse machine flyes"], [/lento avanti|military|shoulder press|spinte? manubri/, "dumbbell shoulder press"],
+    [/curl.*martello|hammer/, "hammer curls"], [/curl/, "barbell curl"], [/push.?down|ercolina|tricip/, "triceps pushdown"], [/\bdip/, "dips triceps version"],
+    [/addominal.*sbarra|leg raise|toes to bar/, "hanging leg raise"], [/crunch/, "crunches"], [/plank/, "plank"], [/piegament|push.?up/, "pushups"]];
+  const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ");
+  const STEM = { flyes: "fly", flye: "fly", flies: "fly", raises: "raise", curls: "curl", extensions: "extension", rows: "row", crunches: "crunch", presses: "press", squats: "squat", lunges: "lunge", pullups: "pullup", pushups: "pushup", deadlifts: "deadlift", pulldowns: "pulldown", dips: "dip", laterals: "lateral" };
+  const NOUNS = new Set(["fly", "press", "curl", "row", "raise", "squat", "lunge", "pullup", "pushup", "deadlift", "pulldown", "dip", "extension", "crunch", "thrust", "bridge", "crossover", "pushdown", "lateral", "plank", "shrug", "kickback", "skullcrusher", "butterfly"]);
+  const words = s => norm(s).split(/[\s-]+/).filter(w => w.length > 1).map(w => STEM[w] || w);
+  function bestMatch(text) {
+    const db = window.EXDB || [], qa = words(text).filter(w => w.length > 2), q = new Set(qa); if (!q.size) return null;
+    const noun = [...qa].reverse().find(w => NOUNS.has(w));
+    let best = null, bs = 0;
+    for (const [id, name] of db) { const w = words(name); if (noun && !w.includes(noun)) continue; let hit = 0, extra = 0; for (const x of w) { if (q.has(x)) hit += x.length; else extra++; } const sc = hit - extra * 2; if (hit && sc > bs) { bs = sc; best = id; } }
+    return bs >= 5 ? best : null;
+  }
+  const cache = {};
+  window.demoFor = function (it) {
+    const sub = curSub(it), name = exName(it), key = it.id + "|" + name;
+    if (key in cache) return cache[key];
+    let id = null;
+    if (!sub && it.demo) id = it.demo;
+    if (!id && !sub && BY_ID[it.id] && !isGenApp()) id = BY_ID[it.id];
+    if (!id && it.en) id = bestMatch(it.en);
+    if (!id) { const en = (/\(([^)]*)\)\s*$/.exec(name) || [])[1]; if (en) id = bestMatch(en); }
+    if (!id) { const n = norm(name.replace(/\([^)]*\)\s*$/, "")); for (const [re, en] of IT) if (re.test(n)) { id = bestMatch(en); if (id) break; } }
+    return cache[key] = id;
+  };
+  const isGenApp = () => typeof setTraining === "function";
+  const GENERAL = ["Scendi in 2–3 secondi, risali deciso.", "Espira mentre spingi o tiri, inspira nel ritorno.", "Fermati a 1–2 ripetizioni dal cedimento.", "Stesso arco di movimento in ogni ripetizione.", "Se la tecnica cede, la serie è finita."];
+  window.tipsFor = function (it) {
+    const sub = curSub(it), list = [];
+    const split = t => String(t || "").split(/(?<=[.!?])\s+/).map(x => x.trim().replace(/\.$/, "")).filter(x => x.length > 6).map(x => x.charAt(0).toUpperCase() + x.slice(1));
+    if (sub && sub.cue) list.push(...split(sub.cue)); list.push(...split(it.tech)); if (it.note) list.push(...split(it.note));
+    return list.concat(GENERAL).slice(0, 8);
+  };
+  window.demoBox = function (it) {
+    const id = demoFor(it), tips = tipsFor(it);
+    S.tips = tips; S.tipI = 0;
+    return `<div class="demo">${id ? `<div class="demo-img" aria-label="Animazione: ${esc(short(exName(it)))}" role="img"><img src="${IMG}${encodeURIComponent(id)}/0.jpg" alt="" loading="eager" onerror="this.closest('.demo').classList.add('noimg')"><img src="${IMG}${encodeURIComponent(id)}/1.jpg" alt="" class="b" loading="eager"></div>` : ""}
+      <div class="tip" aria-live="polite"><span class="tip-k">Consiglio</span><span id="tip-t">${esc(tips[0] || "")}</span></div></div>`;
+  };
+  setInterval(() => { const el = document.getElementById("tip-t"); if (!el || !S.tips || !S.tips.length) return; S.tipI = (S.tipI + 1) % S.tips.length; el.classList.add("out"); setTimeout(() => { el.textContent = S.tips[S.tipI]; el.classList.remove("out"); }, 250); }, 4200);
+  const st = document.createElement("style");
+  st.textContent = `
+  .demo { background: var(--surface); border-radius: 22px; overflow: hidden; margin-bottom: 10px; }
+  .demo-img { position: relative; aspect-ratio: 16 / 10; background: #fff; }
+  .demo-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: grayscale(1) contrast(1.05); }
+  .demo-img img.b { animation: demoflip 2.4s steps(1, end) infinite; }
+  @keyframes demoflip { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+  .demo.noimg .demo-img { display: none; }
+  .tip { display: flex; gap: 10px; align-items: baseline; padding: 12px 14px; min-height: 48px; }
+  .tip-k { flex: none; background: var(--accent); color: var(--lime-ink); font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+  #tip-t { font-size: 14px; line-height: 20px; transition: opacity .25s; }
+  #tip-t.out { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { .demo-img img.b { animation: none; opacity: 0; } }
+  `;
+  document.head.appendChild(st);
 })();
