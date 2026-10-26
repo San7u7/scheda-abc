@@ -12,7 +12,7 @@ const blobToB64 = b => new Promise((res, rej) => { const r = new FileReader(); r
 async function geminiModels(key) {
   // Pick the newest general "flash" models that support generateContent; skip image, audio, live and embedding variants.
   const r = await fetch(`${GEM}/models?pageSize=200`, { headers: { "x-goog-api-key": key } });
-  if (r.status === 400 || r.status === 401 || r.status === 403) throw { code: "bad_key", message: "Chiave non valida" };
+  if (r.status === 400 || r.status === 401 || r.status === 403) { const t = await r.text().catch(() => ""); throw { code: /API key|API_KEY|permission|unauth/i.test(t) || r.status !== 400 ? "bad_key" : "upstream_error", message: t.slice(0, 200) }; }
   if (!r.ok) throw { code: "upstream_error", message: "HTTP " + r.status };
   const list = ((await r.json()).models || [])
     .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
@@ -95,18 +95,20 @@ function aiKeyBox() {
   return k ? `<div class="card"><h2>AI attiva: Google Gemini</h2><p class="small muted">Coach, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
       <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`
     : `<div class="card"><h2>Attiva l'AI gratis</h2><p class="small muted">Serve una chiave gratuita di Google Gemini: apri <b>aistudio.google.com/apikey</b>, accedi con un account Google, tocca «Create API key» e incollala qui. Resta solo su questo telefono. Sul piano gratuito Google può usare le richieste per migliorare i suoi modelli.</p>
-      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Incolla la chiave (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;font-size:15px;width:100%">
+      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Incolla la chiave (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;font-size:15px;width:100%">
       <button class="primary" data-act="ai-save">Attiva AI</button></div>`;
 }
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
   if (act === "ai-save") {
-    const el = document.getElementById("ai-key"), k = (el && el.value || "").trim();
-    if (!/^[\w-]{20,}$/.test(k)) { toast("Incolla una chiave valida"); return; }
+    const el = document.getElementById("ai-key");
+    // clean what iOS adds when pasting: spaces, line breaks, invisible characters, "smart" dashes and quotes
+    const k = (el && el.value || "").replace(/[\s\u200B-\u200D\u2060\uFEFF"'«»“”‘’]/g, "").replace(/\u2014/g, "--").replace(/[\u2013\u2212]/g, "-");
+    if (k.length < 20) { toast("La chiave sembra incompleta: copiala di nuovo da AI Studio"); return; }
     b.disabled = true; b.textContent = "Verifico…";
     try { await geminiModels(k); setAIKey(k); await setupSite(); toast("AI attivata"); }
-    catch (err) { toast(err && err.code === "bad_key" ? "Chiave non valida: ricopiala da AI Studio" : "Non riesco a contattare Google: riprova"); }
+    catch (err) { toast(err && err.code === "bad_key" ? "Google dice che la chiave non è valida: ricopiala da AI Studio" : "Non riesco a contattare Google: controlla la connessione e riprova"); }
     render();
   } else if (act === "ai-remove") { setAIKey(""); await setupSite(); render(); toast("Chiave rimossa"); }
   else if (act === "ai-test") {
