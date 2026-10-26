@@ -60,17 +60,23 @@ function makeGemini(key) {
     if (json) base.responseMimeType = "application/json";
     let last;
     const all = await getModels(), lite = all.filter(n => /lite/.test(n)), full = all.filter(n => !/lite/.test(n));
-    const order = (opts.fast ? lite.concat(full) : full.concat(lite)).slice(0, 2);
+    // try the best models first, then a well-known stable one; images need a vision-capable full model
+    const order = [...new Set((opts.fast && !opts.images ? lite.concat(full) : full.concat(lite)).concat(["gemini-2.5-flash"]))].slice(0, 4);
+    const SAFE = ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map(category => ({ category, threshold: "BLOCK_ONLY_HIGH" }));
+    const gmsg = t => { try { return JSON.parse(t).error.message; } catch (_) { return String(t || "").slice(0, 160); } };
     for (const [mi, m] of order.entries()) {
       if (mi) P.stage("Provo un altro modello");
-      let th = thinkingFor(m);
-      for (let tries = 0; tries < 2; tries++) {
-        const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
-        // physique photos (shirtless, underwear) trip the default filters: relax them for image requests
-        if (opts.images) body.safetySettings = ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map(category => ({ category, threshold: "BLOCK_NONE" }));
+      const th = thinkingFor(m);
+      // variants: if Google refuses the request shape (400), retry simpler: without relaxed filters, then without thinking settings
+      const variants = opts.images ? [{ safe: true, th }, { safe: false, th }, { safe: false, th: null }] : [{ safe: false, th }, { safe: false, th: null }];
+      let nextModel = false;
+      for (const v of variants) {
+        if (nextModel) break;
+        const body = { contents, generationConfig: v.th ? { ...base, thinkingConfig: v.th } : base };
+        if (v.safe) body.safetySettings = SAFE;
         P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Gemini sta guardando le immagini" : "Gemini sta ragionando"), 900);
         const r = await attempt(m, body, opts, opts.images ? 90000 : opts.fast ? 25000 : 40000); clearTimeout(slow);
-        if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; break; }
+        if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; nextModel = true; break; }
         if (r.ok) {
           P.stage("Leggo la risposta"); const d = await r.json(), c = (d.candidates || [])[0];
           const text = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("") || "";
@@ -79,11 +85,10 @@ function makeGemini(key) {
           return { text, truncated: c.finishReason === "MAX_TOKENS", modelApplied: m };
         }
         const t = await r.text().catch(() => "");
-        if (r.status === 400 && th && /thinking/i.test(t)) { th = null; continue; }
-        if ((r.status === 400 && /API key/i.test(t)) || r.status === 401 || r.status === 403) throw { code: "bad_key", message: "Chiave non valida" };
-        last = { code: r.status === 429 ? "rate_limited" : "upstream_error", message: "HTTP " + r.status + " " + t.slice(0, 120) };
-        if (r.status === 404) { models = null; try { localStorage.removeItem(AI_MODEL); } catch (_) {} }
-        break;
+        if ((r.status === 400 && /API key|API_KEY_INVALID/i.test(t)) || r.status === 401 || r.status === 403) throw { code: "bad_key", message: "Chiave non valida" };
+        last = { code: r.status === 429 ? "rate_limited" : "upstream_error", message: `${m}: HTTP ${r.status} · ${gmsg(t)}` };
+        if (r.status === 404) { models = null; try { localStorage.removeItem(AI_MODEL); } catch (_) {} nextModel = true; }
+        if (r.status === 429) nextModel = true;
       }
     }
     throw last || { code: "upstream_error", message: "Errore" };

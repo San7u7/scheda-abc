@@ -1,4 +1,4 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000000"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Askesis"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif;background:#000}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000000"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Askesis"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif;background:#000}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>Askesis</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,6 +26,7 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .num { font-variant-numeric: tabular-nums; }
 .wrap { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 calc(110px + env(safe-area-inset-bottom, 0px)); }
+body::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); background: var(--ground); z-index: 6; } /* statusbar-cover */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--ground); display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; }
 .top .mark { font-weight: 600; white-space: nowrap; }
 .top .sync { font-size: var(--fs-small); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -401,10 +402,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610261547"></script>
-<script src="lib.js?v=202610261547"></script>
-<script src="ai.js?v=202610261547"></script>
-<script src="coach.js?v=202610261547"></script>
+<script src="seed-abc.js?v=202610261600"></script>
+<script src="lib.js?v=202610261600"></script>
+<script src="ai.js?v=202610261600"></script>
+<script src="coach.js?v=202610261600"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -868,7 +869,7 @@ async function analyze() {
     S.analysis = out; const tg = chosen[chosen.length - 1]; tg.analysis = out;
     if (S.db) S.db.doc(S.base + "/" + tg.id).update({ analysis: out }).catch(() => {}); else saveLocalPhotos();
   } catch (e) {
-    S.analysis = { error: e && e.code === "not_granted" ? "Per valutare le foto serve l'AI attiva: controlla la chiave in Impostazioni." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : e && e.code === "refused" ? "Google ha bloccato la foto con i suoi filtri. Riprova con pantaloncini o costume e il viso fuori inquadratura, oppure con una foto più distante." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova tra un minuto." : e && e.code === "bad_key" ? "La chiave Gemini non è valida: controllala in Impostazioni." : e && e.code === "network" ? "Non riesco a contattare Google: controlla la connessione." : `La valutazione non è riuscita (${(e && (e.code || e.message)) || "errore"}). Riprova tra poco.` };
+    S.analysis = { error: e && e.code === "not_granted" ? "Per valutare le foto serve l'AI attiva: controlla la chiave in Impostazioni." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : e && e.code === "refused" ? "Google ha bloccato la foto con i suoi filtri. Riprova con pantaloncini o costume e il viso fuori inquadratura, oppure con una foto più distante." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova tra un minuto." : e && e.code === "bad_key" ? "La chiave Gemini non è valida: controllala in Impostazioni." : e && e.code === "network" ? "Non riesco a contattare Google: controlla la connessione." : `La valutazione non è riuscita. Dettaglio di Google: ${esc(String((e && (e.message || e.code)) || "errore").slice(0, 200))}` };
   }
   S.busy = false; render();
 }
@@ -1348,8 +1349,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610261547"></script>
-<script src="ux.js?v=202610261547"></script>
-<script src="hub.js?v=202610261547"></script><script src="board.js?v=202610261547"></script><script src="photos.js?v=202610261547"></script><script src="coachui.js?v=202610261547"></script><script src="settings.js?v=202610261547"></script><script src="aikey.js?v=202610261547"></script><script src="tour.js?v=202610261547"></script><script src="gesture.js?v=202610261547"></script>
+<script src="exdb.js?v=202610261600"></script>
+<script src="ux.js?v=202610261600"></script>
+<script src="hub.js?v=202610261600"></script><script src="board.js?v=202610261600"></script><script src="timer.js?v=202610261600"></script><script src="photos.js?v=202610261600"></script><script src="coachui.js?v=202610261600"></script><script src="settings.js?v=202610261600"></script><script src="aikey.js?v=202610261600"></script><script src="tour.js?v=202610261600"></script><script src="gesture.js?v=202610261600"></script>
 
 </body></html>

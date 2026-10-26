@@ -200,7 +200,7 @@
   .coach-fab:active { transform: scale(.94); }
   .coach-fab.away { transform: translateY(140%); opacity: 0; pointer-events: none; }
   .coach-fab { transition: transform .22s, opacity .22s; }
-  .coach-fab.insession { right: auto; left: calc(50% - 26px); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; }
+  .coach-fab.insession { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; }
   .coach-fab.insession svg { width: 48px; height: 48px; }
   .fab-dot { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 999px; background: var(--accent); border: 3px solid #000; box-shadow: 0 0 0 2px var(--accent); }
   .sync { display: none !important; }
