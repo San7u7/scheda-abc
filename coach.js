@@ -99,7 +99,7 @@ const QUICK = ["Fai il punto della settimana", "Cosa mangio prima e dopo la sedu
 /* ---------- coach brain ---------- */
 function coachContext() {
   const t = localISO(), wt = weightTrend(), ad = adherence();
-  const sess = S.sessions.slice().sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 6).map(s => `- ${s.date.slice(0, 10)} seduta ${s.day}${s.durata ? `, ${s.durata} min` : ""}${s.fatica != null ? `, fatica ${s.fatica}/10` : ""}${s.note ? `, note: ${s.note}` : ""}: ` + s.items.map(e => `${splitName(e.name)[0]} ${e.sets.map(x => x.kg != null ? `${x.kg}x${x.reps}` : x.reps).join("/")}`).join("; ")).join("\n");
+  const sess = S.sessions.slice().sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 6).map(s => `- ${localISO(new Date(s.date))} seduta ${s.day}${s.durata ? `, ${s.durata} min` : ""}${s.fatica != null ? `, fatica ${s.fatica}/10` : ""}${s.note ? `, note: ${s.note}` : ""}: ` + s.items.map(e => `${splitName(e.name)[0]} ${e.sets.map(x => x.kg != null ? `${x.kg}x${x.reps}` : x.reps).join("/")}`).join("; ")).join("\n");
   const prog = DAYS.map(d => `${d} (${P[d].day}): ` + P[d].items.map(it => { const pl = plan(it); return `${splitName(exName(it))[0]} ${it.sets}x${it.min}-${it.max}${pl.b.kg != null ? ` @${pl.b.kg}${it.unit && it.unit !== "none" ? it.unit : "kg"}` : ""}${pl.b.lastSets ? ` ultime ${pl.b.lastSets.join("/")}` : ""}${pl.up ? " PRONTO A SALIRE" : ""}`; }).join("; ")).join("\n");
   const days = Array.from({ length: 7 }, (_, i) => addDays(t, -i)).map(d => { const v = S.days[d]; return v ? `- ${d}: pasti ${MEALS.filter(([k]) => v.meals[k] || (v.custom && v.custom[k])).map(([, l]) => l).join(", ") || "nessuno segnato"}; kcal stimate ${Math.round(intake(d).eaten.kcal)}; acqua ${fmt(v.water * 0.25)} L; creatina ${v.creatina ? v.creatina + " g" : "no"}; omega3 ${v.omega ? "sì" : "no"}${v.peso ? `; peso ${v.peso} kg` : ""}` : `- ${d}: non registrato`; }).join("\n");
   return `DATI DI GIOVANNI (oggi ${DOW[new Date().getDay()].toLowerCase()} ${t})
@@ -134,6 +134,7 @@ async function askCoach(q) {
   q = (q || "").trim(); if (!q || !S.sample || S.coachBusy) return;
   S.chat.msgs.push({ role: "user", content: q }); S.coachBusy = true; S.coachLive = ""; render();
   const hist = S.chat.msgs.slice(-12).map(m => ({ role: m.role, content: m.content }));
+  while (hist.length && hist[0].role !== "user") hist.shift();
   hist[0] = { role: "user", content: COACH_RULES + "\n\n" + coachContext() + "\n\nDOMANDA:\n" + hist[0].content };
   if (hist.length > 1) hist[hist.length - 1] = { role: "user", content: "DATI AGGIORNATI:\n" + coachContext() + "\n\nDOMANDA:\n" + q };
   try {
@@ -154,7 +155,7 @@ async function exportCsv(kind) {
   let rows;
   if (kind === "sedute") {
     rows = [["data", "seduta", "durata_min", "fatica", "esercizio", "serie", "kg", "ripetizioni", "note"]];
-    for (const s of S.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1)) for (const e of s.items) e.sets.forEach((x, i) => rows.push([s.date.slice(0, 10), s.day, s.durata ?? "", s.fatica ?? "", e.name, i + 1, x.kg, x.reps, i === 0 ? (s.note || "") : ""]));
+    for (const s of S.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1)) for (const e of s.items) e.sets.forEach((x, i) => rows.push([localISO(new Date(s.date)), s.day, s.durata ?? "", s.fatica ?? "", e.name, i + 1, x.kg, x.reps, i === 0 ? (s.note || "") : ""]));
   } else {
     rows = [["data", "peso_kg", "pasti_su_5", "kcal_stimate", "proteine_g", "acqua_l", "creatina_g", "omega3"]];
     for (const [d, v] of Object.entries(S.days).sort()) { normDay(v); const it = intake(d); rows.push([d, v.peso ? +v.peso : "", MEALS.filter(([k]) => mealState(v, k) === "plan" || mealState(v, k) === "custom").length, Math.round(it.eaten.kcal), Math.round(it.eaten.p), v.water * 0.25, v.creatina ?? "", v.omega ? "sì" : "no"]); }

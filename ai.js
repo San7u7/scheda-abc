@@ -51,7 +51,7 @@ function makeGemini(key) {
   }
   async function call(input, opts = {}, json = false) {
     const contents = await toContents(input, opts.images);
-    const base = { temperature: json ? 0.2 : 0.6, maxOutputTokens: json ? 8192 : 1500 };
+    const base = { temperature: json ? 0.2 : 0.6, maxOutputTokens: json ? (opts.fast ? 4096 : 16384) : 1500 };
     if (json) base.responseMimeType = "application/json";
     let last;
     const all = await getModels(), lite = all.filter(n => /lite/.test(n)), full = all.filter(n => !/lite/.test(n));
@@ -61,7 +61,7 @@ function makeGemini(key) {
       for (let tries = 0; tries < 2; tries++) {
         const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
         const r = await attempt(m, body, opts, opts.fast ? 25000 : 40000);
-        if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in 40 secondi" }; break; }
+        if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; break; }
         if (r.ok) {
           const d = await r.json(), c = (d.candidates || [])[0];
           const text = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("") || "";
@@ -79,13 +79,14 @@ function makeGemini(key) {
     throw last || { code: "upstream_error", message: "Errore" };
   }
   const notify = e => {
-    const msg = { bad_key: "Chiave Gemini non valida: controllala nelle impostazioni", rate_limited: "Limite gratuito di Gemini raggiunto per ora: riprova più tardi", timeout: "Gemini non ha risposto in tempo: riprova tra poco", network: "Connessione assente: riprova quando sei online" }[e && e.code];
+    const msg = { bad_key: "Chiave Gemini non valida: controllala nelle impostazioni", rate_limited: "Limite gratuito di Gemini raggiunto per ora: riprova più tardi", timeout: "Gemini non ha risposto in tempo: riprova tra poco", truncated: "Documento troppo lungo per una volta sola: caricalo in due parti", network: "Connessione assente: riprova quando sei online" }[e && e.code];
     if (msg && typeof toast === "function") toast(msg); throw e;
   };
   const sample = async (input, opts = {}) => { try { const r = await call(input, opts, false); if (opts.onText) opts.onText({ text: r.text, delta: r.text }); return r; } catch (e) { notify(e); } };
   sample.json = async (input, opts = {}) => {
     try {
       const r = await call(input, opts, true), t = r.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+      if (r.truncated) throw { code: "truncated", message: "Risposta troppo lunga" };
       try { return JSON.parse(t); } catch (_) { const m = /[\[{][\s\S]*[\]}]/.exec(t); if (m) return JSON.parse(m[0]); throw { code: "invalid_json", message: "JSON non valido" }; }
     } catch (e) { notify(e); }
   };
@@ -112,7 +113,8 @@ async function loadLocalPhotos() {
 async function setupSite() {
   S.site = true; S.assets = siteAssets; S.downloads = siteDownloads;
   const k = getAIKey(); S.sample = k ? makeGemini(k) : null;
-  S.sync = k ? "Dati su questo telefono · AI Gemini attiva" : "Dati su questo telefono";
+  S.sync = k ? "Sul telefono · AI attiva" : "Sul telefono";
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (_) {}
   try { S.photos = await loadLocalPhotos(); } catch (_) {}
 }
 function aiKeyBox() {
@@ -120,7 +122,7 @@ function aiKeyBox() {
   return k ? `<div class="card"><h2>AI attiva: Google Gemini</h2><p class="small muted">Coach, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
       <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`
     : `<div class="card"><h2>Attiva l'AI gratis</h2><p class="small muted">Serve una chiave gratuita di Google Gemini: apri <b>aistudio.google.com/apikey</b>, accedi con un account Google, tocca «Create API key» e incollala qui. Resta solo su questo telefono. Sul piano gratuito Google può usare le richieste per migliorare i suoi modelli.</p>
-      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Incolla la chiave (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;font-size:15px;width:100%">
+      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Incolla la chiave (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;font-size:16px;width:100%">
       <button class="primary" data-act="ai-save">Attiva AI</button></div>`;
 }
 document.addEventListener("click", async e => {
