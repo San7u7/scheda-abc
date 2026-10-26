@@ -31,7 +31,7 @@
       ${S.site && typeof aiKeyBox === "function" ? `<div class="block">${aiKeyBox()}</div>` : ""}
       <div class="block"><details class="hcard"><summary><h2>Regole e consigli</h2></summary><ul class="plain muted" style="margin-top:10px"><li>Prima le ripetizioni, poi il carico: quando chiudi il range in tutte le serie, il carico sale.</li><li>RIR 1–2 sui multiarticolari, 0–1 nell'ultima serie degli isolamenti.</li><li>Riscaldamento: 5–8 minuti di cardio, stretching sotto i 60″ per posizione, 1 serie di avvicinamento sul primo esercizio di ogni gruppo muscolare.</li><li>Scarico: con fatica ≥ 8/10 per due settimane, una settimana a metà serie.</li>${(PLAN.rules || []).map(r => `<li>${esc(r)}</li>`).join("")}${supplements().map(x => `<li>${esc(x.name)}${x.plan ? ": " + esc(x.plan) : ""}.</li>`).join("")}</ul></details></div>
       <div class="block"><div class="hcard"><h2>I tuoi dati</h2><p class="small muted">${S.site ? "Restano solo su questo telefono: se cancelli i dati del browser li perdi." : "Sono salvati nel tuo account."}</p>
-        <div class="hc-acts">${S.downloads ? `<button class="ghost" data-act="export" data-v="sedute">Esporta allenamenti (CSV)</button><button class="ghost" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}<button class="link small" data-act="wipe" style="color:var(--warn-ink)">${S.confirmWipe ? "Conferma: cancella tutti i miei dati" : "Cancella tutti i miei dati"}</button></div></div></div>
+        <div class="hc-acts">${S.site ? `<button class="primary go" data-act="backup">Salva una copia dei dati</button><label class="ghost file-btn">Ripristina da una copia<input type="file" accept=".json,application/json" data-act="restore"></label><p class="small muted" style="margin:0">La copia contiene sedute, pasti, foto, impostazioni e chiave AI. Salvala in File o mandatela per email: serve per cambiare telefono o reinstallare l'app.</p>` : ""}${S.downloads ? `<button class="ghost" data-act="export" data-v="sedute">Esporta allenamenti (CSV)</button><button class="ghost" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}<button class="link small" data-act="wipe" style="color:var(--warn-ink)">${S.confirmWipe ? "Conferma: cancella tutti i miei dati" : "Cancella tutti i miei dati"}</button></div></div></div>
       <p class="credits">Foto in bianco e nero da collezioni aperte (CC0, pubblico dominio, CC BY 2.0 di vanitystudiosphotography su Flickr). Animazioni degli esercizi: Free Exercise DB (pubblico dominio). Le calorie sono stime; l'app non sostituisce medico, dietista o allenatore.</p>`;
   }
 
@@ -212,4 +212,30 @@
   `;
   document.head.appendChild(st);
   render();
+})();
+
+/* Backup and restore of everything kept on this phone (localStorage + photo blobs). */
+(function () {
+  const blobToUrl = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+  async function photos() {
+    try { const d = await idb(); return await new Promise((res, rej) => { const st = d.transaction("blobs").objectStore("blobs"), out = {}; const c = st.openCursor(); c.onsuccess = async () => { const cur = c.result; if (cur) { out[cur.key] = cur.value; cur.continue(); } else res(out); }; c.onerror = () => rej(c.error); }); } catch (_) { return {}; }
+  }
+  async function backup() {
+    const ls = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith(NS) || k === "gemini_key" || k === "gemini_models_v2") ls[k] = localStorage.getItem(k); }
+    const ph = await photos(), pu = {}; for (const k in ph) if (ph[k] instanceof Blob) pu[k] = await blobToUrl(ph[k]);
+    const name = `askesis-copia-${localISO()}.json`, file = new File([JSON.stringify({ app: "askesis", ns: NS, v: 1, date: new Date().toISOString(), ls, photos: pu })], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); toast("Copia pronta: salvala in File"); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    siteDownloads.save({ filename: name, data: file }); toast("Copia scaricata");
+  }
+  async function restore(f) {
+    try {
+      const j = JSON.parse(await f.text()); if (!j || j.app !== "askesis" || !j.ls) throw new Error("x");
+      if (j.ns !== NS) { toast("Questa copia è dell'altra app: aprila lì."); return; }
+      for (const k in j.ls) localStorage.setItem(k, j.ls[k]);
+      for (const k in j.photos || {}) { const r = await fetch(j.photos[k]); await idbPut(k, await r.blob()); }
+      toast("Dati ripristinati"); setTimeout(() => location.reload(), 700);
+    } catch (_) { toast("File non valido: scegli una copia salvata da Askesis."); }
+  }
+  document.addEventListener("click", e => { const b = e.target.closest('[data-act="backup"]'); if (b) backup().catch(() => toast("Non sono riuscito a creare la copia.")); });
+  document.addEventListener("change", e => { const i = e.target; if (i.dataset && i.dataset.act === "restore" && i.files && i.files[0]) { restore(i.files[0]); i.value = ""; } });
 })();
