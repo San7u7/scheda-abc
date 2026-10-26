@@ -69,6 +69,7 @@
     const plan = window.weekPlanMap ? weekPlanMap() : {};
     const done = weekDone(), today = (dw + 6) % 7, DN = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
     const missed = Object.keys(plan).map(Number).filter(d => { const i = (d + 6) % 7; return i < today && !done[i]; });
+    if (window.trainFlex && trainFlex() && gap >= 4 && gap < 7 && nd) return nudge(`Sono ${gap} giorni senza allenamento. Oggi è un buon giorno per la seduta ${nd}.`);
     if (gap >= 7) return nudge(`Bentornato${nm}. Ripartiamo con calma: nella prossima seduta usa circa il 90% dei carichi, poi si torna al ritmo di prima.`);
     if (dw === 0) { const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length; return nudge(`Settimana chiusa: ${n} ${n === 1 ? "seduta" : "sedute"} su ${tot}. Su cosa vuoi concentrarti la prossima: proteine, sonno o carichi? Scrivimelo e ti preparo un piccolo obiettivo.`); }
     if (missed.length && nd && !done[today]) return nudge(`${DN[missed[missed.length - 1]].charAt(0).toUpperCase() + DN[missed[missed.length - 1]].slice(1)} è saltato, capita. Oggi puoi fare la seduta ${nd}, oppure tocca «Sposta la settimana» in Oggi e le sistemo io.`);

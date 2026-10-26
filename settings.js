@@ -5,7 +5,7 @@
 (function () {
   const BACK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';
   try { TABS[3][1] = "Profilo"; } catch (_) {}
-  const pref = () => Object.assign({ sound: true, flash: true, awake: true, remind: "18:00" }, lsGet("prefs", {}));
+  const pref = () => Object.assign({ sound: true, flash: true, awake: true, remind: "18:00", days: "flex" }, lsGet("prefs", {}));
   const setPref = (k, v) => { const p = pref(); p[k] = v; lsSet("prefs", p); };
 
   /* ---------- avatar ---------- */
@@ -52,10 +52,12 @@
       <div class="block"><div class="hcard"><button class="srow link-row" data-act="set-sub" data-v="avatar">${userAvatar(48)}<span><b>La tua immagine</b><small>Foto, simbolo o iniziali</small></span><span class="hl">›</span></button>
         <div><p class="small muted" style="margin:6px 0 8px">Colore dell'app</p><div class="swatches">${ACCENTS.map(([v, c, l]) => `<button class="sw" style="background:${c}" data-act="accent" data-v="${v}" aria-pressed="${(pr.colore || "lime") === v}" aria-label="${l}"></button>`).join("")}</div></div></div></div>
       <h2 class="set-h">Allenamento</h2>
-      <div class="block"><div class="hcard">${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>
+      <div class="block"><div class="hcard"><div><b>Quando ti alleni?</b><div class="seg wrap" role="group" style="margin-top:8px"><button data-act="days" data-v="flex" aria-pressed="${p.days === "flex"}">Quando vuoi</button><button data-act="days" data-v="fixed" aria-pressed="${p.days === "fixed"}">Giorni fissi</button></div>
+        <p class="small muted" style="margin:6px 0 0">${p.days === "flex" ? "Fai le sedute in ordine, nei giorni che preferisci: ti suggerisco quando riposare." : "Segui i giorni della scheda: se ne salti uno, ti propongo di spostare la settimana."}</p></div>${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>
       <h2 class="set-h">Promemoria</h2>
       <div class="block"><div class="hcard"><p class="small muted" style="margin:0">Askesis non ha un server, quindi non può scriverti ad app chiusa. Per i promemoria usa il Calendario dell'iPhone: li crea lui, anche ad app chiusa.</p>
-        ${plan.length ? `<div class="srow"><span><b>Orario dell'allenamento</b><small>${plan.length} sedute a settimana</small></span><input type="time" class="tinput" data-pref="remind" value="${p.remind}" aria-label="Orario dell'allenamento"></div><button class="primary go" data-act="ics">Aggiungi al Calendario</button>` : `<p class="small muted">Carica una scheda con i giorni per creare i promemoria.</p>`}
+        <ul class="plain small muted" style="margin:0"><li>Ogni mattina alle 8: il tuo obiettivo del giorno.</li><li>Ogni sera alle 21: chiudi la giornata, pasti e acqua.</li><li>Lunedì e giovedì alle 7:15: la pesata. Ogni 4 settimane: le foto progressi.</li>${p.days === "fixed" && plan.length ? `<li>Nei giorni di allenamento, all'orario che scegli qui sotto.</li>` : `<li>All'orario che scegli: oggi seduta o riposo?</li>`}</ul>
+        ${tog("meals", p.meals !== false, "Pasti nel Calendario", "Ogni pasto all'orario solito, con il menù di quel giorno (colazione 7:30, spuntino 10:30, pranzo 13, merenda 16:30, cena 20).")}<div class="srow"><span><b>Orario dell'allenamento</b><small>Il promemoria arriva 30 minuti prima</small></span><input type="time" class="tinput" data-pref="remind" value="${p.remind}" aria-label="Orario dell'allenamento"></div><button class="primary go" data-act="ics">Aggiungi al Calendario</button>
         ${"setAppBadge" in navigator ? `<p class="small muted" style="margin:0">Sull'icona della Home compare un «1» nei giorni in cui c'è una seduta da fare.</p>` : ""}</div></div>
       <h2 class="set-h">Intelligenza artificiale e dati</h2>${rest}
       <h2 class="set-h">Aiuto</h2>`;
@@ -107,16 +109,34 @@
   function ics() {
     const p = pref(), [hh, mm] = (p.remind || "18:00").split(":").map(Number), BY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
     const pad = n => String(n).padStart(2, "0"), now = new Date(), stamp = now.toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
-    const ev = ((S.training && S.training.sedute) || []).map((s, i) => { if (s.dow == null) return "";
+    const day0 = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const daily = (id, h, m, title, desc, alarm) => ["BEGIN:VEVENT", `UID:askesis-${id}@askesis`, `DTSTAMP:${stamp}`, `DTSTART:${day0}T${pad(h)}${pad(m)}00`, `DTEND:${day0}T${pad(h)}${pad(m + 10)}00`, "RRULE:FREQ=DAILY", `SUMMARY:${title}`, `DESCRIPTION:${desc}`, "BEGIN:VALARM", `TRIGGER:-PT${alarm}M`, "ACTION:DISPLAY", `DESCRIPTION:${title}`, "END:VALARM", "END:VEVENT"].join("\r\n");
+    const base = [daily("mattina", 8, 0, "Askesis · Il tuo obiettivo di oggi", "Apri Askesis: ti dico seduta, calorie e proteine di oggi.", 0), daily("sera", 21, 0, "Askesis · Chiudi la giornata", "Hai segnato pasti e acqua? Apri Askesis e guarda cosa manca.", 0)];
+    if (p.days !== "fixed") base.push(daily("allenamento", hh, mm, "Askesis · Oggi seduta o riposo?", "Apri Askesis e te lo dico.", 30));
+    // meals: one weekly event per day and meal, with that day's menu from the plan
+    const MT = { col: [7, 30], spu: [10, 30], pra: [13, 0], mer: [16, 30], cen: [20, 0] }, txt = x => String(x || "").replace(/[,;\\]/g, " ").replace(/\n/g, " ");
+    if (p.meals !== false && typeof mealOf === "function") for (let dw = 0; dw < 7; dw++) for (const [k, l] of MEALS) {
+      const m = mealOf(dw, k); if (!m || !MT[k]) continue; const d = new Date(now); d.setDate(d.getDate() + ((dw - d.getDay() + 7) % 7));
+      const ds = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`, [h, mi] = MT[k];
+      base.push(["BEGIN:VEVENT", `UID:askesis-pasto-${k}-${dw}@askesis`, `DTSTAMP:${stamp}`, `DTSTART:${ds}T${pad(h)}${pad(mi)}00`, `DTEND:${ds}T${pad(h)}${pad(mi + 20)}00`, `RRULE:FREQ=WEEKLY;BYDAY=${BY[dw]}`,
+        `SUMMARY:${l}: ${txt(m.t)}`, `DESCRIPTION:${txt((m.i || []).join(" · "))} · Segnalo fatto in Askesis.`, "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", `DESCRIPTION:${l}`, "END:VALARM", "END:VEVENT"].join("\r\n"));
+    }
+    // weigh-in twice a week, progress photos every 4 weeks
+    const next = dw => { const d = new Date(now); d.setDate(d.getDate() + ((dw - d.getDay() + 7) % 7 || 7)); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`; };
+    const ev2 = (id, ds, h, m, rule, title, desc) => ["BEGIN:VEVENT", `UID:askesis-${id}@askesis`, `DTSTAMP:${stamp}`, `DTSTART:${ds}T${pad(h)}${pad(m)}00`, `DTEND:${ds}T${pad(h)}${pad(m + 10)}00`, `RRULE:${rule}`, `SUMMARY:${title}`, `DESCRIPTION:${desc}`, "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", `DESCRIPTION:${title}`, "END:VALARM", "END:VEVENT"].join("\r\n");
+    base.push(ev2("pesata", next(1), 7, 15, "FREQ=WEEKLY;BYDAY=MO,TH", "Askesis · Pesata", "Al mattino a digiuno dopo il bagno: registra il peso in Askesis."));
+    base.push(ev2("foto", next(1), 7, 20, "FREQ=WEEKLY;INTERVAL=4;BYDAY=MO", "Askesis · Foto progressi", "Frontale, laterale, posteriore: stessa luce e stessa posa. Poi apri Il tuo percorso."));
+    const ev = p.days !== "fixed" ? base : base.concat(((S.training && S.training.sedute) || []).map((s, i) => { if (s.dow == null) return "";
       const d = new Date(now); d.setDate(d.getDate() + ((s.dow - d.getDay() + 7) % 7)); const ds = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
       const end = new Date(d); end.setHours(hh + 1, mm); const de = `${ds}T${pad(end.getHours())}${pad(end.getMinutes())}00`;
       return ["BEGIN:VEVENT", `UID:askesis-${DAYS[i] || i}-${ds}@askesis`, `DTSTAMP:${stamp}`, `DTSTART:${ds}T${pad(hh)}${pad(mm)}00`, `DTEND:${de}`, `RRULE:FREQ=WEEKLY;BYDAY=${BY[s.dow]}`,
-        `SUMMARY:Askesis · Seduta ${DAYS[i] || ""}`, `DESCRIPTION:${(s.focus || s.nome || "").replace(/[,;\n]/g, " ")}. Apri Askesis per iniziare.`, "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Tra 30 minuti alleni", "END:VALARM", "END:VEVENT"].join("\r\n"); }).filter(Boolean);
-    const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Askesis//IT", "CALSCALE:GREGORIAN", ...ev, "END:VCALENDAR"].join("\r\n");
+        `SUMMARY:Askesis · Seduta ${DAYS[i] || ""}`, `DESCRIPTION:${(s.focus || s.nome || "").replace(/[,;\n]/g, " ")}. Apri Askesis per iniziare.`, "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Tra 30 minuti alleni", "END:VALARM", "END:VEVENT"].join("\r\n"); }).filter(Boolean));
+    const fold = l => { const out = []; while (l.length > 60) { out.push(l.slice(0, 60)); l = " " + l.slice(60); } out.push(l); return out.join("\r\n"); };
+    const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Askesis//IT", "CALSCALE:GREGORIAN", "X-WR-CALNAME:Askesis", ...ev, "END:VCALENDAR"].join("\r\n").split("\r\n").map(fold).join("\r\n");
     siteDownloads.save({ filename: "askesis-allenamenti.ics", data: new Blob([body], { type: "text/calendar" }) });
     toast("Apri il file e tocca «Aggiungi tutti» nel Calendario");
   }
-  function badge() { try { if (!("setAppBadge" in navigator)) return; const m = window.weekPlanMap ? weekPlanMap() : {}, today = m[new Date().getDay()]; if (today && !doneToday()) navigator.setAppBadge(1); else navigator.clearAppBadge(); } catch (_) {} }
+  function badge() { try { if (!("setAppBadge" in navigator)) return; const m = window.weekPlanMap ? weekPlanMap() : {}, today = pref().days === "flex" ? (window.restAdvice && !restAdvice() ? 1 : 0) : (m[new Date().getDay()] && !doneToday() ? 1 : 0); if (today) navigator.setAppBadge(1); else navigator.clearAppBadge(); } catch (_) {} }
 
   /* ---------- rest end: sound + flash; screen awake in session ---------- */
   let ac = null, beeped = null, lock = null;
@@ -146,6 +166,7 @@
     if (act === "tab" || act === "redo") S.settings = null;
     if (act === "set-close") { e.stopPropagation(); S.settings = null; S.crop = null; window.scrollTo(0, 0); render(); }
     else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar"].includes(v) ? v : "main"; S.crop = null; window.scrollTo(0, 0); render(); }
+    else if (act === "days") { e.stopPropagation(); setPref("days", v); render(); toast(v === "flex" ? "Ti alleni quando vuoi" : "Giorni fissi della scheda"); }
     else if (act === "pref") { e.stopPropagation(); const p = pref(); setPref(v, !p[v]); render(); }
     else if (act === "accent") { e.stopPropagation(); saveProfile({ colore: v }); }
     else if (act === "ics") { e.stopPropagation(); ics(); }

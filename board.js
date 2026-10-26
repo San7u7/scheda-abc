@@ -46,7 +46,17 @@
   const monKey = () => localISO(mondayOf(new Date()));
   const basePlan = () => { const m = {}; ((S.training && S.training.sedute) || []).forEach((s, i) => { if (s.dow != null && DAYS[i]) m[s.dow] = DAYS[i]; }); return m; };
   const shift = () => { const x = lsGet("shift", null); return x && x.week === monKey() ? x.map : null; };
-  const planMap = () => shift() || basePlan();
+  const flex = () => (lsGet("prefs", {}).days || "flex") === "flex"; // «Quando vuoi» (default) or «Giorni fissi»
+  window.trainFlex = flex;
+  const planMap = () => flex() ? {} : (shift() || basePlan());
+  function restAdvice() { // advice, never a block
+    if (doneToday()) return "same";
+    const n = Object.keys(weekDone()).length; if (DAYS.length && n >= DAYS.length) return "goal";
+    const did = d => S.sessions.some(x => localISO(new Date(x.date)) === d);
+    if (did(addDays(localISO(), -1)) && did(addDays(localISO(), -2))) return "twice";
+    return null;
+  }
+  window.restAdvice = restAdvice;
   window.weekPlanMap = planMap;
   const idx = dw => (dw + 6) % 7; // Monday-first index used by weekDone()
   function missedDays() { const m = planMap(), done = weekDone(), did = Object.values(done), t = idx(new Date().getDay()); return Object.keys(m).map(Number).filter(dw => idx(dw) < t && !done[idx(dw)] && !did.includes(m[dw])); }
@@ -61,9 +71,10 @@
     return left.length - Object.values(out).filter(d => left.includes(d)).length;
   }
   function syncLabels() { // session cards show this week's day after a move
-    const sh = shift();
+    const sh = shift(), fx = flex();
     DAYS.forEach(k => { const p = P[k]; if (!p) return; if (!("_day" in p)) { p._day = p.day; p._dow = p.dow; }
-      if (sh) { const dw = Object.keys(sh).map(Number).find(x => sh[x] === k); p.day = dw != null ? DOW[dw] : "Fuori settimana"; p.dow = dw != null ? dw : null; }
+      if (fx) { p.day = ""; p.dow = null; }
+      else if (sh) { const dw = Object.keys(sh).map(Number).find(x => sh[x] === k); p.day = dw != null ? DOW[dw] : "Fuori settimana"; p.dow = dw != null ? dw : null; }
       else { p.day = p._day; p.dow = p._dow; } });
   }
   const r0 = window.render; window.render = function () { try { syncLabels(); } catch (_) {} r0(); };
@@ -72,7 +83,7 @@
   const baseNext = window.nextDay;
   window.nextDay = function () {
     const a = activeDay(); if (a) return a;
-    const sh = shift(); if (!sh) return baseNext();
+    const sh = shift(); if (!sh || flex()) return baseNext();
     const done = Object.values(weekDone()), t = idx(new Date().getDay());
     if (sh[new Date().getDay()] && !doneToday()) return sh[new Date().getDay()];
     const up = Object.keys(sh).map(Number).filter(dw => idx(dw) > t && !done.includes(sh[dw])).sort((x, y) => idx(x) - idx(y));
@@ -102,12 +113,12 @@
   function weekCard() {
     const done = weekDone(), m = planMap(), today = (new Date().getDay() + 6) % 7, plan = {}; Object.entries(m).forEach(([dw, d]) => { plan[(+dw + 6) % 7] = d; });
     const cells = ["L", "M", "M", "G", "V", "S", "D"].map((l, i) => { const d = done[i], p = plan[i], cls = d ? "on" : p ? (i < today ? "miss" : "plan") : "rest";
-      const edit = !d && i >= today;
+      const edit = !d && i >= today && !flex();
       return `<${edit ? `button data-act="wk-day" data-v="${(i + 1) % 7}" aria-label="Cambia ${["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"][i]}"` : "div"} class="wk ${cls} ${i === today ? "today" : ""} ${edit ? "ed" : ""}"><span class="wk-l">${l}</span><span class="wk-d">${d || p || "·"}</span></${edit ? "button" : "div"}>`; }).join("");
     const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length, ws = weekStreak(), miss = missedDays();
     return `<div class="card"><div class="block-h"><h2>La tua <span class="hl">settimana</span></h2><span class="small muted num">${n} di ${tot}</span></div><div class="wkrow">${cells}</div>
-      ${miss.length ? `<button class="primary go" data-act="wk-auto">Sposta la settimana</button>` : ""}
-      <p class="small muted" style="margin:0">Tocca un giorno da oggi in poi per cambiare seduta o mettere riposo. Vale solo per questa settimana.${shift() ? ` <button class="link small" data-act="wk-reset" style="padding:0">Torna alla scheda</button>` : ""}</p>
+      ${flex() ? `<p class="small muted" style="margin:0">Allenati quando vuoi: l'obiettivo è ${tot} ${tot === 1 ? "seduta" : "sedute"} a settimana, con un giorno di riposo quando puoi. Se preferisci giorni fissi, li scegli in Impostazioni.</p>` : `${miss.length ? `<button class="primary go" data-act="wk-auto">Sposta la settimana</button>` : ""}
+      <p class="small muted" style="margin:0">Tocca un giorno da oggi in poi per cambiare seduta o mettere riposo. Vale solo per questa settimana.${shift() ? ` <button class="link small" data-act="wk-reset" style="padding:0">Torna alla scheda</button>` : ""}</p>`}
       <p class="small muted" style="margin:0">${ws.n >= 2 ? `${ws.n} settimane complete di fila${ws.best > ws.n ? ` (migliore: ${ws.best})` : ""}.` : ws.best ? `La tua serie migliore: ${ws.best} settimane complete. Completa questa e riparte.` : "Completa tutte le sedute della settimana per iniziare una serie."}</p></div>`;
   }
   function weightCard() {
@@ -134,6 +145,16 @@
     const a = activeDay(), dt0 = doneToday(), np = nextPlanned(), v = dayLog(localISO()), meal = MEALS.find(([k]) => mealState(v, k) === "open"), mo = meal && mealOf(new Date().getDay(), meal[0]);
     let t, s, acts;
     if (a) { t = `Seduta <span class="hl-ink">${a}</span> in corso`; s = "Riprendi da dove eri rimasto: carichi e serie fatte sono salvati."; acts = `<button class="primary now-go" data-act="start" data-v="${a}">Riprendi</button>`; }
+    else if (flex() && np) {
+      const ra = restAdvice(), n = Object.keys(weekDone()).length, tot = DAYS.length, mealLine = meal && mo ? ` Prossimo pasto: <button class="now-meal" data-act="meal-open" data-v="${meal[0]}">${meal[1].toLowerCase()} <span>›</span></button>` : "";
+      const mealActs = meal && mo ? `<button class="primary now-go" data-act="meal" data-v="${meal[0]}">${meal[1]}: l'ho mangiato</button>` : "";
+      if (ra === "same") { t = `Seduta <span class="hl-ink">${dt0.day}</span> fatta`; s = `La prossima domani: ora contano proteine, acqua e sonno.${mealLine}`; acts = mealActs; }
+      else if (ra === "goal") { t = "Settimana completa"; s = `${n} sedute su ${tot}. Una in più non serve: recupera e ricomincia lunedì.${mealLine}`; acts = mealActs; }
+      else if (ra === "twice") { t = "Oggi riposo"; s = `Due giorni di fila, ottimo. Domani la seduta ${np.day} rende di più.${mealLine}`; acts = mealActs; }
+      else { const ups = P[np.day].items.filter(it => plan(it).up).length;
+        t = `Oggi puoi fare la seduta <span class="hl-ink">${np.day}</span>`; s = (ups ? `${ups === 1 ? "Un esercizio è pronto" : ups + " esercizi sono pronti"} a salire di carico.` : "Punta a una ripetizione in più per serie.") + ` ${n} di ${tot} questa settimana.${mealLine}`;
+        acts = `<button class="primary now-go" data-act="start" data-v="${np.day}">Inizia</button><button class="ghost dark" data-act="open-day" data-v="${np.day}">Dettagli</button>`; }
+    }
     else if (np && np.when === "oggi" && !dt0) { const ups = P[np.day].items.filter(it => plan(it).up).length;
       t = `Oggi tocca alla seduta <span class="hl-ink">${np.day}</span>`; s = ups ? `${ups === 1 ? "Un esercizio è pronto" : ups + " esercizi sono pronti"} a salire di carico.` : "Punta a una ripetizione in più per serie.";
       acts = `<button class="primary now-go" data-act="start" data-v="${np.day}">Inizia</button><button class="ghost dark" data-act="open-day" data-v="${np.day}">Dettagli</button>`; }
@@ -153,7 +174,7 @@
       const tot = Object.keys(plan).length || DAYS.length, np = nextPlanned(), ws = weekStreak();
       metric = `${Object.keys(done).length}<small> di ${tot} sedute</small>`;
       vis = `<div class="mb-dots">${[0, 1, 2, 3, 4, 5, 6].map(i => `<i class="${done[i] ? "on" : plan[i] ? (i < today ? "miss" : "plan") : ""} ${i === today ? "today" : ""}"></i>`).join("")}</div>`;
-      state = np ? `Prossima: <b>${np.day}</b>${np.when ? ", " + np.when : ""}` : "Nessuna scheda caricata"; if (ws.n >= 2) state += ` · ${ws.n} settimane complete`; }
+      state = np ? `Prossima: <b>${np.day}</b>${flex() ? ", quando vuoi" : np.when ? ", " + np.when : ""}` : "Nessuna scheda caricata"; if (ws.n >= 2) state += ` · ${ws.n} settimane complete`; }
     if (k === "food") { const T = planTargets(), e = intake(localISO()).eaten, v = dayLog(localISO()), meal = MEALS.find(([mk]) => mealState(v, mk) === "open");
       const h = new Date().getHours() + new Date().getMinutes() / 60, exp = Math.max(0, Math.min(1, (h - 7) / 14));
       metric = `${fmt(Math.round(e.kcal))}<small> / ${fmt(T.kcal)} kcal</small>`;
@@ -242,6 +263,22 @@
       if (v === "foto" || v === "peso") setTimeout(() => { const h = [...document.querySelectorAll("h2")].find(x => x.textContent === "Dettagli"); if (h) h.scrollIntoView({ behavior: "smooth" }); }, 50); }
   }, true);
   document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('.mbox, .mb-quick')) { e.preventDefault(); e.target.click(); } });
+
+  /* ---------- second session in the same day: advice, then the user decides ---------- */
+  document.addEventListener("click", e => {
+    const b = e.target.closest('[data-act="start"], [data-act="start-anyway"], [data-act="start-later"]'); if (!b) return;
+    if (b.dataset.act === "start-later") { e.stopPropagation(); S.sheet = null; renderSheet(); return; }
+    if (b.dataset.act === "start-anyway") { e.stopPropagation(); const k = b.dataset.v, d = draft(k); d.started = true; d.startedAt = Date.now(); saveDrafts(); S.sheet = null; S.tab = "allenamento"; lsSet("tab2", S.tab); window.scrollTo(0, 0); renderSheet(); render(); return; }
+    if (activeDay() || !doneToday()) return;
+    e.stopPropagation(); S.startPending = b.dataset.v; S.sheet = "sameday"; renderSheet();
+  }, true);
+  const prevS2 = window.renderSheet;
+  window.renderSheet = function () {
+    if (S.sheet !== "sameday") return prevS2();
+    $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="Seconda seduta oggi"><div class="grab"></div>
+      <h2>Hai già fatto una seduta oggi</h2><p class="muted">I muscoli crescono mentre recuperi: la seduta ${esc(S.startPending || "")} rende di più domani.</p>
+      <button class="primary" data-act="start-later">Va bene, domani</button><button class="ghost" data-act="start-anyway" data-v="${esc(S.startPending || "")}">Inizio lo stesso</button></div></div>`;
+  };
 
   /* ---------- edit Oggi like the iPhone Home Screen ---------- */
   const nameOf = k => BOX.find(b => b[0] === k)[1];
