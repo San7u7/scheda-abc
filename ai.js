@@ -75,7 +75,7 @@ function makeGemini(key) {
         const body = { contents, generationConfig: v.th ? { ...base, thinkingConfig: v.th } : base };
         if (v.safe) body.safetySettings = SAFE;
         P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Gemini sta guardando le immagini" : "Gemini sta ragionando"), 900);
-        const r = await attempt(m, body, opts, opts.images ? 90000 : opts.fast ? 25000 : 40000); clearTimeout(slow);
+        const r = await attempt(m, body, opts, opts.modelTier === "complex" ? 120000 : opts.images ? 90000 : opts.fast ? 25000 : 40000); clearTimeout(slow);
         if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; nextModel = true; break; }
         if (r.ok) {
           P.stage("Leggo la risposta"); const d = await r.json(), c = (d.candidates || [])[0];
@@ -174,9 +174,9 @@ document.addEventListener("click", async e => {
 function aiProgress(input, opts, json) {
   const text = typeof input === "string" ? input : String((input[input.length - 1] || {}).content || "");
   const task = opts.task || (opts.images && /etichett/i.test(text) ? "Leggo l'etichetta" : opts.images && /fisico|percorso|preparatore|livell/i.test(text) ? "Valuto le foto" : opts.images ? "Leggo l'immagine"
-    : /SCHEDA|scheda di allenamento/i.test(text) && json ? "Leggo la scheda" : /piano alimentare|dieta/i.test(text) && json && text.length > 2000 ? "Leggo il piano alimentare"
+    : /crea|genera|progetta/i.test(text) && /sedut|scheda|allenament/i.test(text) && json ? "Creo la tua scheda" : /SCHEDA|scheda di allenamento/i.test(text) && json ? "Leggo la scheda" : /piano alimentare|dieta/i.test(text) && json && text.length > 2000 ? "Leggo il piano alimentare"
     : /alternativ|sostitu/i.test(text) ? "Cerco alternative" : /calorie|macro/i.test(text) && json ? "Stimo calorie e macro" : json ? "Elaboro" : "Leo sta pensando");
-  const est = (opts.images ? (opts.fast ? 12 : 30) : json ? (opts.fast ? 8 : 20) : 10) * 1000;
+  const est = (opts.modelTier === "complex" && !opts.images ? 50 : opts.images ? (opts.fast ? 12 : 35) : json ? (opts.fast ? 8 : 20) : 10) * 1000;
   const id = Date.now() + Math.random(), t0 = Date.now();
   const st = { id, task, stage: "", t0, est };
   aiProgress.list.set(id, st); aiProgress.paint();
