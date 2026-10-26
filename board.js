@@ -374,7 +374,11 @@
   });
   // fresh data without a gesture: recompute when the app comes back and when the day changes
   let lastDay = localISO();
-  const refresh = () => { const d = localISO(); if (d !== lastDay) { lastDay = d; toast("Nuovo giorno, contatori azzerati."); } if (!S.sheet) render(); };
+  // Android hides the page while the file picker is open: re-rendering on return would detach the input before its change event fires
+  let picking = 0;
+  document.addEventListener("click", e => { if (e.target.matches && e.target.matches("input[type=file]")) picking = Date.now(); }, true);
+  ["change", "cancel"].forEach(t => document.addEventListener(t, e => { if (e.target.type === "file") picking = 0; }, true));
+  const refresh = () => { const d = localISO(); if (d !== lastDay) { lastDay = d; toast("Nuovo giorno, contatori azzerati."); } if (!S.sheet && Date.now() - picking > 300000) render(); };
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
   window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 

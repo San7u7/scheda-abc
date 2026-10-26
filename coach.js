@@ -237,7 +237,10 @@ function loadPdf() {
   return pdfReady || (pdfReady = loadScript(PDFJS + "pdf.worker.min.js").then(() => loadScript(PDFJS + "pdf.min.js")).then(() => window.pdfjsLib));
 }
 async function readDoc(file, maxImages = 4) {
-  const name = (file.name || "").toLowerCase(), type = file.type || "";
+  const name = (file.name || "").toLowerCase();
+  let type = file.type || "";
+  // some Android pickers (Drive, file managers) give no MIME type and no extension: sniff the first bytes
+  if (!type && !/\.(txt|md|csv|pdf)$/.test(name)) type = new TextDecoder().decode(await file.slice(0, 4).arrayBuffer()) === "%PDF" ? "application/pdf" : "image/jpeg";
   if (type.startsWith("text/") || /\.(txt|md|csv)$/.test(name)) return { text: (await file.text()).slice(0, 30000), images: [] };
   if (type === "application/pdf" || name.endsWith(".pdf")) {
     const lib = await loadPdf(), pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
