@@ -60,7 +60,7 @@ function makeGemini(key) {
       let th = thinkingFor(m);
       for (let tries = 0; tries < 2; tries++) {
         const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
-        const r = await attempt(m, body, opts, 40000);
+        const r = await attempt(m, body, opts, opts.fast ? 25000 : 40000);
         if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in 40 secondi" }; break; }
         if (r.ok) {
           const d = await r.json(), c = (d.candidates || [])[0];
@@ -139,7 +139,8 @@ document.addEventListener("click", async e => {
   else if (act === "ai-test") {
     b.disabled = true; b.textContent = "Provo…";
     const t0 = Date.now();
-    try { const r = await S.sample("Rispondi solo con: ok", { fast: true }); toast(`Funziona: ${r.modelApplied}, ${((Date.now() - t0) / 1000).toFixed(1)} s`); } catch (_) {}
+    try { const r = await S.sample("Rispondi solo con: ok", { fast: true }); toast(`Funziona: ${r.modelApplied}, ${((Date.now() - t0) / 1000).toFixed(1)} s`); }
+    catch (e) { toast(`Prova non riuscita (${e && e.code || "errore"}${e && e.message ? ": " + String(e.message).slice(0, 80) : ""})`); }
     b.disabled = false; b.textContent = "Prova la chiave";
   }
 });
