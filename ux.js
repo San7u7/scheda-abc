@@ -67,12 +67,12 @@
   };
 
   /* ---------- ALLENAMENTO ---------- */
-  function dayCard(k, isNext) {
-    const p = P[k], ups = p.items.filter(x => plan(x).up).length, doneW = Object.values(weekDone()).includes(k);
-    return `<button class="dcard ${isNext ? "next" : ""}" data-act="open-day" data-v="${k}" style="--img:url(${photoFor(k)})">
+  function dayCard(k, isNext, i, n) {
+    const p = P[k], ups = p.items.filter(x => plan(x).up).length, doneW = Object.values(weekDone()).includes(k), a = activeDay();
+    return `<div class="dslide ${isNext ? "next" : ""}" data-i="${i}"><button class="dcard ${isNext ? "next" : ""} ${doneW ? "done" : ""}" data-act="open-day" data-v="${k}" style="--img:url(${photoFor(k)})" aria-label="Seduta ${k}, ${i + 1} di ${n}">
       <span class="dc-img"></span><span class="dc-tag">${doneW ? "Fatta" : isNext ? "Prossima" : p.day || "Seduta"}</span>
       <span class="dc-body"><span class="dc-title">Seduta ${k}</span><span class="dc-sub">${esc(p.focus || p.nome || "")}</span>
-      <span class="dc-meta num">${plural(p.items.length, "esercizio", "esercizi")} · ~${estMin(p)} min${ups ? ` · <b>${ups} pronti a salire</b>` : ""}</span></span><span class="dc-go">${ARROW}</span></button>`;
+      <span class="dc-meta num">${plural(p.items.length, "esercizio", "esercizi")} · ~${estMin(p)} min${ups ? ` · <b>${ups} pronti a salire</b>` : ""}</span></span>${isNext ? "" : `<span class="dc-go">${ARROW}</span>`}</button>${isNext ? `<button class="primary dc-start" data-act="start" data-v="${k}">${a === k ? "Riprendi" : "Inizia"} seduta ${k}</button>` : ""}</div>`;
   }
   function viewDayDetail(k) {
     const p = P[k], ups = p.items.filter(x => plan(x).up).length;
@@ -93,7 +93,8 @@
     if (S.detail && P[S.detail]) return viewDayDetail(S.detail);
     const nd = nextDay();
     return `<h1>Scegli la <span class="hl">seduta</span></h1><p class="muted" style="margin-top:4px">I carichi sono già quelli della volta scorsa.</p>
-      <div class="dgrid">${DAYS.map(k => dayCard(k, k === nd)).join("")}</div>`;
+      <div class="dcar" role="region" aria-roledescription="carosello" aria-label="Sedute">${DAYS.map((k, i) => dayCard(k, k === nd, i, DAYS.length)).join("")}</div>
+      ${DAYS.length > 1 ? `<div class="ddots">${DAYS.map((k, i) => `<button data-dot="${i}" aria-label="Vai alla seduta ${k}" ${k === nd ? 'aria-current="true"' : ""}></button>`).join("")}</div>` : ""}`;
   };
   function viewFocus(a) {
     const d = draft(a), items = P[a].items; if (!items.some(x => x.id === d.cur.id)) { d.cur = firstOpen(a, d); saveDrafts(); }
@@ -229,6 +230,20 @@
   .mc-l { font-size: 12px; color: var(--faint); }
   .mc-t { font-weight: 700; line-height: 20px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .mc-k { font-size: 13px; color: var(--muted); margin-top: auto; }
+  .dcar { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; padding: 0 16px; margin: 16px -16px 0; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .dcar::-webkit-scrollbar { display: none; }
+  .dslide { position: relative; flex: 0 0 calc(100% - 56px); scroll-snap-align: start; scroll-snap-stop: always; height: 360px; display: flex; }
+  .dslide .dcard { flex: 1; min-height: 0; }
+  .dslide .dcard .dc-img { height: 170px; }
+  .dslide .dc-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .dslide.next .dcard { padding-bottom: 72px; }
+  .dslide .dc-start { position: absolute; left: 14px; right: 14px; bottom: 14px; width: auto; min-height: 52px; margin: 0; background: #0a0a0a; color: var(--accent); border: 0; border-radius: 999px; font-weight: 800; font-size: 16px; box-shadow: none; }
+  .dcard.done .dc-tag { background: var(--raised); color: var(--muted); }
+  .ddots { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+  .ddots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: var(--control); transition: width .2s, background .2s; position: relative; }
+  .ddots button::after { content: ""; position: absolute; inset: -18px -8px; }
+  .ddots button[aria-current="true"] { width: 20px; background: var(--accent); }
+  @media (prefers-reduced-motion: reduce) { .dcar { scroll-behavior: auto; } }
   .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
   .dcard { position: relative; text-align: left; border: 0; padding: 0; border-radius: 24px; overflow: hidden; background: var(--surface); color: var(--text); display: flex; flex-direction: column; min-height: 250px; }
   .dcard:first-child:nth-last-child(odd), .dgrid .dcard.next:first-child { }
@@ -347,4 +362,12 @@
   @media (prefers-reduced-motion: reduce) { .demo-img img.b { animation: none; opacity: 0; } }
   `;
   document.head.appendChild(st);
+  /* session carousel: start on the next session, dots follow, dots scroll */
+  const rC = window.render;
+  window.render = function () { rC(); const c = document.querySelector(".dcar"); if (!c || c.dataset.init) return; c.dataset.init = "1";
+    const n = c.querySelector(".dslide.next"); if (n) c.scrollLeft = n.offsetLeft - 16;
+    const dots = [...document.querySelectorAll(".ddots button")];
+    c.addEventListener("scroll", () => { const w = c.querySelector(".dslide").offsetWidth + 12, i = Math.round(c.scrollLeft / w); dots.forEach((d, j) => d.toggleAttribute("aria-current", j === i)); if (dots[i]) dots[i].setAttribute("aria-current", "true"); }, { passive: true });
+    dots.forEach((d, j) => d.addEventListener("click", () => { const sl = c.querySelectorAll(".dslide")[j]; if (sl) c.scrollTo({ left: sl.offsetLeft - 16, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }));
+  };
 })();

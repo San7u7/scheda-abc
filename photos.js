@@ -85,9 +85,21 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
     else body = !S.sample ? `<p class="muted">Per il confronto serve l'AI attiva: la trovi in Piano.</p>` : `<button class="primary go" data-act="pp-ask">Confronta il tuo percorso</button><p class="small muted">Prima e ultima foto di ogni posa, ${Math.round(st.s.span / 7)} settimane di distanza.</p>`;
     const err = pp.err ? `<div class="alert">${esc(pp.err)}</div>` : "";
     const res = c ? (S.ppOpen || st.code !== "ok" ? result(c) : `<button class="link small" data-act="pp-open">Rivedi l'ultimo confronto</button>`) : "";
-    return `<div class="block"><div class="card pp"><h2>Il tuo <span class="hl">percorso</span></h2>${body}${err}${res}</div></div>` + slider();
+    return `<div class="block"><div class="card pp"><h2>Il tuo <span class="hl">percorso</span></h2>${steps(st)}${shelf()}${body}${err}${res}</div></div>` + slider();
   }
 
+  function steps(st) {
+    const n = POSES.filter(ps => S.photos.some(p => (p.pose || "frontale") === ps)).length, c = st.code;
+    const s1 = n === 3, s2 = st.s.span >= MIN_SPAN, s3 = !!cache();
+    const li = (done, t) => `<li class="${done ? "ok" : ""}"><span aria-hidden="true">${done ? "✓" : ""}</span>${t}</li>`;
+    return `<ol class="pp-steps">${li(s1, `Scatta la serie di partenza: frontale, laterale, posteriore${n && !s1 ? ` (${n} di 3)` : ""}`)}${li(s2, "Ripeti le stesse 3 foto dopo almeno 8 settimane")}${li(s3, "Confronta il percorso")}</ol>`;
+  }
+  function shelf() {
+    if (!S.assets) return `<div class="alert">Il salvataggio delle foto non è disponibile in questo browser.</div>`;
+    return `<div class="pp-shelf">${POSES.map(ps => { const l = S.photos.filter(p => (p.pose || "frontale") === ps).sort((a, b) => a.date < b.date ? 1 : -1);
+      return `<div class="pp-row"><div class="pp-rh"><b>${ps[0].toUpperCase() + ps.slice(1)}</b><span class="small muted">${l.length ? `${l.length} ${l.length === 1 ? "foto" : "foto"} · ultima ${dt(l[0].date)}` : "nessuna foto"}</span></div>
+        <div class="pp-thumbs">${l.slice(0, 4).map(p => `<img src="${esc(p.url)}" alt="Foto ${ps} del ${dt(p.date)}" loading="lazy">`).join("")}<label class="pp-add" data-pose="${ps}" aria-label="Aggiungi foto ${ps}">+<input type="file" accept="image/*" data-act="upload"></label></div></div>`; }).join("")}</div>`;
+  }
   function slider() {
     const pose = S.ppPose || "frontale", l = S.photos.filter(p => (p.pose || "frontale") === pose).sort((a, b) => a.date < b.date ? -1 : 1);
     const poses = POSES.filter(ps => S.photos.filter(p => (p.pose || "frontale") === ps).length >= 2);
@@ -100,6 +112,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
       <input class="pp-range" type="range" min="0" max="100" value="${v}" aria-label="Sposta il confine tra prima e dopo"></div></div>`;
   }
 
+  window.percorsoCard = () => percorso();
   const base = window.viewPhotos;
   window.viewPhotos = function () { return percorso() + base(); };
 
@@ -112,6 +125,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
     else if (act === "pp-open") { S.ppOpen = true; render(); }
     else if (act === "pp-pose") { S.ppPose = b.dataset.v; render(); }
   });
+  document.addEventListener("click", e => { const l = e.target.closest(".pp-add"); if (l) S.pose = l.dataset.pose; }, true);
   document.addEventListener("input", e => { if (e.target.classList && e.target.classList.contains("pp-range")) { S.ppCut = +e.target.value; const c = e.target.parentElement.querySelector(".pp-cmp"); if (c) c.style.setProperty("--cut", S.ppCut + "%"); } });
 
   const st = document.createElement("style");
@@ -128,6 +142,16 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
   .pp-line { position: absolute; top: 0; bottom: 0; left: var(--cut); width: 3px; margin-left: -1.5px; background: var(--accent); }
   .pp-tag { position: absolute; top: 10px; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.6); font-size: 12px; font-weight: 700; }
   .pp-tag.l { left: 10px; } .pp-tag.r { right: 10px; }
+  .pp-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .pp-steps li { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-size: 14px; }
+  .pp-steps li span { flex: none; width: 20px; height: 20px; border-radius: 999px; box-shadow: inset 0 0 0 2px var(--control); display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .pp-steps li.ok { color: var(--text); } .pp-steps li.ok span { background: var(--accent); color: var(--lime-ink); box-shadow: none; }
+  .pp-shelf { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--raised); padding-top: 12px; }
+  .pp-rh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .pp-thumbs { display: flex; gap: 8px; }
+  .pp-thumbs img { width: 56px; height: 72px; object-fit: cover; border-radius: 10px; background: var(--raised); }
+  .pp-add { position: relative; width: 56px; height: 72px; border-radius: 10px; border: 2px dashed var(--accent); color: var(--accent); display: grid; place-items: center; font-size: 26px; font-weight: 700; cursor: pointer; overflow: hidden; }
+  .pp-add input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
   .pp-range { width: 100%; height: 44px; accent-color: var(--accent); touch-action: pan-y; }`;
   document.head.appendChild(st);
 })();
