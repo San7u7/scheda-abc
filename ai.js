@@ -71,14 +71,15 @@ function makeGemini(key) {
 }
 
 /* ---------- local photos (IndexedDB) and downloads ---------- */
-function idb() { return new Promise((res, rej) => { const r = indexedDB.open("scheda-foto", 1); r.onupgradeneeded = () => r.result.createObjectStore("blobs"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+const photoDb = () => NS === "abc:" ? "scheda-foto" : "foto-" + NS.replace(/\W/g, "");
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open(photoDb(), 1); r.onupgradeneeded = () => r.result.createObjectStore("blobs"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
 async function idbPut(id, blob) { const d = await idb(); return new Promise((res, rej) => { const t = d.transaction("blobs", "readwrite"); t.objectStore("blobs").put(blob, id); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
 async function idbGet(id) { const d = await idb(); return new Promise((res, rej) => { const q = d.transaction("blobs").objectStore("blobs").get(id); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); }
 const siteAssets = { upload: async blob => { const id = "a" + Date.now(); await idbPut(id, blob); return { id, url: URL.createObjectURL(blob), sizeBytes: blob.size, contentType: blob.type }; } };
 const siteDownloads = { save: async ({ filename, data }) => { const b = data instanceof Blob ? data : new Blob([data], { type: "text/csv;charset=utf-8" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); } };
-function saveLocalPhotos() { try { localStorage.setItem("photos", JSON.stringify(S.photos.map(({ url, ...r }) => r))); } catch (_) {} }
+function saveLocalPhotos() { lsSet("photos", S.photos.map(({ url, ...r }) => r)); }
 async function loadLocalPhotos() {
-  let meta = []; try { meta = JSON.parse(localStorage.getItem("photos") || "[]"); } catch (_) {}
+  const meta = lsGet("photos", []);
   const out = []; for (const p of meta) { try { const b = await idbGet(p.assetId); if (b) { out.push({ ...p, url: URL.createObjectURL(b) }); S.blobs[p.id] = b; } } catch (_) {} }
   return out;
 }
