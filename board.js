@@ -30,7 +30,7 @@
     if (k === "sess") { const n = Object.keys(weekDone()).length, tot = DAYS.length || 3; return st(I.sess, `${n}<small> / ${tot}</small>`, "Sedute della settimana", n / tot * 100, "macro", "train"); }
     return "";
   }
-  const tilesHtml = (edit) => `<div>${edit ? `<div class="block-h" style="margin-bottom:10px"><h2>I numeri di <span class="hl">oggi</span></h2><button class="link small" data-act="tiles-edit">Modifica</button></div>` : ""}<div class="stiles">${tileCfg().map(tile).join("")}</div></div>`;
+  const tilesHtml = (edit) => `<div>${edit ? `<div class="block-h" style="margin-bottom:10px"><h2>I numeri di <span class="hl">oggi</span></h2><button class="link small" data-act="tiles-edit">Scegli i numeri</button></div>` : ""}<div class="stiles">${tileCfg().map(tile).join("")}</div></div>`;
   const DOWL = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
   const CHEV = '<svg class="mb-chev" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>';
   const IC = {
@@ -189,8 +189,8 @@
     const boxes = vis.map((k, i) => { const nm = BOX.find(b => b[0] === k)[1];
       return `<div class="bx ${ed ? "jig" : ""}" data-k="${k}" style="--d:${(i % 3) * 60}ms">${ed ? `<button class="bx-del" data-act="bx-del" data-v="${k}" aria-label="Nascondi ${nm}"><span aria-hidden="true">−</span></button><button class="bx-h" data-act="bx-h" data-v="${k}" aria-label="Sposta ${nm}: trascina, oppure usa le frecce su e giù">≡</button>` : ""}${k === "nums" ? tilesHtml(!ed) : box(k)}</div>`; }).join("");
     return head.join("") + B(now()) + `<div class="block mgrid ${ed ? "editing" : ""}">${boxes}</div>` +
-      (hid.length ? `<div class="block"><button class="bx-add" data-act="bx-add"><span aria-hidden="true">+</span> Aggiungi sezione</button></div>` : ed ? `<p class="small muted" style="text-align:center">Stai già vedendo tutto.</p>` : "") +
-      (ed ? `<button class="bx-fine" data-act="bx-fine">Fine</button>` : `<div class="block" style="display:flex;justify-content:center"><button class="ghost sm" data-act="bx-edit">Modifica Oggi</button></div>`);
+      `<div class="block"><button class="bx-add" data-act="bx-add" aria-label="Aggiungi una sezione a Oggi"><span aria-hidden="true">+</span>${hid.length ? " Aggiungi sezione" : ""}</button></div>` +
+      (ed ? `<button class="bx-fine" data-act="bx-fine">Fine</button>` : "");
   };
 
   const prevSheet = window.renderSheet;
@@ -214,7 +214,7 @@
     if (S.sheet !== "bxadd") return prevSheet();
     const c = cfg(), hid = c.order.filter(k => c.off.includes(k));
     $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="Aggiungi a Oggi"><div class="grab"></div>
-      <h2>Aggiungi a <span class="hl">Oggi</span></h2>${hid.length ? `<div class="blist">${hid.map(k => { const b = BOX.find(x => x[0] === k); return `<button class="brow add" data-act="bx-put" data-v="${k}">${k === "nums" ? '<span class="mb-ic">#</span>' : ic(k)}<span class="b-t"><b>${b[1]}</b><small>${b[2]}</small></span><span class="bx-plus" aria-hidden="true">+</span></button>`; }).join("")}</div>` : `<p class="muted">Stai già vedendo tutto.</p>`}
+      <h2>Aggiungi a <span class="hl">Oggi</span></h2><p class="small muted" style="margin:0">Per spostare o nascondere una sezione, tienila premuta.</p>${hid.length ? `<div class="blist">${hid.map(k => { const b = BOX.find(x => x[0] === k); return `<button class="brow add" data-act="bx-put" data-v="${k}">${k === "nums" ? '<span class="mb-ic">#</span>' : ic(k)}<span class="b-t"><b>${b[1]}</b><small>${b[2]}</small></span><span class="bx-plus" aria-hidden="true">+</span></button>`; }).join("")}</div>` : `<p class="muted">Stai già vedendo tutto.</p>`}
       <button class="ghost" data-act="close">Chiudi</button></div></div>`;
   };
 

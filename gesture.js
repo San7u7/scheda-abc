@@ -3,11 +3,12 @@
    drag a sheet down to close it, swipe left/right between exercises during a session. Loaded last. */
 (function () {
   const standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
-  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro || S.boardEdit ? 1 : 0) + (S.sheet ? 1 : 0);
+  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro || S.boardEdit || S.settings ? 1 : 0) + (S.settings === "coach" ? 1 : 0) + (S.sheet ? 1 : 0);
   const H = window.history;
   function back() {
     if (S.sheet) { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }
     else if (S.hub) { S.hub = ""; window.scrollTo(0, 0); render(); }
+    else if (S.settings) { S.settings = S.settings === "coach" ? "main" : null; window.scrollTo(0, 0); render(); }
     else if (S.boardEdit) { S.boardEdit = false; render(); }
     else if (S.macro) { S.macro = null; window.scrollTo(0, 0); render(); }
     else if (S.detail) { S.detail = null; window.scrollTo(0, 0); render(); }

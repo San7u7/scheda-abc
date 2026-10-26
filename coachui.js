@@ -152,14 +152,15 @@
   const vP = window.viewProgress;
   window.viewProgress = function () { return inject(vP(), screenLine("progressi") + guideHtml("progressi")); };
   const vH = window.viewPiano;
-  window.viewPiano = function () {
-    if (S.hub === "coach") return coachSettings();
-    const html = vH(); if (S.hub) return html;
+  window.viewPiano = function () { return vH(); };
+  window.coachSettingsView = () => coachSettings();
+  window.coachNudge = t => nudge(t);
+  window.coachCard = function () {
     const p = persona();
     const card = `<div class="block"><div class="hcard coach-card"><div class="hc-h">${AVATAR(42)}<div><h2>Il tuo coach: ${esc(p.nome)}</h2><p class="small muted">${OPTS.tono.find(x => x[0] === p.tono)[1]} · risposte ${p.risposte} · ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}</p></div></div>
       <p class="small muted">${p.custom ? "Impostazioni scelte da te." : "Impostato in automatico in base al profilo e ai documenti caricati: è un consiglio, puoi cambiarlo."}</p>
-      <div class="hc-acts"><button class="primary go" data-act="hub" data-v="coach">Regola il coach</button><button class="ghost" data-act="coach-open">Parla con ${esc(p.nome)}</button></div></div></div>`;
-    return inject(html, card);
+      <div class="hc-acts"><button class="primary go" data-act="set-sub" data-v="coach">Regola il coach</button><button class="ghost" data-act="coach-open">Parla con ${esc(p.nome)}</button></div></div></div>`;
+    return card;
   };
   function coachSettings() {
     const p = persona(), seg = (k, opts) => `<div class="seg wrap" role="group">${opts.map(([v, l]) => `<button data-act="coach-set" data-k="${k}" data-v="${v}" aria-pressed="${p[k] === v}">${l}</button>`).join("")}</div>`;
