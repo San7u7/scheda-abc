@@ -326,6 +326,65 @@ label.ghost.file-btn { display: flex; align-items: center; justify-content: cent
 @keyframes shake { 0%, 100% { transform: none; } 20% { transform: translate(-7px, 3px); } 40% { transform: translate(6px, -3px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
 .greet-date { color: var(--muted); margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { .hello .stage, .hello .hbar, .hello .big span, .hello .who { animation: none; opacity: 1; transform: none; filter: none; } .hello { transition: opacity .3s; } .hello.out { transform: none; opacity: 0; } }
+
+/* ---------- restyle «lime pieno» (riferimenti Pinterest 1 + 3) ---------- */
+:root { --radius-card: 26px; --lime-ink: #0a0a0a; }
+.top .mark { font-weight: 800; letter-spacing: -0.02em; }
+h1 { font-size: 34px; line-height: 36px; font-weight: 800; letter-spacing: -0.035em; }
+h2 { font-weight: 700; letter-spacing: -0.01em; }
+.hl { color: var(--accent); }
+.card { border-radius: var(--radius-card); }
+.primary { background: var(--accent); color: var(--lime-ink); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.primary.go::after { content: ""; width: 18px; height: 18px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat; }
+.primary[disabled] { background: var(--raised); color: var(--faint); }
+.sbar .fine { background: var(--accent); color: var(--lime-ink); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--lime-ink); font-weight: 700; }
+.tabs button[aria-current="page"] { color: var(--text); }
+.tabs button[aria-current="page"] svg { background: var(--accent); stroke: var(--lime-ink); border-radius: 999px; width: 54px; height: 30px; padding: 4px 16px; box-sizing: border-box; }
+.tabs button svg { width: 54px; height: 30px; padding: 4px 16px; box-sizing: border-box; }
+/* coach card in pieno lime */
+.card.lime { background: var(--accent); color: var(--lime-ink); }
+.card.lime .coach-line { font-weight: 700; font-size: 20px; line-height: 27px; letter-spacing: -0.015em; }
+.card.lime .coach-line b { color: var(--lime-ink); font-weight: 800; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.card.lime .ghost { border-color: rgba(0,0,0,.28); color: var(--lime-ink); background: rgba(255,255,255,.18); font-weight: 600; }
+.card.lime .ghost:active { background: rgba(0,0,0,.08); }
+.card.lime .eyebrow, .card.lime .small { color: rgba(0,0,0,.65); }
+/* card con foto in bianco e nero */
+.card.photo { position: relative; overflow: hidden; padding: 0; background: #0d0d0d; gap: 0; }
+.card.photo .ph-img { position: relative; height: 190px; background-size: cover; background-position: center 30%; }
+.card.photo .ph-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(13,13,13,.92) 100%); }
+.card.photo .ph-tag { position: absolute; top: 14px; left: 14px; z-index: 1; background: var(--accent); color: var(--lime-ink); font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+.card.photo .ph-title { position: absolute; left: 18px; right: 18px; bottom: 12px; z-index: 1; font-size: 30px; line-height: 32px; font-weight: 800; letter-spacing: -0.03em; }
+.card.photo .ph-body { padding: 4px var(--pad) var(--pad); display: flex; flex-direction: column; gap: 12px; }
+/* riquadri statistica */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--raised); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tile .ic { width: 30px; height: 30px; border-radius: 999px; background: var(--accent-soft); display: grid; place-items: center; }
+.tile .ic svg { width: 16px; height: 16px; stroke: var(--accent); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.tile .tv { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tile .tl { font-size: 12px; color: var(--muted); }
+.tile .tb { height: 6px; border-radius: 3px; background: #3a3a3a; overflow: hidden; }
+.tile .tb i { display: block; height: 100%; background: var(--accent); }
+.kcal { font-size: 46px; line-height: 48px; font-weight: 800; letter-spacing: -0.04em; }
+.ebar { height: 14px; border-radius: 7px; }
+.track { height: 10px; border-radius: 5px; }
+.track i { border-radius: 5px; }
+.check { border-width: 2px; }
+.xrow { border-radius: 18px; }
+.active { border-radius: 26px; }
+.hero .box { border-radius: 18px; }
+.reps button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--lime-ink); }
+.welcome .wphoto { height: 30dvh; min-height: 180px; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); background-size: cover; background-position: center 25%; position: relative; }
+.welcome .wphoto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 55%, #000 100%); }
+.welcome .wtop { margin-top: -54px; position: relative; z-index: 1; }
+.welcome:has(.wphoto) { gap: 16px; padding-top: 0; }
+.welcome .wphoto { height: 22dvh; min-height: 150px; }
+.welcome:has(.wphoto) .wbig { font-size: clamp(88px, 30vw, 150px); }
+.welcome:has(.wphoto) .wsub { font-size: clamp(26px, 8vw, 38px); }
+.welcome:has(.wphoto) .wlist > div { padding: 9px 0; }
+.welcome:has(.wphoto) .wbot .lead { font-size: 15px; line-height: 22px; }
+.credits { font-size: 11px; line-height: 15px; color: var(--faint); }
+.credits a { color: var(--faint); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } .primary:active { transform: none; } }
 </style>
 
@@ -337,9 +396,9 @@ label.ghost.file-btn { display: flex; align-items: center; justify-content: cent
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="lib.js?v=202610261231"></script>
-<script src="ai.js?v=202610261231"></script>
-<script src="coach.js?v=202610261231"></script>
+<script src="lib.js?v=202610261241"></script>
+<script src="ai.js?v=202610261241"></script>
+<script src="coach.js?v=202610261241"></script>
 <script>
 "use strict";
 /* ---------- the program (approved scheda, 26 ott 2026) ---------- */
@@ -549,7 +608,10 @@ function energyCard() {
   return `<div class="card"><div class="block-h"><h2>Calorie di oggi</h2><span class="small faint">stime</span></div>
     <div class="kcal num">${fmt(Math.round(e.kcal))}<span class="muted"> di ${fmt(T)} kcal</span></div>
     <div class="ebar" aria-hidden="true"><i style="width:${pe}%"></i><s style="width:${pr}%"></s></div>
-    <div class="small muted num">Proteine ${Math.round(e.p)} di ${PLAN.pro} g · Carboidrati ${Math.round(e.c)} g · Grassi ${Math.round(e.f)} g</div>
+    <div class="tiles">
+      <div class="tile"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span><span class="tv">${Math.round(e.p)}<span class="tl"> / ${PLAN.pro} g</span></span><span class="tl">Proteine</span><span class="tb"><i style="width:${Math.min(100, e.p / PLAN.pro * 100)}%"></i></span></div>
+      <div class="tile"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg></span><span class="tv">${Math.round(e.c)} g</span><span class="tl">Carboidrati</span><span class="tb"><i style="width:${PLAN.cho ? Math.min(100, e.c / PLAN.cho * 100) : 0}%"></i></span></div>
+      <div class="tile"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 8v4l3 2"/></svg></span><span class="tv">${Math.round(e.f)} g</span><span class="tl">Grassi</span><span class="tb"><i style="width:${PLAN.fat ? Math.min(100, e.f / PLAN.fat * 100) : 0}%"></i></span></div></div>
     ${it.restKeys.length ? `<div class="small faint">In grigio i pasti del piano che restano: a fine giornata arrivi a ${r10(it.projected)} kcal.</div>` : ""}
     ${tail}
     ${wb.days ? `<div class="small muted">Settimana fino a ieri: ${wb.diff >= 0 ? "+" : "−"}${r10(Math.abs(wb.diff))} kcal rispetto al piano (${wb.days} ${wb.days === 1 ? "giorno registrato" : "giorni registrati"}).</div>` : ""}</div>`;
@@ -562,13 +624,13 @@ function viewOggi() {
   const done = MEALS.filter(([k]) => mealState(v, k) !== "open").length;
   const sessCard = dt0 ? `<div class="card"><div class="done-line">${CHECK.replace("<svg", '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"')} Seduta ${dt0.day} fatta oggi</div>
       <p class="muted">${dt0.items.length} esercizi${dt0.durata ? ` · ${dt0.durata} min` : ""}${dt0.fatica != null ? ` · fatica ${dt0.fatica}/10` : ""}. Prossima: seduta ${nextDay()}.</p></div>`
-    : `<div class="card"><div class="block-h"><h2>Seduta ${nd}</h2><span class="small faint">${p.day}</span></div>
+    : `<div class="card photo"><div class="ph-img" style="background-image:url(img/bench.jpg)"><span class="ph-tag">${a ? "In corso" : p.day || "Prossima"}</span><div class="ph-title">Seduta <span class="hl">${nd}</span></div></div><div class="ph-body">
       <p class="muted">${esc(p.focus)}</p>
       <div class="sess-meta small num"><span>${p.items.length} ${p.items.length === 1 ? "esercizio" : "esercizi"}</span><span>${totalSets} serie</span><span>circa ${Math.max(10, Math.round(p.items.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5)} min</span></div>
       ${a ? (() => { const d = S.drafts[a], all = P[a].items.flatMap(it => d.sets[it.id]); return `<div class="track"><i style="width:${all.filter(s => s.done).length / all.length * 100}%"></i></div>`; })() : ""}
       ${a && S.drafts[a].startedAt && Date.now() - S.drafts[a].startedAt > 12 * 3600e3 ? `<p class="small" style="color:var(--warn-ink)">Iniziata il ${dt(new Date(S.drafts[a].startedAt).toISOString())}: concludila o scartala da «Fine».</p>` : ""}
-      <button class="primary" data-act="start" data-v="${nd}">${a ? "Riprendi seduta" : "Inizia seduta"}</button>
-      ${a ? "" : `<button class="link small" data-act="tab" data-v="allenamento">Fai un'altra seduta</button>`}</div>`;
+      <button class="primary go" data-act="start" data-v="${nd}">${a ? "Riprendi seduta" : "Inizia seduta"}</button>
+      ${a ? "" : `<button class="link small" data-act="tab" data-v="allenamento">Fai un'altra seduta</button>`}</div></div>`;
   const meals = MEALS.map(([k, l]) => { const m = mealOf(dw, k), st = mealState(v, k), on = st === "plan" || st === "custom";
     const kc = st === "custom" ? v.custom[k].kcal : st === "skip" ? 0 : nutOf(dw, k).kcal;
     return `<div class="meal ${on ? "on" : ""} ${st === "custom" ? "var" : ""} ${st === "skip" ? "skip" : ""}"><button class="check" data-act="meal" data-v="${k}" aria-pressed="${on}" aria-label="${l} come da piano">${CHECK}</button>
@@ -577,14 +639,14 @@ function viewOggi() {
       <div class="acts"><button class="ghost" data-act="mealalt" data-v="${k}">${st === "custom" ? "Modifica cosa ho mangiato" : "Ho mangiato altro"}</button><button class="ghost" data-act="mealskip" data-v="${k}">${st === "skip" ? "Annulla «saltato»" : "L'ho saltato"}</button></div></details></div>`; }).join("");
   const extras = v.extra.map(x => `<div class="extra"><span><span>${esc(x.text)}</span><br><span class="mk">${fmt(Math.round(x.kcal))} kcal · ${Math.round(x.p)} g proteine</span></span><button class="icon-btn" data-act="delextra" data-v="${x.id}" aria-label="Elimina ${esc(x.text)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("");
   const wt = weightTrend();
-  return `<h1>Ciao ${esc(ownerName())}</h1><p class="greet-date">${DOW[dw]} ${now.getDate()} ${now.toLocaleDateString("it-IT", { month: "long" })}</p>
-    <div class="block"><div class="card">
+  return `<h1>Ciao <span class="hl">${esc(ownerName())}</span></h1><p class="greet-date">${DOW[dw]} ${now.getDate()} ${now.toLocaleDateString("it-IT", { month: "long" })}</p>
+    <div class="block"><div class="card lime">
       <p class="coach-line">${coachLine()}</p>
       <div class="chips"><button class="ghost" data-act="chat">Chiedi al coach</button>${S.sample ? `<button class="ghost" data-act="ask" data-v="${QUICK[0]}">${QUICK[0]}</button>` : ""}</div>
     </div>${warns.map(w => `<div class="alert">${esc(w.k)}: ${esc(w.v)}</div>`).join("")}</div>
     <div class="block">${energyCard()}</div>
     <div class="block">${sessCard}</div>
-    <div class="block"><div class="block-h"><h2>Pasti</h2><span class="small muted num" style="display:flex;gap:10px;align-items:center"><span class="dots" aria-hidden="true">${MEALS.map(([k]) => `<i class="${mealState(v, k) !== "open" ? "on" : ""}"></i>`).join("")}</span>${done} di 5</span></div>
+    <div class="block"><div class="block-h"><h2>Pasti di <span class="hl">oggi</span></h2><span class="small muted num" style="display:flex;gap:10px;align-items:center"><span class="dots" aria-hidden="true">${MEALS.map(([k]) => `<i class="${mealState(v, k) !== "open" ? "on" : ""}"></i>`).join("")}</span>${done} di 5</span></div>
       <div class="meals">${meals}${extras}</div>
       <button class="ghost" data-act="mealalt" data-v="extra" style="align-self:flex-start">Aggiungi cibo fuori pasto</button></div>
     <div class="block"><h2>Abitudini</h2><div class="habits">
@@ -602,11 +664,11 @@ function viewAllenamento() {
   const a = activeDay();
   if (!a) {
     const day = S.day || nextDay(), p = P[day];
-    return `<h1>Allenamento</h1><p class="muted" style="margin-top:4px">Scegli la seduta e inizia: i carichi sono già quelli della volta scorsa.</p>
+    return `<h1>Il tuo <span class="hl">allenamento</span></h1><p class="muted" style="margin-top:4px">Scegli la seduta e inizia: i carichi sono già quelli della volta scorsa.</p>
       <div class="seg" style="margin-top:16px" role="group" aria-label="Seduta">${DAYS.map(k => `<button data-act="pick-day" data-v="${k}" aria-pressed="${k === day}">${k} · ${P[k].day.slice(0, 3)}</button>`).join("")}</div>
-      <div class="block"><div class="card"><div class="block-h"><h2>Seduta ${day}</h2><span class="small faint">${p.day}</span></div><p class="muted">${esc(p.focus)}</p>
+      <div class="block"><div class="card photo"><div class="ph-img" style="background-image:url(img/rack.jpg)"><span class="ph-tag">${p.items.length} ${p.items.length === 1 ? "esercizio" : "esercizi"}</span><div class="ph-title">Seduta <span class="hl">${day}</span></div></div><div class="ph-body"><p class="muted">${esc(p.focus)}</p>
         <ul class="daylist">${p.items.map(it => { const pl = plan(it); return `<li><span>${esc(short(exName(it)))}${pl.up ? ' <span class="up small">· sale</span>' : ""}</span><span>${it.sets} × ${it.min}–${it.max}</span></li>`; }).join("")}</ul>
-        <button class="primary" data-act="start" data-v="${day}">Inizia seduta ${day}</button></div></div>`;
+        <button class="primary go" data-act="start" data-v="${day}">Inizia seduta ${day}</button></div></div></div>`;
   }
   const d = draft(a), items = P[a].items, all = items.flatMap(it => d.sets[it.id]);
   const doneEx = items.filter(it => d.sets[it.id].every(s => s.done)).length;
@@ -671,7 +733,7 @@ function chart(pts, unit) {
 function viewProgress() {
   const segs = [["carichi","Carichi"],["calorie","Calorie"],["peso","Peso"],["foto","Foto"]];
   const body = S.psub === "peso" ? viewWeight() : S.psub === "calorie" ? viewKcal() : S.psub === "foto" ? viewPhotos() : viewLoads();
-  return `<h1>Progressi</h1><div class="seg" style="margin-top:14px" role="group" aria-label="Tipo di progresso">${segs.map(([k, l]) => `<button data-act="psub" data-v="${k}" aria-pressed="${S.psub === k}">${l}</button>`).join("")}</div>${body}`;
+  return `<h1>I tuoi <span class="hl">progressi</span></h1><div class="seg" style="margin-top:14px" role="group" aria-label="Tipo di progresso">${segs.map(([k, l]) => `<button data-act="psub" data-v="${k}" aria-pressed="${S.psub === k}">${l}</button>`).join("")}</div>${body}`;
 }
 function viewLoads() {
   const h = history(), names = Object.keys(h), n = S.sessions.length;
@@ -839,7 +901,7 @@ function viewPiano() {
       <div class="block"><div class="card"><h2>Alimentazione</h2><ul class="plain muted">${PLAN.rules.map(r => `<li>${esc(r)}</li>`).join("")}<li>Acqua: ${fmt(PLAN.waterL)} L al giorno, anche prima, durante e dopo la seduta.</li></ul></div></div>
       <div class="block"><div class="card"><h2>Integratori</h2><ul class="plain muted">${PLAN.supplements.map(s => `<li>${esc(s.name)}: ${esc(s.plan)}.</li>`).join("")}<li>Tu prendi ${fmt(S.state.creatinaG || 3)} g di creatina: da allineare con il dietista.</li></ul></div></div>`;
   }
-  return `<h1>Piano</h1><div class="seg" style="margin-top:14px" role="group" aria-label="Sezione del piano">${segs.map(([k, l]) => `<button data-act="pianosub" data-v="${k}" aria-pressed="${S.pianosub === k}">${l}</button>`).join("")}</div>${body}`;
+  return `<h1>Il tuo <span class="hl">piano</span></h1><div class="seg" style="margin-top:14px" role="group" aria-label="Sezione del piano">${segs.map(([k, l]) => `<button data-act="pianosub" data-v="${k}" aria-pressed="${S.pianosub === k}">${l}</button>`).join("")}</div>${body}`;
 }
 
 /* ---------- profile setup ---------- */
@@ -848,9 +910,9 @@ const pickSeg = (k, opts) => `<div class="seg" role="group">${opts.map(([v, l]) 
 function viewOnboarding() {
   if (!S.ob) obInit(0);
   const o = S.ob, pr = o.pr, err = o.err ? `<div class="alert">${esc(o.err)}</div>` : "";
-  if (o.step === 0) return `<div class="welcome"><div class="wtop"><div class="wbar"></div><div class="wbig">Ciao</div><div class="wsub">${esc(pr.nome || "Giovanni")}</div></div>
+  if (o.step === 0) return `<div class="welcome"><div class="wphoto" style="background-image:url(img/hero.jpg)" role="img" aria-label="Atleta di schiena in posa di doppio bicipite"></div><div class="wtop"><div class="wbar"></div><div class="wbig">Ciao</div><div class="wsub">${esc(pr.nome || "Giovanni")}</div></div>
     <div class="wlist"><div><b>Allenamento</b><span>Seduta guidata, carichi già pronti e progressione automatica.</span></div><div><b>Alimentazione</b><span>Pasti del giorno, calorie e come recuperare quelle mancanti.</span></div><div><b>Progressi</b><span>Carichi, peso e foto su settimana, mese e anno.</span></div></div>
-    <div class="wbot"><p class="lead">Prima di iniziare mi servono alcuni dati su di te. Scheda e piano del dietista sono già dentro.</p><button class="primary" data-act="ob-next">Inizia</button><p class="small faint">${S.site ? "I tuoi dati restano solo su questo telefono." : "I tuoi dati restano nel tuo account e li vedi solo tu."}</p></div></div>`;
+    <div class="wbot"><p class="lead">Prima di iniziare mi servono alcuni dati su di te. Scheda e piano del dietista sono già dentro.</p><button class="primary go" data-act="ob-next">Inizia</button><p class="small faint">${S.site ? "I tuoi dati restano solo su questo telefono." : "I tuoi dati restano nel tuo account e li vedi solo tu."}</p></div></div>`;
   return `<div class="ob"><h1>${o.redo ? "Il tuo profilo" : "Parlami di te"}</h1>
     <div class="field"><label for="ob-nome">Nome</label><input type="text" id="ob-nome" autocomplete="given-name" value="${esc(pr.nome)}" data-ob="nome"></div>
     <div class="field"><span class="lab">Sesso</span>${pickSeg("sesso", [["m", "Uomo"], ["f", "Donna"]])}</div>
@@ -936,7 +998,8 @@ function renderSheet() {
       <div class="list"><div class="lrow"><span class="muted">Profilo</span><span class="r">${esc(pr.nome)}, ${pr.eta} anni, ${fmt(pr.altezza)} cm</span></div><div class="lrow"><span class="muted">Fase</span><span class="r">${esc(pr.obiettivo)}</span></div></div>
       <button class="menu-btn" data-act="redo-profile">Modifica profilo e colore</button>
       ${S.site ? aiKeyBox() : ""}
-      ${S.downloads ? `<button class="menu-btn" data-act="export" data-v="sedute">Esporta storico allenamenti (CSV)</button><button class="menu-btn" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}`;
+      ${S.downloads ? `<button class="menu-btn" data-act="export" data-v="sedute">Esporta storico allenamenti (CSV)</button><button class="menu-btn" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}
+      <p class="credits">Foto: «Fitness Photography – Male Black Fitness Model Strength» di vanitystudiosphotography (CC BY 2.0, Flickr); «10TH MDSB Command Mentorship PT», U.S. Army (CC0, rawpixel); «Dumbbells rack gym» (CC0, rawpixel). Elaborate in bianco e nero.</p>`;
   } else if (sh === "saved") {
     html = S.savedHtml + `<button class="primary" data-act="close">Fatto</button>`;
   } else if (sh === "chat") {
