@@ -1,5 +1,5 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000000"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Scheda ABC"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif;background:#000}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
-<title>Scheda ABC</title>
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000000"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Askesis"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif;background:#000}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Askesis</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -396,10 +396,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610261315"></script>
-<script src="lib.js?v=202610261315"></script>
-<script src="ai.js?v=202610261315"></script>
-<script src="coach.js?v=202610261315"></script>
+<script src="seed-abc.js?v=202610261411"></script>
+<script src="lib.js?v=202610261411"></script>
+<script src="ai.js?v=202610261411"></script>
+<script src="coach.js?v=202610261411"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -527,7 +527,7 @@ function render() {
   const q = $("#q"), qv = q ? q.value : "";
   $("#top").innerHTML = inSession()
     ? `<button class="back" data-act="tab" data-v="oggi" aria-label="Torna a Oggi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>Oggi</button><span class="sync">${esc(S.sync)}</span>`
-    : S.profile ? `<span class="mark">${esc((window.APP && APP.title) || "Coach")}</span><span style="display:flex;align-items:center;gap:6px;min-width:0"><span class="sync">${esc(S.sync)}</span><button class="gear" data-act="tab" data-v="piano" aria-label="Piano e impostazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span>` : `<span class="mark">${esc((window.APP && APP.title) || "Coach")}</span><span class="sync">${esc(S.sync)}</span>`;
+    : S.profile ? `<span class="mark">${esc((window.APP && APP.title) || "Askesis")}</span><span style="display:flex;align-items:center;gap:6px;min-width:0"><span class="sync">${esc(S.sync)}</span><button class="gear" data-act="tab" data-v="piano" aria-label="Piano e impostazioni"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span>` : `<span class="mark">${esc((window.APP && APP.title) || "Coach")}</span><span class="sync">${esc(S.sync)}</span>`;
   const v = $("#view");
   if (!S.profile || S.ob) { v.innerHTML = viewOnboarding(); $("#bar").innerHTML = ""; renderSheet(); return; }
   v.innerHTML = S.tab === "oggi" ? viewOggi() : S.tab === "allenamento" ? viewAllenamento() : S.tab === "progressi" ? viewProgress() : viewPiano();
@@ -1343,8 +1343,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610261315"></script>
-<script src="ux.js?v=202610261315"></script>
-<script src="hub.js?v=202610261315"></script><script src="coachui.js?v=202610261315"></script>
+<script src="exdb.js?v=202610261411"></script>
+<script src="ux.js?v=202610261411"></script>
+<script src="hub.js?v=202610261411"></script><script src="coachui.js?v=202610261411"></script>
 
 </body></html>

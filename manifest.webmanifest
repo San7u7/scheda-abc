@@ -1,6 +1,6 @@
 {
- "name": "Scheda ABC",
- "short_name": "Scheda ABC",
+ "name": "Askesis",
+ "short_name": "Askesis",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
