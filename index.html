@@ -396,9 +396,9 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="lib.js?v=202610261250"></script>
-<script src="ai.js?v=202610261250"></script>
-<script src="coach.js?v=202610261250"></script>
+<script src="lib.js?v=202610261252"></script>
+<script src="ai.js?v=202610261252"></script>
+<script src="coach.js?v=202610261252"></script>
 <script>
 "use strict";
 /* ---------- the program (approved scheda, 26 ott 2026) ---------- */
@@ -560,7 +560,7 @@ function renderBar() {
     el.innerHTML = `<div class="sbar" role="region" aria-label="Seduta in corso"><div>
       <span class="clock"><span class="small faint">Seduta ${activeDay()}</span><b id="sb-clock">${mmss(el2)}</b></span>
       ${t ? `<span class="rest"><span class="t" id="sb-t">${left ? mmss(left) : "Via"}</span><span class="g"><span class="small muted">${left ? "Recupero" : "Recupero finito"}</span><span class="track" style="display:block"><i id="sb-bar" style="width:${(1 - left / t.total) * 100}%"></i></span></span><button data-act="t15">+15″</button><button data-act="tstop">Salta</button></span>` : `<span class="spacer"></span>`}
-      <button class="fine" data-act="finish">Fine</button></div></div>`;
+      <button class="fine" data-act="finish">Concludi</button></div></div>`;
   } else {
     const live = activeDay(); S.barSig = "t" + S.tab + (live ? 1 : 0);
     el.innerHTML = `<nav class="tabs" aria-label="Sezioni"><div>${TABS.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${S.tab === k ? 'aria-current="page"' : ""}>${ICON[k]}<span>${l}</span>${k === "allenamento" && live ? '<span class="live" aria-label="seduta in corso"></span>' : ""}</button>`).join("")}</div></nav>`;
@@ -982,7 +982,7 @@ function renderSheet() {
       ${lib.length ? `<div><p class="small muted" style="margin-bottom:8px">I miei alimenti: tocca per aggiungere</p><div class="chips">${lib.map(x => `<button class="ghost" data-act="fadd" data-v="${x.id}">${esc(x.nome)}</button>`).join("")}</div></div>` : ""}
       ${S.sample ? `<label class="ghost file-btn" style="text-align:center">${f.busy === "label" ? "Leggo la foto…" : "Foto dell'etichetta o dell'alimento"}<input type="file" accept="image/*" data-act="flabel" aria-label="Foto dell'etichetta"></label>` : ""}
       <textarea id="ftext" rows="2" placeholder="Oppure scrivilo: 3 fette di pane di grano duro da 25 g, 60 g di tacchino">${esc(f.text || "")}</textarea>
-      ${S.sample ? (f.busy ? `<button class="ghost" disabled><span id="f-busy">${f.busy === "text" ? "Sto stimando…" : "Sto leggendo la foto…"}</span></button><button class="link small" data-act="estimate-cancel" style="align-self:center">Annulla stima</button>` : `<button class="ghost" data-act="estimate">Stima dal testo</button>`) : `<p class="small muted">Per stimare dal testo o dalle foto attiva l'AI gratuita nelle impostazioni. Intanto puoi scrivere tu i valori.</p>`}
+      ${S.sample ? (f.busy ? `<button class="ghost" disabled><span id="f-busy">${f.busy === "text" ? "Sto stimando…" : "Sto leggendo la foto…"}</span></button><button class="link small" data-act="estimate-cancel" style="align-self:center">Annulla stima</button>` : `<button class="ghost" data-act="estimate">Stima le calorie</button>`) : `<p class="small muted">Per stimare dal testo o dalle foto attiva l'AI gratuita nelle impostazioni. Intanto puoi scrivere tu i valori.</p>`}
       ${f.err ? `<div class="alert">${esc(f.err)}</div>` : ""}
       ${items.length ? `<table class="ftab"><tbody>${items.map((x, i) => `<tr><td>${esc(x.nome)}<br><span class="small faint">${x.per100 ? `${fmt(x.per100.kcal)} kcal per 100 g` : esc(x.quantita || "")}</span>
           ${x.per100 ? `<div class="fq"><button data-act="fg" data-i="${i}" data-v="-10" aria-label="Meno 10 g">−</button><span class="num">${fmt(x.g)} g</span><button data-act="fg" data-i="${i}" data-v="10" aria-label="Più 10 g">+</button></div>` : ""}</td>
@@ -1225,6 +1225,6 @@ render();
   render();
 })();
 </script>
-<script src="ux.js?v=202610261250"></script>
+<script src="ux.js?v=202610261252"></script>
 
 </body></html>
