@@ -33,11 +33,18 @@ function makeGemini(key) {
     if (!models.length) throw { code: "upstream_error", message: "Nessun modello Gemini disponibile per questa chiave" };
     return models;
   }
+  // smaller uploads: phones drop big requests, and 1024 px is plenty for the model
+  async function downscale(b) {
+    try { if (!/^image\//.test(b.type || "image/jpeg") || b.size < 250000) return b;
+      const bm = await createImageBitmap(b), k = Math.min(1, 1024 / Math.max(bm.width, bm.height)); if (k === 1 && b.size < 600000) return b;
+      const c = document.createElement("canvas"); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); c.getContext("2d").drawImage(bm, 0, 0, c.width, c.height);
+      return await new Promise(r => c.toBlob(x => r(x || b), "image/jpeg", 0.8)); } catch (_) { return b; }
+  }
   async function toContents(input, images) {
     const msgs = typeof input === "string" ? [{ role: "user", content: input }] : input;
     const contents = msgs.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: String(m.content) }] }));
     const imgs = images ? (images instanceof Blob ? [images] : Array.from(images)) : [];
-    if (imgs.length) { const last = contents[contents.length - 1]; for (const b of imgs.slice(0, 6)) last.parts.unshift({ inline_data: { mime_type: b.type || "image/jpeg", data: await blobToB64(b) } }); }
+    if (imgs.length) { const last = contents[contents.length - 1]; for (const b0 of imgs.slice(0, 6)) { const b = await downscale(b0); last.parts.unshift({ inline_data: { mime_type: b.type || "image/jpeg", data: await blobToB64(b) } }); } }
     return contents;
   }
   // Gemini 3 reasons at HIGH by default (slow): ask for LOW; 2.5 Flash can switch reasoning off. Retry without it if refused.
@@ -76,7 +83,10 @@ function makeGemini(key) {
         const body = { contents, generationConfig: v.th ? { ...base, thinkingConfig: v.th } : base };
         if (v.safe) body.safetySettings = SAFE;
         P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Gemini sta guardando le immagini" : "Gemini sta ragionando"), 900);
-        const r = await attempt(m, body, opts, opts.modelTier === "complex" ? 120000 : opts.images ? 90000 : opts.fast ? 25000 : 40000); clearTimeout(slow);
+        let r;
+        try { r = await attempt(m, body, opts, opts.modelTier === "complex" ? 120000 : opts.images ? 90000 : opts.fast ? 25000 : 40000); }
+        catch (e) { clearTimeout(slow); if (e && e.code === "network") { last = { code: "network", message: e.message }; P.stage("Connessione interrotta, riprovo"); await new Promise(z => setTimeout(z, 1500)); continue; } throw e; }
+        clearTimeout(slow);
         if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; nextModel = true; break; }
         if (r.ok) {
           P.stage("Leggo la risposta"); const d = await r.json(), c = (d.candidates || [])[0];

@@ -402,10 +402,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610261609"></script>
-<script src="lib.js?v=202610261609"></script>
-<script src="ai.js?v=202610261609"></script>
-<script src="coach.js?v=202610261609"></script>
+<script src="seed-abc.js?v=202610261615"></script>
+<script src="lib.js?v=202610261615"></script>
+<script src="ai.js?v=202610261615"></script>
+<script src="coach.js?v=202610261615"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -869,7 +869,7 @@ async function analyze() {
     S.analysis = out; const tg = chosen[chosen.length - 1]; tg.analysis = out;
     if (S.db) S.db.doc(S.base + "/" + tg.id).update({ analysis: out }).catch(() => {}); else saveLocalPhotos();
   } catch (e) {
-    S.analysis = { error: e && e.code === "not_granted" ? "Per valutare le foto serve l'AI attiva: controlla la chiave in Impostazioni." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : e && e.code === "refused" ? "Google ha bloccato la foto con i suoi filtri. Riprova con pantaloncini o costume e il viso fuori inquadratura, oppure con una foto più distante." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova tra un minuto." : e && e.code === "bad_key" ? "La chiave Gemini non è valida: controllala in Impostazioni." : e && e.code === "network" ? "Non riesco a contattare Google: controlla la connessione." : `La valutazione non è riuscita. Dettaglio di Google: ${esc(String((e && (e.message || e.code)) || "errore").slice(0, 200))}` };
+    S.analysis = { error: e && e.code === "not_granted" ? "Per valutare le foto serve l'AI attiva: controlla la chiave in Impostazioni." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : e && e.code === "refused" ? "Google ha bloccato la foto con i suoi filtri. Riprova con pantaloncini o costume e il viso fuori inquadratura, oppure con una foto più distante." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova tra un minuto." : e && e.code === "bad_key" ? "La chiave Gemini non è valida: controllala in Impostazioni." : e && e.code === "network" ? "La connessione con Google si è interrotta. Resta sull'app finché la valutazione non finisce (se passi a un'altra app l'iPhone la ferma) e riprova." : `La valutazione non è riuscita. Dettaglio di Google: ${esc(String((e && (e.message || e.code)) || "errore").slice(0, 200))}` };
   }
   S.busy = false; render();
 }
@@ -1349,8 +1349,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610261609"></script>
-<script src="ux.js?v=202610261609"></script>
-<script src="hub.js?v=202610261609"></script><script src="board.js?v=202610261609"></script><script src="timer.js?v=202610261609"></script><script src="nutri.js?v=202610261609"></script><script src="photos.js?v=202610261609"></script><script src="coachui.js?v=202610261609"></script><script src="settings.js?v=202610261609"></script><script src="aikey.js?v=202610261609"></script><script src="tour.js?v=202610261609"></script><script src="gesture.js?v=202610261609"></script>
+<script src="exdb.js?v=202610261615"></script>
+<script src="ux.js?v=202610261615"></script>
+<script src="hub.js?v=202610261615"></script><script src="board.js?v=202610261615"></script><script src="timer.js?v=202610261615"></script><script src="nutri.js?v=202610261615"></script><script src="photos.js?v=202610261615"></script><script src="coachui.js?v=202610261615"></script><script src="settings.js?v=202610261615"></script><script src="aikey.js?v=202610261615"></script><script src="tour.js?v=202610261615"></script><script src="gesture.js?v=202610261615"></script>
 
 </body></html>
