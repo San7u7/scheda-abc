@@ -98,7 +98,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
     if (!S.assets) return `<div class="alert">Il salvataggio delle foto non è disponibile in questo browser.</div>`;
     return `<div class="pp-shelf">${POSES.map(ps => { const l = S.photos.filter(p => (p.pose || "frontale") === ps).sort((a, b) => a.date < b.date ? 1 : -1);
       return `<div class="pp-row"><div class="pp-rh"><b>${ps[0].toUpperCase() + ps.slice(1)}</b><span class="small muted">${l.length ? `${l.length} ${l.length === 1 ? "foto" : "foto"} · ultima ${dt(l[0].date)}` : "nessuna foto"}</span></div>
-        <div class="pp-thumbs">${l.slice(0, 4).map(p => `<img src="${esc(p.url)}" alt="Foto ${ps} del ${dt(p.date)}" loading="lazy">`).join("")}<label class="pp-add" data-pose="${ps}" aria-label="Aggiungi foto ${ps}">+<input type="file" accept="image/*" data-act="upload"></label></div></div>`; }).join("")}</div>`;
+        <div class="pp-thumbs">${l.slice(0, 4).map(p => `<span class="pp-th ${S.ppSel === p.id ? "sel" : ""}"><button class="pp-tb" data-act="pp-sel" data-v="${p.id}" aria-label="Foto ${ps} del ${dt(p.date)}: tocca per eliminarla"><img src="${esc(p.url)}" alt="" loading="lazy"></button>${S.ppSel === p.id ? `<button class="pp-x" data-act="pp-del" data-v="${p.id}" aria-label="Elimina la foto ${ps} del ${dt(p.date)}">×</button>` : ""}</span>`).join("")}<label class="pp-add" data-pose="${ps}" aria-label="Aggiungi foto ${ps}">+<input type="file" accept="image/*" data-act="upload"></label></div></div>`; }).join("")}</div>`;
   }
   function slider() {
     const pose = S.ppPose || "frontale", l = S.photos.filter(p => (p.pose || "frontale") === pose).sort((a, b) => a.date < b.date ? -1 : 1);
@@ -114,7 +114,23 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
 
   window.percorsoCard = () => percorso();
   const base = window.viewPhotos;
-  window.viewPhotos = function () { return percorso() + base(); };
+  window.viewPhotos = function () { return percorso() + base().replace(/(<button class="ph" data-act="pick" data-v="([^"]+)" aria-pressed="true">)/g, '$1<span class="ph-x pp-x" data-act="pp-del" data-v="$2" role="button" aria-label="Elimina questa foto">×</span>'); };
+  function undoToast(msg, undo, commit) {
+    document.querySelectorAll(".utoast").forEach(x => x.remove());
+    const t = document.createElement("div"); t.className = "toast utoast"; t.setAttribute("role", "status"); let undone = false;
+    t.innerHTML = `<span>${esc(msg)}</span><button>Annulla</button>`; document.body.appendChild(t);
+    t.querySelector("button").onclick = e => { e.stopPropagation(); undone = true; undo(); t.remove(); };
+    setTimeout(() => { t.remove(); if (!undone) commit(); }, 5000);
+  }
+  function delPhoto(id) {
+    const i = S.photos.findIndex(p => p.id === id); if (i < 0) return; const ph = S.photos[i];
+    S.photos.splice(i, 1); S.sel = S.sel.filter(x => x !== id); S.ppSel = null; S.analysis = null; render();
+    undoToast("Foto eliminata.", () => { S.photos.splice(i, 0, ph); render(); }, async () => {
+      try { if (S.db) await S.db.doc(S.base + "/" + id).delete(); else { saveLocalPhotos(); const d = await idb(); d.transaction("blobs", "readwrite").objectStore("blobs").delete(ph.assetId || id); } } catch (_) {}
+      delete S.blobs[id];
+    });
+    if (!S.db) saveLocalPhotos();
+  }
 
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
@@ -124,6 +140,8 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
     else if (act === "pp-go") { S.ppConsent = false; run(); }
     else if (act === "pp-open") { S.ppOpen = true; render(); }
     else if (act === "pp-pose") { S.ppPose = b.dataset.v; render(); }
+    else if (act === "pp-sel") { S.ppSel = S.ppSel === b.dataset.v ? null : b.dataset.v; render(); }
+    else if (act === "pp-del") { e.stopPropagation(); delPhoto(b.dataset.v); }
   });
   document.addEventListener("click", e => { const l = e.target.closest(".pp-add"); if (l) S.pose = l.dataset.pose; }, true);
   document.addEventListener("input", e => { if (e.target.classList && e.target.classList.contains("pp-range")) { S.ppCut = +e.target.value; const c = e.target.parentElement.querySelector(".pp-cmp"); if (c) c.style.setProperty("--cut", S.ppCut + "%"); } });
@@ -150,6 +168,12 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
   .pp-rh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
   .pp-thumbs { display: flex; gap: 8px; }
   .pp-thumbs img { width: 56px; height: 72px; object-fit: cover; border-radius: 10px; background: var(--raised); }
+  .pp-th { position: relative; flex: none; }
+  .pp-tb { border: 0; padding: 0; background: none; border-radius: 10px; display: block; }
+  .pp-th.sel img { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .pp-x { position: absolute; top: -10px; right: -10px; z-index: 2; width: 28px; height: 28px; border-radius: 999px; border: 2px solid #000; background: #ff453a; color: #fff; font-size: 18px; font-weight: 800; line-height: 1; display: grid; place-items: center; padding: 0; }
+  .pp-x::after { content: ""; position: absolute; inset: -8px; }
+  .ph { position: relative; } .ph-x { top: 6px; right: 6px; }
   .pp-add { position: relative; width: 56px; height: 72px; border-radius: 10px; border: 2px dashed var(--accent); color: var(--accent); display: grid; place-items: center; font-size: 26px; font-weight: 700; cursor: pointer; overflow: hidden; }
   .pp-add input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
   .pp-range { width: 100%; height: 44px; accent-color: var(--accent); touch-action: pan-y; }`;
