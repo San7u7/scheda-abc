@@ -38,26 +38,46 @@ function makeGemini(key) {
     if (imgs.length) { const last = contents[contents.length - 1]; for (const b of imgs.slice(0, 6)) last.parts.unshift({ inline_data: { mime_type: b.type || "image/jpeg", data: await blobToB64(b) } }); }
     return contents;
   }
+  // Gemini 3 reasons at HIGH by default (slow): ask for LOW; 2.5 Flash can switch reasoning off. Retry without it if refused.
+  const thinkingFor = m => /^gemini-(?:[3-9]|\d{2,})/.test(m) ? { thinkingLevel: "low" } : /^gemini-2\.5-flash/.test(m) ? { thinkingBudget: 0 } : null;
+  async function attempt(m, body, opts, timeoutMs) {
+    const ac = new AbortController(), timer = setTimeout(() => ac.abort("timeout"), timeoutMs);
+    const onUser = () => ac.abort("user"); if (opts.signal) { if (opts.signal.aborted) throw { code: "cancelled" }; opts.signal.addEventListener("abort", onUser); }
+    try { return await fetch(`${GEM}/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body), signal: ac.signal }); }
+    catch (e) { if (opts.signal && opts.signal.aborted) throw { code: "cancelled" }; if (ac.signal.aborted) return { timeout: true }; throw { code: "network", message: String(e && e.message || e) }; }
+    finally { clearTimeout(timer); if (opts.signal) opts.signal.removeEventListener("abort", onUser); }
+  }
   async function call(input, opts = {}, json = false) {
-    const body = { contents: await toContents(input, opts.images), generationConfig: { temperature: json ? 0.2 : 0.6, maxOutputTokens: json ? 8192 : 1500 } };
-    if (json) body.generationConfig.responseMimeType = "application/json";
+    const contents = await toContents(input, opts.images);
+    const base = { temperature: json ? 0.2 : 0.6, maxOutputTokens: json ? 8192 : 1500 };
+    if (json) base.responseMimeType = "application/json";
     let last;
-    for (const m of await getModels()) {
-      const r = await fetch(`${GEM}/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body), signal: opts.signal });
-      if (r.ok) {
-        const d = await r.json(), c = (d.candidates || [])[0];
-        const text = c && c.content && (c.content.parts || []).map(p => p.text || "").join("") || "";
-        if (!text) { last = { code: c && c.finishReason === "SAFETY" ? "refused" : "empty_completion", message: "Risposta vuota" }; continue; }
-        return { text, truncated: c.finishReason === "MAX_TOKENS", modelApplied: m };
+    for (const m of (await getModels()).slice(0, 2)) {
+      let th = thinkingFor(m);
+      for (let tries = 0; tries < 2; tries++) {
+        const body = { contents, generationConfig: th ? { ...base, thinkingConfig: th } : base };
+        const r = await attempt(m, body, opts, 40000);
+        if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in 40 secondi" }; break; }
+        if (r.ok) {
+          const d = await r.json(), c = (d.candidates || [])[0];
+          const text = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("") || "";
+          if (!text) { last = { code: c && c.finishReason === "SAFETY" ? "refused" : "empty_completion", message: "Risposta vuota" }; break; }
+          return { text, truncated: c.finishReason === "MAX_TOKENS", modelApplied: m };
+        }
+        const t = await r.text().catch(() => "");
+        if (r.status === 400 && th && /thinking/i.test(t)) { th = null; continue; }
+        if ((r.status === 400 && /API key/i.test(t)) || r.status === 401 || r.status === 403) throw { code: "bad_key", message: "Chiave non valida" };
+        last = { code: r.status === 429 ? "rate_limited" : "upstream_error", message: "HTTP " + r.status + " " + t.slice(0, 120) };
+        if (r.status === 404) { models = null; try { localStorage.removeItem(AI_MODEL); } catch (_) {} }
+        break;
       }
-      if (r.status === 400 && /API key/i.test(await r.clone().text())) throw { code: "bad_key", message: "Chiave non valida" };
-      if (r.status === 401 || r.status === 403) throw { code: "bad_key", message: "Chiave non valida" };
-      last = { code: r.status === 429 ? "rate_limited" : "upstream_error", message: "HTTP " + r.status };
-      if (r.status === 404) { models = null; try { localStorage.removeItem(AI_MODEL); } catch (_) {} }
     }
     throw last || { code: "upstream_error", message: "Errore" };
   }
-  const notify = e => { if (e && e.code === "bad_key" && typeof toast === "function") toast("Chiave Gemini non valida: controllala nelle impostazioni"); if (e && e.code === "rate_limited" && typeof toast === "function") toast("Limite gratuito di Gemini raggiunto per ora: riprova più tardi"); throw e; };
+  const notify = e => {
+    const msg = { bad_key: "Chiave Gemini non valida: controllala nelle impostazioni", rate_limited: "Limite gratuito di Gemini raggiunto per ora: riprova più tardi", timeout: "Gemini non ha risposto in tempo: riprova tra poco", network: "Connessione assente: riprova quando sei online" }[e && e.code];
+    if (msg && typeof toast === "function") toast(msg); throw e;
+  };
   const sample = async (input, opts = {}) => { try { const r = await call(input, opts, false); if (opts.onText) opts.onText({ text: r.text, delta: r.text }); return r; } catch (e) { notify(e); } };
   sample.json = async (input, opts = {}) => {
     try {

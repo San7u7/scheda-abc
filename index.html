@@ -917,7 +917,7 @@ function renderSheet() {
       ${lib.length ? `<div><p class="small muted" style="margin-bottom:8px">I miei alimenti: tocca per aggiungere</p><div class="chips">${lib.map(x => `<button class="ghost" data-act="fadd" data-v="${x.id}">${esc(x.nome)}</button>`).join("")}</div></div>` : ""}
       ${S.sample ? `<label class="ghost file-btn" style="text-align:center">${f.busy === "label" ? "Leggo la foto…" : "Foto dell'etichetta o dell'alimento"}<input type="file" accept="image/*" data-act="flabel" aria-label="Foto dell'etichetta"></label>` : ""}
       <textarea id="ftext" rows="2" placeholder="Oppure scrivilo: 3 fette di pane di grano duro da 25 g, 60 g di tacchino">${esc(f.text || "")}</textarea>
-      ${S.sample ? `<button class="ghost" data-act="estimate" ${f.busy ? "disabled" : ""}>${f.busy === "text" ? "Sto stimando…" : "Stima dal testo"}</button>` : `<p class="small muted">Per stimare dal testo o dalle foto attiva l'AI gratuita nelle impostazioni. Intanto puoi scrivere tu i valori.</p>`}
+      ${S.sample ? (f.busy ? `<button class="ghost" disabled>${f.busy === "text" ? "Sto stimando…" : "Sto leggendo la foto…"}</button><button class="link small" data-act="estimate-cancel" style="align-self:center">Annulla stima</button>` : `<button class="ghost" data-act="estimate">Stima dal testo</button>`) : `<p class="small muted">Per stimare dal testo o dalle foto attiva l'AI gratuita nelle impostazioni. Intanto puoi scrivere tu i valori.</p>`}
       ${f.err ? `<div class="alert">${esc(f.err)}</div>` : ""}
       ${items.length ? `<table class="ftab"><tbody>${items.map((x, i) => `<tr><td>${esc(x.nome)}<br><span class="small faint">${x.per100 ? `${fmt(x.per100.kcal)} kcal per 100 g` : esc(x.quantita || "")}</span>
           ${x.per100 ? `<div class="fq"><button data-act="fg" data-i="${i}" data-v="-10" aria-label="Meno 10 g">−</button><span class="num">${fmt(x.g)} g</span><button data-act="fg" data-i="${i}" data-v="10" aria-label="Più 10 g">+</button></div>` : ""}</td>
@@ -997,19 +997,21 @@ async function estimateFood() {
   if (!t) { f.err = "Scrivi cosa hai mangiato, con le quantità se le sai."; renderSheet(); return; }
   blurAll(); f.busy = "text"; f.err = null; renderSheet();
   try {
-    const out = await S.sample.json(NUT_PROMPT + "\n\nDESCRIZIONE:\n" + t, { modelTier: "default" });
+    f.ac = new AbortController();
+    const out = await S.sample.json(NUT_PROMPT + "\n\nDESCRIZIONE:\n" + t, { modelTier: "default", signal: f.ac.signal });
     const items = (out && Array.isArray(out.alimenti) ? out.alimenti : []).map(x => ({ nome: String(x.nome || "Alimento"), quantita: String(x.quantita || ""), g: gramsOf(x.quantita), kcal: num(x.kcal), p: num(x.p), c: num(x.c), f: num(x.f), src: "stima" }));
     if (!items.length || !items.some(x => x.kcal > 0)) throw new Error("vuoto");
     f.items = f.items.filter(x => x.src !== "stima").concat(items); f.note = out.note || "";
   } catch (e) {
-    f.err = e && e.code === "not_granted" ? "Serve il permesso per far stimare le calorie a Claude: riapri la scheda e consenti l'accesso." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra poco o scrivi tu i valori." : "Non sono riuscito a stimare questo pasto. Aggiungi le quantità e riprova, oppure scrivi tu i valori.";
+    f.err = e && e.code === "cancelled" ? "Stima annullata." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova, oppure scrivi tu i valori." : e && e.code === "not_granted" ? "Serve il permesso per far stimare le calorie a Claude: riapri la scheda e consenti l'accesso." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra poco o scrivi tu i valori." : "Non sono riuscito a stimare questo pasto. Aggiungi le quantità e riprova, oppure scrivi tu i valori.";
   }
   f.busy = false; renderSheet();
 }
 async function readLabel(file) {
   const f = S.food; blurAll(); f.busy = "label"; f.err = null; renderSheet();
   try {
-    const blob = await shrink(file), out = await S.sample.json(LABEL_PROMPT, { images: [blob], modelTier: "default" });
+    f.ac = new AbortController();
+    const blob = await shrink(file), out = await S.sample.json(LABEL_PROMPT, { images: [blob], modelTier: "default", signal: f.ac.signal });
     const p = out && out.per100 || {}, per100 = { kcal: num(p.kcal), p: num(p.p), c: num(p.c), f: num(p.f) };
     if (!per100.kcal) throw new Error("vuoto");
     const food = { id: "f" + Date.now(), nome: String(out.nome || "Alimento"), per100, porzione: num(out.porzione_g) || 100, tipo: out.tipo === "etichetta" ? "etichetta" : "stima", used: 1, pending: true };
@@ -1075,6 +1077,7 @@ document.addEventListener("click", e => {
   else if (act === "libdel") { if (S.confirmDel !== v) { S.confirmDel = v; render(); } else { S.foods = S.foods.filter(x => x.id !== v); S.confirmDel = null; persistFoods(); render(); } }
   else if (act === "discard") { if (!S.confirmDiscard) { S.confirmDiscard = true; renderSheet(); } else { const a = activeDay(); delete S.drafts[a]; saveDrafts(); S.confirmDiscard = false; S.timer = null; S.sheet = null; S.tab = "oggi"; render(); toast("Seduta scartata"); } }
   else if (act === "estimate") estimateFood();
+  else if (act === "estimate-cancel") { if (S.food && S.food.ac) S.food.ac.abort(); }
   else if (act === "savefood") saveFood();
   else if (act === "delextra") { const d = dayLog(localISO()); d.extra = d.extra.filter(x => String(x.id) !== v); saveDay(localISO()); render(); }
   else if (act === "water") { const d = dayLog(localISO()); d.water = Math.max(0, Math.min(20, d.water + (+v))); saveDay(localISO()); render(); }
