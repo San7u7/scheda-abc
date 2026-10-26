@@ -296,6 +296,20 @@ label.ghost.file-btn { display: flex; align-items: center; justify-content: cent
 .steps i.on { background: var(--text); }
 .gear { width: 40px; height: 40px; border-radius: 999px; border: 0; background: transparent; display: grid; place-items: center; color: var(--muted); }
 .gear svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+/* welcome */
+.welcome { min-height: calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 20px 0 24px; }
+.welcome .wtop { display: flex; flex-direction: column; gap: 18px; }
+.welcome .wbar { height: 10px; background: var(--accent); border-radius: 2px; }
+.welcome .wbig { font-family: "Anton", "Impact", "Arial Black", sans-serif; font-size: clamp(120px, 44vw, 220px); line-height: .92; margin-top: -.04em; text-transform: uppercase; letter-spacing: -0.005em; }
+.welcome .wsub { font-family: "Anton", "Impact", "Arial Black", sans-serif; font-size: clamp(30px, 9vw, 44px); line-height: 1; text-transform: uppercase; color: var(--accent); }
+.welcome .wlist { display: flex; flex-direction: column; }
+.welcome .wlist > div { display: grid; grid-template-columns: 116px 1fr; gap: 12px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--rule); }
+.welcome .wlist > div:last-child { border-bottom: 1px solid var(--rule); }
+.welcome .wlist b { font-size: 15px; font-weight: 600; }
+.welcome .wlist span { color: var(--muted); }
+.welcome .wbot { display: flex; flex-direction: column; gap: 12px; }
+.welcome .wbot .lead { font-size: 17px; line-height: 25px; color: var(--muted); }
+@media (max-height: 720px) { .welcome { gap: 18px; padding-top: 8px; } .welcome .wbig { font-size: clamp(96px, 32vw, 160px); } .welcome .wsub { font-size: 30px; } .welcome .wlist > div { padding: 9px 0; } .welcome .wbot .lead { font-size: 15px; line-height: 22px; } }
 /* hello */
 .hello { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: transform .55s cubic-bezier(.7,0,.3,1); }
 .hello.out { transform: translateY(-100%); pointer-events: none; }
@@ -827,9 +841,9 @@ const pickSeg = (k, opts) => `<div class="seg" role="group">${opts.map(([v, l]) 
 function viewOnboarding() {
   if (!S.ob) obInit(0);
   const o = S.ob, pr = o.pr, err = o.err ? `<div class="alert">${esc(o.err)}</div>` : "";
-  if (o.step === 0) return `<div class="ob"><div style="flex:1"></div><div class="script">Ciao</div>
-    <p class="lead">Prima di iniziare mi servono alcuni dati su di te. La tua scheda e il piano del dietista sono già dentro l'app.</p>
-    <button class="primary" data-act="ob-next">Inizia</button><p class="small faint">I tuoi dati restano nel tuo account e li vedi solo tu.</p></div>`;
+  if (o.step === 0) return `<div class="welcome"><div class="wtop"><div class="wbar"></div><div class="wbig">Ciao</div><div class="wsub">${esc(pr.nome || "Giovanni")}</div></div>
+    <div class="wlist"><div><b>Allenamento</b><span>Seduta guidata, carichi già pronti e progressione automatica.</span></div><div><b>Alimentazione</b><span>Pasti del giorno, calorie e come recuperare quelle mancanti.</span></div><div><b>Progressi</b><span>Carichi, peso e foto su settimana, mese e anno.</span></div></div>
+    <div class="wbot"><p class="lead">Prima di iniziare mi servono alcuni dati su di te. Scheda e piano del dietista sono già dentro.</p><button class="primary" data-act="ob-next">Inizia</button><p class="small faint">I tuoi dati restano nel tuo account e li vedi solo tu.</p></div></div>`;
   return `<div class="ob"><h1>${o.redo ? "Il tuo profilo" : "Parlami di te"}</h1>
     <div class="field"><label for="ob-nome">Nome</label><input type="text" id="ob-nome" autocomplete="given-name" value="${esc(pr.nome)}" data-ob="nome"></div>
     <div class="field"><span class="lab">Sesso</span>${pickSeg("sesso", [["m", "Uomo"], ["f", "Donna"]])}</div>
