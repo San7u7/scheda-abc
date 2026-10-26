@@ -80,7 +80,7 @@
   fab.className = "coach-fab"; fab.setAttribute("data-act", "coach-open"); fab.setAttribute("aria-label", "Parla con il coach");
   document.body.appendChild(fab);
   function paintFab() {
-    const hidden = !S.profile || !!S.ob || !!S.sheet;
+    const hidden = !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit;
     fab.hidden = hidden;
     fab.innerHTML = AVATAR(56) + (S.nudge && !S.nudge.seen ? '<span class="fab-dot" aria-hidden="true"></span>' : "");
     fab.classList.toggle("insession", typeof inSession === "function" && inSession());

@@ -3,11 +3,12 @@
    drag a sheet down to close it, swipe left/right between exercises during a session. Loaded last. */
 (function () {
   const standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
-  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro ? 1 : 0) + (S.sheet ? 1 : 0);
+  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro || S.boardEdit ? 1 : 0) + (S.sheet ? 1 : 0);
   const H = window.history;
   function back() {
     if (S.sheet) { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }
     else if (S.hub) { S.hub = ""; window.scrollTo(0, 0); render(); }
+    else if (S.boardEdit) { S.boardEdit = false; render(); }
     else if (S.macro) { S.macro = null; window.scrollTo(0, 0); render(); }
     else if (S.detail) { S.detail = null; window.scrollTo(0, 0); render(); }
     else if (S.tab !== "oggi") { S.tab = "oggi"; lsSet("tab2", S.tab); window.scrollTo(0, 0); render(); }
@@ -24,7 +25,7 @@
   const edge = document.createElement("div"); edge.className = "edge-back"; edge.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';
   document.body.appendChild(edge);
   let t = null;
-  const skip = el => el.closest("input, textarea, select, .hscroll, .seg, [contenteditable]");
+  const skip = el => el.closest("input, textarea, select, .hscroll, .seg, [contenteditable], .bx-h, .pp-range");
   document.addEventListener("touchstart", e => {
     if (e.touches.length !== 1) { t = null; return; }
     const p = e.touches[0], sheet = e.target.closest(".sheet");

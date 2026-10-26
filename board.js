@@ -185,9 +185,12 @@
     if (S.macro === "train") return back + `<h1>Il tuo <span class="hl">allenamento</span></h1>` + B(weekCard()) + (parts.session || "") + B(recordsCard()) + B(`<button class="ghost" data-act="tab" data-v="allenamento">Tutte le sedute e la scheda</button>`);
     if (S.macro === "food") return back + `<h1>La tua <span class="hl">alimentazione</span></h1>` + B(tilesHtml(true)) + (parts.meals || "") + (parts.sup || "") + B(`<div class="stack" style="gap:8px"><button class="ghost" data-act="board-go" data-v="menu">Il menù della settimana</button><button class="ghost" data-act="board-go" data-v="piano">Piano alimentare e i miei alimenti</button></div>`);
     if (S.macro === "body") return back + `<h1>Peso e <span class="hl">corpo</span></h1>` + B(weightCard()) + B(photoCard()) + B(`<button class="ghost" data-act="board-go" data-v="peso">Andamento completo del peso</button>`);
-    const c = cfg(), boxes = c.order.filter(k => !c.off.includes(k)).map(k => k === "nums" ? tilesHtml(true) : box(k)).join("");
-    return head.join("") + B(now()) + `<div class="block mgrid">${boxes}</div>` +
-      `<div class="block" style="display:flex;justify-content:center"><button class="ghost sm" data-act="board-edit">Scegli cosa vedere in Oggi</button></div>`;
+    const c = cfg(), ed = !!S.boardEdit, vis = c.order.filter(k => !c.off.includes(k)), hid = c.order.filter(k => c.off.includes(k));
+    const boxes = vis.map((k, i) => { const nm = BOX.find(b => b[0] === k)[1];
+      return `<div class="bx ${ed ? "jig" : ""}" data-k="${k}" style="--d:${(i % 3) * 60}ms">${ed ? `<button class="bx-del" data-act="bx-del" data-v="${k}" aria-label="Nascondi ${nm}"><span aria-hidden="true">−</span></button><button class="bx-h" data-act="bx-h" data-v="${k}" aria-label="Sposta ${nm}: trascina, oppure usa le frecce su e giù">≡</button>` : ""}${k === "nums" ? tilesHtml(!ed) : box(k)}</div>`; }).join("");
+    return head.join("") + B(now()) + `<div class="block mgrid ${ed ? "editing" : ""}">${boxes}</div>` +
+      (hid.length ? `<div class="block"><button class="bx-add" data-act="bx-add"><span aria-hidden="true">+</span> Aggiungi sezione</button></div>` : ed ? `<p class="small muted" style="text-align:center">Stai già vedendo tutto.</p>` : "") +
+      (ed ? `<button class="bx-fine" data-act="bx-fine">Fine</button>` : `<div class="block" style="display:flex;justify-content:center"><button class="ghost sm" data-act="bx-edit">Modifica Oggi</button></div>`);
   };
 
   const prevSheet = window.renderSheet;
@@ -208,23 +211,18 @@
         <button class="primary" data-act="close" style="margin-top:16px">Fatto</button><button class="link small" data-act="tiles-reset" style="align-self:center">Ripristina: calorie, proteine, grassi, acqua</button></div></div>`;
       return;
     }
-    if (S.sheet !== "board") return prevSheet();
-    const c = cfg(), o = $("#overlay");
-    const rows = c.order.map((k, i) => { const b = BOX.find(x => x[0] === k), on = !c.off.includes(k);
-      return `<div class="brow ${on ? "" : "off"}"><button class="bsw" data-act="board-tog" data-v="${k}" role="switch" aria-checked="${on}" aria-label="Mostra ${b[1]}"><span></span></button><span class="b-t"><b>${b[1]}</b><small>${b[2]}</small></span>
-        <button class="icon-btn sm" data-act="board-mv" data-v="${k}" data-d="-1" aria-label="Sposta su" ${i ? "" : "disabled"}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 15l6-6 6 6"/></svg></button>
-        <button class="icon-btn sm" data-act="board-mv" data-v="${k}" data-d="1" aria-label="Sposta giù" ${i < c.order.length - 1 ? "" : "disabled"}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>`; }).join("");
-    o.innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="Scegli cosa vedere in Oggi"><div class="grab"></div>
-      <h2>Cosa vedere in <span class="hl">Oggi</span></h2><p class="muted">«Adesso» resta sempre in cima. Scegli le sezioni e il loro ordine.</p>
-      <div class="blist">${rows}</div><button class="primary" data-act="close">Fatto</button></div></div>`;
+    if (S.sheet !== "bxadd") return prevSheet();
+    const c = cfg(), hid = c.order.filter(k => c.off.includes(k));
+    $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="Aggiungi a Oggi"><div class="grab"></div>
+      <h2>Aggiungi a <span class="hl">Oggi</span></h2>${hid.length ? `<div class="blist">${hid.map(k => { const b = BOX.find(x => x[0] === k); return `<button class="brow add" data-act="bx-put" data-v="${k}">${k === "nums" ? '<span class="mb-ic">#</span>' : ic(k)}<span class="b-t"><b>${b[1]}</b><small>${b[2]}</small></span><span class="bx-plus" aria-hidden="true">+</span></button>`; }).join("")}</div>` : `<p class="muted">Stai già vedendo tutto.</p>`}
+      <button class="ghost" data-act="close">Chiudi</button></div></div>`;
   };
 
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const act = b.dataset.act, v = b.dataset.v;
-    if (act === "tab") S.macro = null;
+    if (act === "tab") { S.macro = null; S.boardEdit = false; }
     if (act === "macro") { e.stopPropagation(); if (v === "prog") { S.macro = null; S.tab = "progressi"; lsSet("tab2", S.tab); } else S.macro = v || null; window.scrollTo(0, 0); render(); }
-    else if (act === "board-edit") { S.sheet = "board"; renderSheet(); }
     else if (act === "wk-day") { S.wkday = +v; S.sheet = "wkday"; renderSheet(); }
     else if (act === "wk-set") { const m = { ...planMap() }, dw = S.wkday, prev = m[dw]; const other = v ? Object.keys(m).map(Number).find(x => x !== dw && m[x] === v) : null;
       if (other != null) { if (prev) m[other] = prev; else delete m[other]; } if (v) m[dw] = v; else delete m[dw];
@@ -235,8 +233,6 @@
     else if (act === "tiles-edit") { S.sheet = "tiles"; renderSheet(); }
     else if (act === "tile-set") { const t = tileCfg().slice(), i = +b.dataset.i, j = t.indexOf(v); if (j >= 0 && j !== i) t[j] = t[i]; t[i] = v; lsSet("tiles", t); renderSheet(); render(); }
     else if (act === "tiles-reset") { lsSet("tiles", ["kcal", "pro", "fat", "water"]); renderSheet(); render(); }
-    else if (act === "board-tog") { const c = cfg(); c.off = c.off.includes(v) ? c.off.filter(x => x !== v) : [...c.off, v]; save(c); renderSheet(); render(); }
-    else if (act === "board-mv") { const c = cfg(), i = c.order.indexOf(v), j = i + +b.dataset.d; if (j < 0 || j >= c.order.length) return; [c.order[i], c.order[j]] = [c.order[j], c.order[i]]; save(c); renderSheet(); render(); }
     else if (act === "board-go") { e.stopPropagation(); S.macro = null;
       if (v === "menu" || v === "piano") { S.tab = "piano"; S.hub = v === "menu" ? "menu" : ""; }
       else { S.tab = "progressi"; S.psub = v; }
@@ -244,6 +240,74 @@
       if (v === "foto" || v === "peso") setTimeout(() => { const h = [...document.querySelectorAll("h2")].find(x => x.textContent === "Dettagli"); if (h) h.scrollIntoView({ behavior: "smooth" }); }, 50); }
   }, true);
   document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('.mbox, .mb-quick')) { e.preventDefault(); e.target.click(); } });
+
+  /* ---------- edit Oggi like the iPhone Home Screen ---------- */
+  const nameOf = k => BOX.find(b => b[0] === k)[1];
+  const setEdit = on => { S.boardEdit = on; render(); };
+  function undoToast(msg, undo) {
+    document.querySelectorAll(".utoast").forEach(x => x.remove());
+    const t = document.createElement("div"); t.className = "toast utoast"; t.setAttribute("role", "status");
+    t.innerHTML = `<span>${esc(msg)}</span><button>Annulla</button>`; document.body.appendChild(t);
+    t.querySelector("button").onclick = () => { undo(); t.remove(); }; setTimeout(() => t.remove(), 5000);
+  }
+  let press = null, swallow = false, fired = false;
+  document.addEventListener("touchstart", e => {
+    const bx = e.target.closest(".bx"); if (!bx || S.boardEdit || S.tab !== "oggi" || S.macro || e.touches.length !== 1) return;
+    const t0 = e.touches[0]; press = { x: t0.clientX, y: t0.clientY, id: setTimeout(() => { press = null; fired = true; try { navigator.vibrate && navigator.vibrate(12); } catch (_) {} setEdit(true); }, 500) };
+  }, { passive: true });
+  document.addEventListener("touchmove", e => { if (!press) return; const t0 = e.touches[0]; if (Math.hypot(t0.clientX - press.x, t0.clientY - press.y) > 10) { clearTimeout(press.id); press = null; } }, { passive: true });
+  document.addEventListener("touchend", () => { if (press) { clearTimeout(press.id); press = null; } if (fired) { fired = false; swallow = true; setTimeout(() => { swallow = false; }, 400); } }, { passive: true });
+  document.addEventListener("contextmenu", e => { if (e.target.closest(".bx")) e.preventDefault(); });
+  document.addEventListener("click", e => {
+    if (swallow) { swallow = false; e.preventDefault(); e.stopPropagation(); return; }
+    if (!S.boardEdit) return;
+    const b = e.target.closest("[data-act]"), act = b && b.dataset.act;
+    if (["bx-del", "bx-h", "bx-add", "bx-fine", "bx-put", "close", "tiles-edit", "tile-set", "tiles-reset"].includes(act) || e.target.closest(".sheet, .tabs, .toast")) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!e.target.closest(".bx")) setEdit(false); // tap on empty space ends editing
+  }, true);
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const act = b.dataset.act, v = b.dataset.v;
+    if (act === "bx-edit") setEdit(true);
+    else if (act === "bx-fine") setEdit(false);
+    else if (act === "bx-add") { S.sheet = "bxadd"; renderSheet(); }
+    else if (act === "bx-put") { const c = cfg(); c.off = c.off.filter(x => x !== v); save(c); S.sheet = null; renderSheet(); render(); toast(`Sezione ${nameOf(v)} aggiunta a Oggi`); }
+    else if (act === "bx-del") {
+      const el = b.closest(".bx"), c = cfg(); el.classList.add("gone");
+      setTimeout(() => { c.off = [...c.off, v]; save(c); render(); undoToast(`Sezione ${nameOf(v)} nascosta. I dati restano.`, () => { const c2 = cfg(); c2.off = c2.off.filter(x => x !== v); save(c2); render(); }); }, 200);
+    }
+  });
+  // reorder: drag the ≡ handle (keyboard: arrows)
+  let drag = null;
+  document.addEventListener("pointerdown", e => {
+    const h = e.target.closest(".bx-h"); if (!h) return; e.preventDefault();
+    const el = h.closest(".bx"); drag = { el, y0: e.clientY, off: 0 }; el.classList.add("lift"); h.setPointerCapture && h.setPointerCapture(e.pointerId);
+  });
+  document.addEventListener("pointermove", e => {
+    if (!drag) return; e.preventDefault();
+    const { el } = drag; let dy = e.clientY - drag.y0 - drag.off;
+    const prev = el.previousElementSibling, next = el.nextElementSibling;
+    if (next && next.classList.contains("bx") && dy > next.offsetHeight / 2) { const hgt = next.offsetHeight + 12; el.parentNode.insertBefore(next, el); drag.off += hgt; dy -= hgt; }
+    else if (prev && prev.classList.contains("bx") && -dy > prev.offsetHeight / 2) { const hgt = prev.offsetHeight + 12; el.parentNode.insertBefore(el, prev); drag.off -= hgt; dy += hgt; }
+    el.style.transform = `translateY(${dy}px) scale(1.03)`;
+    if (e.clientY < 90) window.scrollBy(0, -10); else if (e.clientY > innerHeight - 110) window.scrollBy(0, 10);
+  }, { passive: false });
+  const endDrag = () => { if (!drag) return; const { el } = drag; drag = null; el.style.transform = ""; el.classList.remove("lift");
+    const dom = [...document.querySelectorAll(".mgrid > .bx")].map(x => x.dataset.k), c = cfg(); c.order = [...dom, ...c.order.filter(k => !dom.includes(k))]; save(c); render(); };
+  document.addEventListener("pointerup", endDrag); document.addEventListener("pointercancel", endDrag);
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && S.boardEdit) return setEdit(false);
+    const h = e.target.closest && e.target.closest(".bx-h"); if (!h || !["ArrowUp", "ArrowDown"].includes(e.key)) return; e.preventDefault();
+    const c = cfg(), vis = c.order.filter(k => !c.off.includes(k)), i = vis.indexOf(h.dataset.v), j = i + (e.key === "ArrowUp" ? -1 : 1); if (j < 0 || j >= vis.length) return;
+    [vis[i], vis[j]] = [vis[j], vis[i]]; c.order = [...vis, ...c.order.filter(k => c.off.includes(k))]; save(c); render();
+    const nh = document.querySelector(`.bx-h[data-v="${h.dataset.v}"]`); if (nh) nh.focus();
+  });
+  // fresh data without a gesture: recompute when the app comes back and when the day changes
+  let lastDay = localISO();
+  const refresh = () => { const d = localISO(); if (d !== lastDay) { lastDay = d; toast("Nuovo giorno, contatori azzerati."); } if (!S.sheet) render(); };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+  window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 
   const st = document.createElement("style");
   st.textContent = `
@@ -293,6 +357,23 @@
   .b-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .b-t small { color: var(--muted); font-size: 12px; }
   .icon-btn.sm { width: 40px; height: 40px; } .icon-btn[disabled] { opacity: .3; }
+  .bx { position: relative; touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; transition: transform .2s; }
+  .bx.jig { animation: jig .26s ease-in-out var(--d) infinite alternate; }
+  .bx.lift { animation: none; z-index: 5; transition: none; box-shadow: 0 16px 40px rgba(0,0,0,.6); border-radius: 24px; }
+  .bx.gone { transform: scale(.8); opacity: 0; transition: transform .18s, opacity .18s; }
+  @keyframes jig { from { transform: rotate(-1deg); } to { transform: rotate(1deg); } }
+  .editing .mbox, .editing .stile { pointer-events: none; }
+  .bx-del { position: absolute; top: -12px; left: -12px; z-index: 3; width: 44px; height: 44px; border: 0; background: none; padding: 0; display: grid; place-items: center; }
+  .bx-del span { width: 26px; height: 26px; border-radius: 999px; background: #3a3a3c; color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 700; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  .bx-h { position: absolute; top: 8px; right: 8px; z-index: 3; width: 44px; height: 44px; border-radius: 12px; border: 0; background: var(--raised); color: var(--text); font-size: 22px; touch-action: none; cursor: grab; }
+  .bx-add { width: 100%; min-height: 64px; border-radius: 24px; border: 2px dashed var(--control); background: none; color: var(--muted); font-size: 16px; font-weight: 600; }
+  .bx-add span { color: var(--accent); font-size: 22px; margin-right: 6px; }
+  .bx-fine { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: 16px; z-index: 20; min-height: 40px; padding: 0 20px; border-radius: 999px; border: 0; background: var(--accent); color: var(--lime-ink); font-weight: 800; font-size: 16px; }
+  .brow.add { width: 100%; border: 0; color: inherit; text-align: left; font: inherit; }
+  .bx-plus { width: 32px; height: 32px; border-radius: 999px; background: var(--accent); color: var(--lime-ink); display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
+  .utoast { display: flex; align-items: center; gap: 14px; }
+  .utoast button { border: 0; background: none; color: #000; font-weight: 800; text-decoration: underline; padding: 6px 0; font-size: 15px; }
+  @media (prefers-reduced-motion: reduce) { .bx.jig { animation: none; outline: 2px dashed var(--accent); outline-offset: 4px; border-radius: 24px; } }
   .bsw { flex: none; width: 50px; height: 30px; border-radius: 999px; border: 0; background: var(--control); position: relative; padding: 0; }
   .bsw span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: #fff; transition: transform .18s; }
   .bsw[aria-checked="true"] { background: var(--accent); }
