@@ -3,10 +3,10 @@
    and a «Come funziona» page in Impostazioni. No forced modal: «Salta» always visible. Loaded after settings.js. */
 (function () {
   const STEPS = [
-    [".now", "Adesso", "Qui trovi sempre la prossima cosa da fare. Tocca «L'ho mangiato» o «Inizia» e il resto si aggiorna da solo."],
+    [".now", "Adesso", () => { const b = document.querySelector(".now .now-go"); return `Qui trovi sempre la prossima cosa da fare${b ? `: ora è «${b.textContent.trim()}»` : ""}. Fatta quella, si aggiorna da sola.`; }],
     [".mgrid .bx", "Oggi è tuo", "Tieni premuto un box per spostarlo o nasconderlo. Con il «+» in fondo aggiungi sezioni."],
     ['.tabs [data-v="allenamento"]', "Allenamento", "Scegli la seduta e ti guido un esercizio alla volta. Attrezzo occupato? Tocca «Sostituisci»."],
-    ['.tabs [data-v="progressi"], .tabs [data-v="piano"]', "Progressi e Piano", "In Progressi vedi carichi, peso e foto nel tempo. In Piano trovi scheda, dieta e i tuoi alimenti."],
+    ['.tabs [data-v="progressi"], .tabs [data-v="piano"]', "Progressi e Profilo", "In Progressi vedi carichi, peso e foto nel tempo. In Profilo trovi scheda, dieta e i tuoi alimenti."],
     [".coach-fab", "Leo", "Io sono sempre qui in basso. Chiedimi qualsiasi cosa, anche a metà allenamento. Le impostazioni sono nell'ingranaggio in alto."]
   ];
   const layer = document.createElement("div"); layer.className = "tour"; layer.hidden = true; document.body.appendChild(layer);
@@ -15,7 +15,7 @@
     const rs = els.map(e => e.getBoundingClientRect()); return { x: Math.min(...rs.map(r => r.left)), y: Math.min(...rs.map(r => r.top)), r: Math.max(...rs.map(r => r.right)), b: Math.max(...rs.map(r => r.bottom)), el: els[0] }; };
   function show() {
     if (step < 0 || step >= STEPS.length) return end();
-    const [sel, title, text] = STEPS[step], first = document.querySelector(sel.split(",")[0]);
+    const [sel, title, tx] = STEPS[step], text = typeof tx === "function" ? tx() : tx, first = document.querySelector(sel.split(",")[0]);
     if (first && !first.closest(".tabs") && !first.classList.contains("coach-fab")) first.scrollIntoView({ block: "center" });
     setTimeout(() => {
       const r = rectOf(sel); const pad = 8;
@@ -46,9 +46,9 @@
 
   // first-use hints for hidden gestures (one per screen, never during a set: only shown when the screen appears)
   const HINTS = {
-    swipe: () => !!document.querySelector(".fnav") && "Scorri di lato per cambiare esercizio.",
+    swipe: () => !S.sheet && S.tab === "allenamento" && activeDay() && !!document.querySelector("#view .fnav") && "Scorri di lato per cambiare esercizio.",
     label: () => S.sheet === "food" && "Inquadra la tabella nutrizionale dell'etichetta: i valori li leggo io e li salvo nei tuoi alimenti.",
-    drag: () => !!S.sheet && S.sheet !== "food" && document.querySelector(".sheet .grab") && "Trascina in basso per chiudere questa finestra."
+    drag: () => !!S.sheet && !["food", "chat", "kgcheck"].includes(S.sheet) && !S.boardEdit && document.querySelector(".sheet .grab") && "Trascina in basso per chiudere questa finestra."
   };
   let shown = false;
   function hint() {
@@ -59,8 +59,10 @@
       document.body.appendChild(h); const off = () => { h.remove(); shown = false; }; setTimeout(off, 5500); h.addEventListener("click", off); return; }
   }
   const r0 = window.render, s0 = window.renderSheet;
-  window.render = function () { r0(); if (S.settings === "main") { const v = $("#view"); if (v && !v.querySelector(".how")) v.insertAdjacentHTML("beforeend", how()); } setTimeout(hint, 400); };
-  window.renderSheet = function () { s0(); setTimeout(hint, 400); };
+  const dropTip = () => { document.querySelectorAll(".t-tip").forEach(x => x.remove()); shown = false; };
+  document.addEventListener("touchstart", () => { if (document.querySelector(".t-tip")) setTimeout(dropTip, 1200); }, { passive: true });
+  window.render = function () { dropTip(); r0(); if (S.settings === "help") { const v = $("#view"); if (v) v.innerHTML = `<button class="back" data-act="set-sub" data-v="main"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>Impostazioni</button><h1>Come <span class="hl">funziona</span></h1>` + how() + (window.rulesBlock ? rulesBlock() : ""); } setTimeout(hint, 400); };
+  window.renderSheet = function () { dropTip(); s0(); setTimeout(hint, 400); };
 
   function how() {
     const item = (t, d) => `<li><b>${t}</b><br><span class="muted">${d}</span></li>`;
@@ -70,10 +72,10 @@
         ${item("Allenamento", "Scegli la seduta e segui un esercizio alla volta. Scorri di lato per cambiare esercizio, «Sostituisci» se l'attrezzo è occupato. Se salti un giorno, sposti le sedute della settimana.")}
         ${item("Alimentazione", "Spunta i pasti del piano o scrivi cosa hai mangiato. Fotografa le etichette dei cibi che mangi spesso: poi li riconosco quando li scrivi.")}
         ${item("Progressi", "Carichi, calorie, peso e foto nel tempo. In Foto trovi «Il tuo percorso»: ogni 4 settimane confronto le tue foto.")}
-        ${item("Piano", "La scheda e il piano alimentare che segui: li guardi, li modifichi o ne carichi di nuovi.")}
-        ${item("Leo", "Il pulsante in basso a destra: chiedimi qualsiasi cosa. Come ti parlo lo scegli qui sopra, in «Il tuo coach».")}
+        ${item("Profilo", "La scheda e il piano alimentare che segui: li guardi, li modifichi o ne carichi di nuovi. Qui trovi anche Leo.")}
+        ${item("Leo", "Il pulsante in basso a destra: chiedimi qualsiasi cosa. Come ti parlo lo scegli in Profilo › Il tuo coach.")}
         ${item("Gesti", "Scorri dal bordo sinistro per tornare indietro. Trascina in basso una finestra per chiuderla.")}
-        ${item("I tuoi dati", "Restano solo su questo telefono. Salva ogni tanto una copia: è qui sopra, in «I tuoi dati».")}
+        ${item("I tuoi dati", "Restano solo su questo telefono. Fai ogni tanto un backup: Impostazioni › I tuoi dati.")}
       </ul><button class="primary go" data-act="tour-again">Rivedi il tour</button></div></div>`;
   }
   document.addEventListener("click", e => { if (e.target.closest('[data-act="tour-again"]')) { e.stopPropagation(); start(); } }, true);
@@ -89,7 +91,7 @@
   .t-acts { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
   .t-acts .primary { min-height: 44px; padding: 0 22px; width: auto; flex: 0 0 auto; }
   .t-acts .link { min-height: 44px; }
-  .t-tip { position: fixed; left: 16px; right: 16px; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: flex; gap: 10px; align-items: center; background: var(--text); color: #000; border-radius: 18px; padding: 10px 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: tipin .25s ease-out; }
+  .t-tip { position: fixed; left: 16px; right: 16px; top: calc(64px + env(safe-area-inset-top, 0px)); z-index: 40; display: flex; gap: 10px; align-items: center; background: var(--text); color: #000; border-radius: 18px; padding: 10px 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: tipin .25s ease-out; }
   .t-tip svg { flex: none; }
   @keyframes tipin { from { transform: translateY(12px); opacity: 0; } }
   .how-list li { margin-bottom: 12px; }

@@ -81,7 +81,7 @@
   fab.className = "coach-fab"; fab.setAttribute("data-act", "coach-open"); fab.setAttribute("aria-label", "Parla con il coach");
   document.body.appendChild(fab);
   function paintFab() {
-    const hidden = !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit;
+    const hidden = !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit || (typeof inSession === "function" && inSession() && !!S.timer);
     fab.hidden = hidden;
     fab.innerHTML = AVATAR(56) + (S.nudge && !S.nudge.seen ? '<span class="fab-dot" aria-hidden="true"></span>' : "");
     fab.classList.toggle("insession", typeof inSession === "function" && inSession());
@@ -151,7 +151,7 @@
   const vA = window.viewAllenamento;
   window.viewAllenamento = function () { const html = vA(); if (typeof activeDay === "function" && activeDay()) return html; return html; };
   const vP = window.viewProgress;
-  window.viewProgress = function () { return inject(vP(), screenLine("progressi") + guideHtml("progressi")); };
+  window.viewProgress = function () { return vP(); };
   const vH = window.viewPiano;
   window.viewPiano = function () { return vH(); };
   window.coachSettingsView = () => coachSettings();
@@ -160,7 +160,7 @@
     const p = persona();
     const card = `<div class="block"><div class="hcard coach-card"><div class="hc-h">${AVATAR(42)}<div><h2>Il tuo coach: ${esc(p.nome)}</h2><p class="small muted">${OPTS.tono.find(x => x[0] === p.tono)[1]} · risposte ${p.risposte} · ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}</p></div></div>
       <p class="small muted">${p.custom ? "Impostazioni scelte da te." : "Impostato in automatico in base al profilo e ai documenti caricati: è un consiglio, puoi cambiarlo."}</p>
-      <div class="hc-acts"><button class="primary go" data-act="set-sub" data-v="coach">Regola il coach</button><button class="ghost" data-act="coach-open">Parla con ${esc(p.nome)}</button></div></div></div>`;
+      <div class="hc-acts"><button class="primary go" data-act="set-sub" data-v="coach">Regola il coach</button></div></div></div>`;
     return card;
   };
   function coachSettings() {
@@ -168,7 +168,7 @@
     return `<button class="back" data-act="hub" data-v=""><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>Piano</button>
       <div class="coach-hero">${AVATAR(72)}<div><h1>Regola <span class="hl">${esc(p.nome)}</span></h1><p class="muted">Come ti parla e quanto ti segue.</p></div></div>
       <div class="block"><div class="hcard"><h2>Perché è impostato così</h2><ul class="plain muted">${p.why.map(w => `<li>${esc(w)}</li>`).join("")}</ul>${p.custom ? `<button class="ghost" data-act="coach-reset">Torna all'impostazione automatica</button>` : ""}</div></div>
-      <div class="block"><div class="hcard"><div class="field"><label for="co-nome">Nome del coach</label><input type="text" id="co-nome" value="${esc(p.nome)}" autocomplete="off"></div><button class="ghost sm" data-act="coach-name">Salva il nome</button></div></div>
+      <div class="block"><div class="hcard"><div class="field"><label for="co-nome">Nome del coach</label><input type="text" id="co-nome" value="${esc(p.nome)}" autocomplete="off"></div><p class="small muted" style="margin:0">Si salva da solo quando esci dal campo.</p></div></div>
       <div class="block"><h2>Tono</h2>${seg("tono", OPTS.tono)}</div>
       <div class="block"><h2>Risposte</h2>${seg("risposte", OPTS.risposte)}</div>
       <div class="block"><h2>Obiettivo su cui insistere</h2>${seg("focus", OPTS.focus)}</div>
@@ -188,6 +188,9 @@
     else if (act === "coach-name") { const n = ($("#co-nome").value || "").trim().slice(0, 20); if (n) { savePersona({ nome: n }); render(); toast(`Ora mi chiamo ${n}`); } }
   }, true);
 
+  document.addEventListener("change", e => { if (e.target.id === "co-nome") { const n = (e.target.value || "").trim().slice(0, 20); if (n && n !== persona().nome) { savePersona({ nome: n }); render(); toast(`Ora mi chiamo ${n}`); } } });
+  setInterval(() => { const h = !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit || (typeof inSession === "function" && inSession() && !!S.timer); if (fab.hidden !== h) paintFab(); }, 1000);
+  let lastY = 0; window.addEventListener("scroll", () => { const y = window.scrollY; fab.classList.toggle("away", y > lastY + 4 && y > 120); if (y < lastY - 4) fab.classList.remove("away"); lastY = y; }, { passive: true });
   const baseRender = window.render;
   window.render = function () { baseRender(); paintFab(); };
 
@@ -195,6 +198,8 @@
   st.textContent = `
   .coach-fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 8; width: 60px; height: 60px; border-radius: 999px; border: 0; padding: 2px; background: #000; box-shadow: 0 8px 24px rgba(0,0,0,.55); display: grid; place-items: center; transition: transform .15s; }
   .coach-fab:active { transform: scale(.94); }
+  .coach-fab.away { transform: translateY(140%); opacity: 0; pointer-events: none; }
+  .coach-fab { transition: transform .22s, opacity .22s; }
   .coach-fab.insession { right: auto; left: calc(50% - 26px); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; }
   .coach-fab.insession svg { width: 48px; height: 48px; }
   .fab-dot { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 999px; background: var(--accent); border: 3px solid #000; box-shadow: 0 0 0 2px var(--accent); }

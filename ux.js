@@ -346,7 +346,6 @@
     return `<div class="demo">${id ? `<div class="demo-img" aria-label="Animazione: ${esc(short(exName(it)))}" role="img"><img src="${IMG}${encodeURIComponent(id)}/0.jpg" alt="" loading="eager" onerror="this.closest('.demo').classList.add('noimg')"><img src="${IMG}${encodeURIComponent(id)}/1.jpg" alt="" class="b" loading="eager"></div>` : ""}
       <div class="tip" aria-live="polite"><span class="tip-k">Consiglio</span><span id="tip-t">${esc(tips[0] || "")}</span></div></div>`;
   };
-  setInterval(() => { const el = document.getElementById("tip-t"); if (!el || !S.tips || !S.tips.length) return; S.tipI = (S.tipI + 1) % S.tips.length; el.classList.add("out"); setTimeout(() => { el.textContent = S.tips[S.tipI]; el.classList.remove("out"); }, 250); }, 4200);
   const st = document.createElement("style");
   st.textContent = `
   .demo { background: var(--surface); border-radius: 22px; overflow: hidden; margin-bottom: 10px; }

@@ -31,36 +31,37 @@
   window.viewPiano = function () {
     const h = vH(); if (S.hub) return h;
     const pr = S.profile || {}, goal = ((typeof GOALS !== "undefined" && GOALS.find(g => g[0] === pr.obiettivo)) || [0, ""])[1];
-    const head = `<button class="phead" data-act="redo" data-v="1" aria-label="Modifica il profilo">${userAvatar(72)}<span><span class="ph-n">${esc(pr.nome || "Il tuo profilo")}</span><span class="small muted">${goal ? esc(goal) + " · " : ""}${pr.eta ? pr.eta + " anni · " : ""}${pr.peso ? fmt(pr.peso) + " kg" : ""}</span><span class="small hl">Modifica profilo ›</span></span></button>`;
+    const head = `<button class="phead" data-act="redo" data-v="1" aria-label="Modifica il profilo">${userAvatar(72)}<span><span class="ph-n">${esc(pr.nome || "Il tuo profilo")}</span><span class="small muted">${goal ? esc(goal) + " · " : ""}${pr.eta ? pr.eta + " anni · " : ""}${(() => { const w = weights(), kg = w.length ? w[w.length - 1].kg : pr.peso; return kg ? fmt(Math.round(kg * 10) / 10) + " kg" : ""; })()}</span><span class="small hl">Modifica profilo ›</span></span></button>`;
     const plan = h.replace(/^<h1>[\s\S]*?<\/h1><p[^>]*>[\s\S]*?<\/p>/, `<h2 class="set-h">Il tuo piano</h2><p class="small muted" style="margin:4px 0 0">Cosa ti alleni e cosa mangi questa settimana.</p>`);
-    return head + `<h2 class="set-h">Il tuo coach</h2>` + (window.coachCard ? coachCard() : "") + plan;
+    return (head + `<h2 class="set-h">Il tuo coach</h2>` + (window.coachCard ? coachCard() : "") + plan).replace(/class="primary go"/g, 'class="ghost go"').replace(/<label class="primary file-btn">/g, '<label class="ghost file-btn">');
   };
   // the avatar also greets you on Oggi
   const vO = window.viewOggi;
   window.viewOggi = function () { const h = vO(); return S.macro ? h : h.replace('<div class="hello-row">', `<div class="hello-row"><button class="hr-av" data-act="tab" data-v="piano" aria-label="Apri il profilo">${userAvatar(44)}</button>`); };
 
   /* ---------- Impostazioni ---------- */
-  const tog = (k, on, label, sub) => `<div class="srow"><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span><button class="bsw" data-act="pref" data-v="${k}" role="switch" aria-checked="${on}" aria-label="${label}"><span></span></button></div>`;
+  const tog = (k, on, label, sub) => `<div class="setrow"><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span><button class="bsw" data-act="pref" data-v="${k}" role="switch" aria-checked="${on}" aria-label="${label}"><span></span></button></div>`;
   function view() {
     if (S.settings === "coach") return coachSettingsView().replace(/<button class="back" data-act="hub" data-v="">[\s\S]*?<\/button>/, `<button class="back" data-act="set-close">${BACK}Profilo</button>`);
     if (S.settings === "avatar") return avatarView();
     const p = pref(), pr = S.profile || {}, plan = ((S.training && S.training.sedute) || []).filter(s => s.dow != null);
     const rest = settingsBlocks().replace(/<div class="block"><div class="hcard"><div class="hc-h">[\s\S]*?Modifica profilo e colore<\/button><\/div><\/div><\/div>/, "");
-    return `<button class="back" data-act="set-close">${BACK}Chiudi</button><h1><span class="hl">Impostazioni</span></h1>
+    return `<button class="back" data-act="set-close">${BACK}Indietro</button><h1><span class="hl">Impostazioni</span></h1>
       <p class="muted" style="margin-top:4px">Come si comporta l'app su questo telefono.</p>
-      <h2 class="set-h">Aspetto</h2>
-      <div class="block"><div class="hcard"><button class="srow link-row" data-act="set-sub" data-v="avatar">${userAvatar(48)}<span><b>La tua immagine</b><small>Foto, simbolo o iniziali</small></span><span class="hl">›</span></button>
+      <nav class="set-idx" aria-label="Sezioni">${[["s-asp", "Aspetto"], ["s-all", "Allenamento"], ["s-pro", "Promemoria"], ["s-dati", "IA"], ["s-dati2", "Dati"]].map(([i, l]) => `<button data-jump="${i}">${l}</button>`).join("")}<button data-act="set-sub" data-v="help">Aiuto</button></nav>
+      <h2 class="set-h" id="s-asp">Aspetto</h2>
+      <div class="block"><div class="hcard"><button class="setrow link-row" data-act="set-sub" data-v="avatar">${userAvatar(48)}<span><b>La tua immagine</b><small>Foto, simbolo o iniziali</small></span><span class="hl">›</span></button>
         <div><p class="small muted" style="margin:6px 0 8px">Colore dell'app</p><div class="swatches">${ACCENTS.map(([v, c, l]) => `<button class="sw" style="background:${c}" data-act="accent" data-v="${v}" aria-pressed="${(pr.colore || "lime") === v}" aria-label="${l}"></button>`).join("")}</div></div></div></div>
-      <h2 class="set-h">Allenamento</h2>
+      <h2 class="set-h" id="s-all">Allenamento</h2>
       <div class="block"><div class="hcard"><div><b>Quando ti alleni?</b><div class="seg wrap" role="group" style="margin-top:8px"><button data-act="days" data-v="flex" aria-pressed="${p.days === "flex"}">Quando vuoi</button><button data-act="days" data-v="fixed" aria-pressed="${p.days === "fixed"}">Giorni fissi</button></div>
         <p class="small muted" style="margin:6px 0 0">${p.days === "flex" ? "Fai le sedute in ordine, nei giorni che preferisci: ti suggerisco quando riposare." : "Segui i giorni della scheda: se ne salti uno, ti propongo di spostare la settimana."}</p></div>${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>
-      <h2 class="set-h">Promemoria</h2>
+      <h2 class="set-h" id="s-pro">Promemoria</h2>
       <div class="block"><div class="hcard"><p class="small muted" style="margin:0">Askesis non ha un server, quindi non può scriverti ad app chiusa. Per i promemoria usa il Calendario dell'iPhone: li crea lui, anche ad app chiusa.</p>
         <ul class="plain small muted" style="margin:0"><li>Ogni mattina alle 8: il tuo obiettivo del giorno.</li><li>Ogni sera alle 21: chiudi la giornata, pasti e acqua.</li><li>Lunedì e giovedì alle 7:15: la pesata. Ogni 4 settimane: le foto progressi.</li>${p.days === "fixed" && plan.length ? `<li>Nei giorni di allenamento, all'orario che scegli qui sotto.</li>` : `<li>All'orario che scegli: oggi seduta o riposo?</li>`}</ul>
-        ${tog("meals", p.meals !== false, "Pasti nel Calendario", "Ogni pasto all'orario solito, con il menù di quel giorno (colazione 7:30, spuntino 10:30, pranzo 13, merenda 16:30, cena 20).")}<div class="srow"><span><b>Orario dell'allenamento</b><small>Il promemoria arriva 30 minuti prima</small></span><input type="time" class="tinput" data-pref="remind" value="${p.remind}" aria-label="Orario dell'allenamento"></div><button class="primary go" data-act="ics">Aggiungi al Calendario</button>
+        ${tog("meals", p.meals !== false, "Pasti nel Calendario", "Ogni pasto all'orario solito, con il menù di quel giorno (colazione 7:30, spuntino 10:30, pranzo 13, merenda 16:30, cena 20).")}<div class="setrow"><span><b>Orario dell'allenamento</b><small>Il promemoria arriva 30 minuti prima</small></span><input type="time" class="tinput" data-pref="remind" value="${p.remind}" aria-label="Orario dell'allenamento"></div><button class="primary go" data-act="ics">Aggiungi al Calendario</button>
         ${"setAppBadge" in navigator ? `<p class="small muted" style="margin:0">Sull'icona della Home compare un «1» nei giorni in cui c'è una seduta da fare.</p>` : ""}</div></div>
-      <h2 class="set-h">Intelligenza artificiale e dati</h2>${rest}
-      <h2 class="set-h">Aiuto</h2>`;
+      <h2 class="set-h" id="s-dati">Intelligenza artificiale</h2>${rest.replace('<div class="block"><div class="hcard"><h2>I tuoi dati</h2>', '<h2 class="set-h" id="s-dati2">I tuoi dati</h2><div class="block"><div class="hcard"><h2 class="sr-only">I tuoi dati</h2>')}
+      <h2 class="set-h">Aiuto</h2><div class="block"><div class="hcard"><button class="setrow link-row" data-act="set-sub" data-v="help"><span><b>Come funziona</b><small>Sezioni, gesti, regole di allenamento e il tour</small></span><span class="hl">›</span></button></div></div>`;
   }
   function avatarView() {
     const a = (S.profile && S.profile.avatar) || { type: "initials" }, c = S.crop;
@@ -77,7 +78,7 @@
   }
 
   const r0 = window.render;
-  window.render = function () { r0(); if (S.settings && S.profile && !S.ob) { const v = $("#view"); if (v) v.innerHTML = view(); } badge(); };
+  window.render = function () { r0(); if (S.settings && S.profile && !S.ob) { const v = $("#view"); if (v) v.innerHTML = view(); document.querySelectorAll('.tabs [aria-current]').forEach(x => x.removeAttribute("aria-current")); } badge(); };
 
   /* ---------- crop ---------- */
   async function loadPhoto(file) {
@@ -155,7 +156,7 @@
 
   // rules belong to training; CSV export lives only in Impostazioni
   const vA = window.viewAllenamento;
-  window.viewAllenamento = function () { const h = vA(); return activeDay() || S.detail ? h : h + (window.rulesBlock ? rulesBlock() : ""); };
+  window.viewAllenamento = function () { return vA(); };
   const vP = window.viewProgress;
   window.viewProgress = function () { return vP().replace(/<button[^>]*data-act="export"[^>]*>[\s\S]*?<\/button>/g, ""); };
 
@@ -165,7 +166,7 @@
     if (b.classList.contains("gear")) { e.preventDefault(); e.stopPropagation(); S.settings = S.settings ? null : "main"; S.macro = null; S.boardEdit = false; window.scrollTo(0, 0); render(); return; }
     if (act === "tab" || act === "redo") S.settings = null;
     if (act === "set-close") { e.stopPropagation(); S.settings = null; S.crop = null; window.scrollTo(0, 0); render(); }
-    else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar"].includes(v) ? v : "main"; S.crop = null; window.scrollTo(0, 0); render(); }
+    else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar", "help"].includes(v) ? v : "main"; S.crop = null; window.scrollTo(0, 0); render(); }
     else if (act === "days") { e.stopPropagation(); setPref("days", v); render(); toast(v === "flex" ? "Ti alleni quando vuoi" : "Giorni fissi della scheda"); }
     else if (act === "pref") { e.stopPropagation(); const p = pref(); setPref(v, !p[v]); render(); }
     else if (act === "accent") { e.stopPropagation(); saveProfile({ colore: v }); }
@@ -176,6 +177,7 @@
     else if (act === "crop-no") { e.stopPropagation(); S.crop = null; render(); }
     else if (act === "backup") lsSet("backup_at", Date.now());
   }, true);
+  document.addEventListener("click", e => { const j = e.target.closest("[data-jump]"); if (j) { const t = document.getElementById(j.dataset.jump); if (t) window.scrollTo({ top: t.getBoundingClientRect().top + scrollY - 70, behavior: "smooth" }); } });
 
   // Leo reminds the backup after 7 days of use, then monthly (data live only on this phone)
   setTimeout(() => {
@@ -183,11 +185,17 @@
     const first = lsGet("first_use", 0) || (lsSet("first_use", Date.now()), Date.now()), last = lsGet("backup_at", 0), asked = lsGet("backup_nudge", 0), DAY = 864e5;
     if (Date.now() - first < 7 * DAY || Date.now() - last < 30 * DAY || Date.now() - asked < 30 * DAY) return;
     lsSet("backup_nudge", Date.now());
-    coachNudge("I tuoi dati sono solo su questo telefono. Ogni tanto salvane una copia: Impostazioni › I tuoi dati › Salva una copia dei dati. Ci vogliono 10 secondi.");
+    coachNudge("I tuoi dati sono solo su questo telefono. Ogni tanto salvane una copia: Impostazioni › I tuoi dati › Fai un backup. Ci vogliono 10 secondi.");
   }, 1500);
 
   const st = document.createElement("style");
   st.textContent = `
+  .set-idx { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; scrollbar-width: none; } .set-idx::-webkit-scrollbar { display: none; }
+  .set-idx button { flex: none; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--raised); color: var(--text); font-size: 14px; font-weight: 600; }
+  .link.small { min-height: 44px; display: inline-flex; align-items: center; }
+  h2 .hl, h3 .hl, .set-h .hl { color: inherit; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .set-h { margin: 22px 0 0; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .uav { display: inline-grid; place-items: center; border-radius: 999px; background: var(--accent); color: var(--lime-ink); font-weight: 800; object-fit: cover; flex: none; }
   .phead { width: 100%; display: flex; gap: 16px; align-items: center; text-align: left; background: none; border: 0; color: inherit; padding: 8px 0 0; font: inherit; }
@@ -195,8 +203,8 @@
   .ph-n { font-size: 30px; font-weight: 800; line-height: 1.1; }
   .hello-row { position: relative; }
   .hr-av { position: absolute; right: 0; top: 50%; transform: translateY(-50%); border: 0; background: none; padding: 0; border-radius: 999px; }
-  .srow { display: flex; align-items: center; gap: 12px; justify-content: space-between; padding: 6px 0; }
-  .srow > span:not(.uav) { display: flex; flex-direction: column; min-width: 0; } .srow small { color: var(--muted); font-size: 12px; }
+  .setrow { display: flex; align-items: center; gap: 12px; justify-content: space-between; padding: 6px 0; }
+  .setrow > span:not(.uav) { display: flex; flex-direction: column; min-width: 0; } .setrow small { color: var(--muted); font-size: 12px; }
   .link-row { width: 100%; border: 0; background: none; color: inherit; font: inherit; text-align: left; justify-content: flex-start; }
   .link-row > span:nth-child(2) { flex: 1; text-align: left; }
   .tinput { background: var(--raised); color: var(--text); border: 0; border-radius: 12px; min-height: 44px; padding: 0 12px; font-size: 16px; }

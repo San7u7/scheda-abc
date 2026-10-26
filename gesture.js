@@ -3,12 +3,12 @@
    drag a sheet down to close it, swipe left/right between exercises during a session. Loaded last. */
 (function () {
   const standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
-  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro || S.boardEdit || S.settings ? 1 : 0) + (S.settings === "coach" ? 1 : 0) + (S.sheet ? 1 : 0);
+  const level = () => S.ob || !S.profile ? 0 : (S.tab !== "oggi" ? 1 : 0) + (S.hub || S.detail || S.macro || S.boardEdit || S.settings ? 1 : 0) + (["coach", "avatar", "help"].includes(S.settings) ? 1 : 0) + (S.sheet ? 1 : 0);
   const H = window.history;
   function back() {
     if (S.sheet) { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }
     else if (S.hub) { S.hub = ""; window.scrollTo(0, 0); render(); }
-    else if (S.settings) { S.settings = S.settings === "coach" ? "main" : null; window.scrollTo(0, 0); render(); }
+    else if (S.settings) { S.settings = ["coach", "avatar", "help"].includes(S.settings) ? "main" : null; window.scrollTo(0, 0); render(); }
     else if (S.boardEdit) { S.boardEdit = false; render(); }
     else if (S.macro) { S.macro = null; window.scrollTo(0, 0); render(); }
     else if (S.detail) { S.detail = null; window.scrollTo(0, 0); render(); }
@@ -20,7 +20,10 @@
   window.addEventListener("popstate", () => { pushed = false; if (level() > 0) back(); sync(); });
   const r0 = window.render, s0 = window.renderSheet;
   window.render = function () { r0(); sync(); };
-  window.renderSheet = function () { s0(); sync(); };
+  let openSheet = null;
+  window.renderSheet = function () { s0(); sync();
+    if (S.sheet && S.sheet !== openSheet) { const d = document.querySelector(".sheet"), h = d && d.querySelector("h2"); if (h) { h.id = h.id || "sheet-title"; h.tabIndex = -1; d.setAttribute("aria-labelledby", h.id); try { h.focus({ preventScroll: true }); } catch (_) {} } }
+    openSheet = S.sheet; };
 
   /* ---------- touch gestures ---------- */
   const edge = document.createElement("div"); edge.className = "edge-back"; edge.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';

@@ -129,7 +129,7 @@ async function setupSite() {
 }
 function aiKeyBox() {
   const k = getAIKey();
-  return k ? `<div class="card"><h2>AI attiva: Google Gemini</h2><p class="small muted">Coach, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
+  return k ? `<div class="card"><h2>Leo usa Google Gemini</h2><p class="small muted">Coach, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
       <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`
     : `<div class="card aikey"><h2>Attiva l'AI, gratis</h2><p class="small muted" style="margin:0">Ti serve una chiave personale di Google: bastano due minuti.</p>
       <ul class="plain ai-why"><li><b>Coach</b>: risponde su allenamento e alimentazione partendo dai tuoi dati.</li><li><b>Foto e documenti</b>: legge scheda, dieta ed etichette da foto o PDF, e valuta le foto dei progressi.</li><li><b>Pasti</b>: stima calorie e macro da una foto o da una descrizione.</li></ul>

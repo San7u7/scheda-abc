@@ -82,7 +82,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
     else if (st.code === "few") body = `<p class="muted">Servono almeno due foto nella stessa posa, scattate a distanza di settimane. Inizia con una serie frontale, laterale e posteriore: sarà il tuo punto di partenza.</p>`;
     else if (st.code === "span") body = `<p class="muted">Il primo confronto è disponibile dal ${longDate(st.from)}. I cambiamenti si vedono in settimane, non in giorni.</p>`;
     else if (st.code === "wait") body = `<p class="muted">Il prossimo confronto è disponibile dal ${longDate(st.from)}. I cambiamenti si vedono in settimane, non in giorni.</p>`;
-    else body = !S.sample ? `<p class="muted">Per il confronto serve l'AI attiva: la trovi in Piano.</p>` : `<button class="primary go" data-act="pp-ask">Confronta il tuo percorso</button><p class="small muted">Prima e ultima foto di ogni posa, ${Math.round(st.s.span / 7)} settimane di distanza.</p>`;
+    else body = !S.sample ? `<p class="muted">Per il confronto serve l'AI attiva: la trovi in Impostazioni.</p>` : `<button class="primary go" data-act="pp-ask">Confronta il tuo percorso</button><p class="small muted">Prima e ultima foto di ogni posa, ${Math.round(st.s.span / 7)} settimane di distanza.</p>`;
     const err = pp.err ? `<div class="alert">${esc(pp.err)}</div>` : "";
     const res = c ? (S.ppOpen || st.code !== "ok" ? result(c) : `<button class="link small" data-act="pp-open">Rivedi l'ultimo confronto</button>`) : "";
     return `<div class="block"><div class="card pp"><h2>Il tuo <span class="hl">percorso</span></h2>${steps(st)}${shelf()}${body}${err}${res}</div></div>` + slider();
@@ -96,7 +96,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
   }
   function shelf() {
     if (!S.assets) return `<div class="alert">Il salvataggio delle foto non è disponibile in questo browser.</div>`;
-    return `<div class="pp-shelf">${POSES.map(ps => { const l = S.photos.filter(p => (p.pose || "frontale") === ps).sort((a, b) => a.date < b.date ? 1 : -1);
+    return `<div class="pp-shelf"><p class="small muted" style="margin:0">Tocca una foto per valutarla o eliminarla.</p>${POSES.map(ps => { const l = S.photos.filter(p => (p.pose || "frontale") === ps).sort((a, b) => a.date < b.date ? 1 : -1);
       return `<div class="pp-row"><div class="pp-rh"><b>${ps[0].toUpperCase() + ps.slice(1)}</b><span class="small muted">${l.length ? `${l.length} ${l.length === 1 ? "foto" : "foto"} · ultima ${dt(l[0].date)}` : "nessuna foto"}</span></div>
         <div class="pp-thumbs">${l.slice(0, 4).map(p => `<span class="pp-th ${S.ppSel === p.id ? "sel" : ""}"><button class="pp-tb" data-act="pp-sel" data-v="${p.id}" aria-label="Foto ${ps} del ${dt(p.date)}: tocca per eliminarla"><img src="${esc(p.url)}" alt="" loading="lazy"></button>${S.ppSel === p.id ? `<button class="pp-x" data-act="pp-del" data-v="${p.id}" aria-label="Elimina la foto ${ps} del ${dt(p.date)}">×</button>` : ""}</span>`).join("")}<label class="pp-add" data-pose="${ps}" aria-label="Aggiungi foto ${ps}">+<input type="file" accept="image/*" data-act="upload"></label></div></div>`; }).join("")}</div>`;
   }
@@ -114,7 +114,9 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
 
   window.percorsoCard = () => percorso();
   const base = window.viewPhotos;
-  window.viewPhotos = function () { return percorso() + base().replace(/(<button class="ph" data-act="pick" data-v="([^"]+)" aria-pressed="true">)/g, '$1<span class="ph-x pp-x" data-act="pp-del" data-v="$2" role="button" aria-label="Elimina questa foto">×</span>'); };
+  const strip = h => h.replace(/<div class="posesel seg"[\s\S]*?<\/div>\s*<button class="primary file-btn">[\s\S]*?<\/button>/, "").replace(/<div class="ph-grid">[\s\S]*?<\/button><\/div>/, "")
+    .replace(/<div class="empty"><h2>Nessuna foto ancora<\/h2>[\s\S]*?<\/div>/, "").replace(/<p class="small faint">Tocca una foto[\s\S]*?<\/p>/, "");
+  window.viewPhotos = function () { return percorso() + strip(base()).replace(/(<button class="ph" data-act="pick" data-v="([^"]+)" aria-pressed="true">)/g, '$1<span class="ph-x pp-x" data-act="pp-del" data-v="$2" role="button" aria-label="Elimina questa foto">×</span>'); };
   function undoToast(msg, undo, commit) {
     document.querySelectorAll(".utoast").forEach(x => x.remove());
     const t = document.createElement("div"); t.className = "toast utoast"; t.setAttribute("role", "status"); let undone = false;
@@ -140,7 +142,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
     else if (act === "pp-go") { S.ppConsent = false; run(); }
     else if (act === "pp-open") { S.ppOpen = true; render(); }
     else if (act === "pp-pose") { S.ppPose = b.dataset.v; render(); }
-    else if (act === "pp-sel") { S.ppSel = S.ppSel === b.dataset.v ? null : b.dataset.v; render(); }
+    else if (act === "pp-sel") { const id = b.dataset.v; S.ppSel = S.ppSel === id ? null : id; S.sel = S.ppSel ? [S.ppSel] : []; S.analysis = null; render(); }
     else if (act === "pp-del") { e.stopPropagation(); delPhoto(b.dataset.v); }
   });
   document.addEventListener("click", e => { const l = e.target.closest(".pp-add"); if (l) S.pose = l.dataset.pose; }, true);
