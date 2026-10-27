@@ -16,8 +16,10 @@
   }
   // one guard entry in the history while inside the app: the system back (Safari swipe, Android) pops it and we go up one level
   let pushed = false;
-  function sync() { if (level() > 0 && !pushed) { try { H.pushState({ askesis: 1 }, ""); pushed = true; } catch (_) {} } }
-  window.addEventListener("popstate", () => { pushed = false; if (level() > 0) back(); sync(); });
+  // v3.js tiene le sue voci (pagine interne, fogli, viste vecchie aperte da una sezione): finché ne ha, la history è sua
+  const v3busy = () => !!(window.V3 && V3._busy && V3._busy());
+  function sync() { if (level() > 0 && !pushed && !v3busy()) { try { H.pushState({ askesis: 1 }, ""); pushed = true; } catch (_) {} } }
+  window.addEventListener("popstate", ev => { if (window.V3 && V3._owns && V3._owns(ev)) return; pushed = false; if (level() > 0) back(); sync(); });
   const r0 = window.render, s0 = window.renderSheet;
   window.render = function () { r0(); sync(); };
   let openSheet = null;

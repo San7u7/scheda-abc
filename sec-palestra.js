@@ -103,13 +103,16 @@
     ["Glutei", "Sdraiato, caviglia sul ginocchio, 30 secondi per lato"], ["Petto", "Avambraccio alla parete, 30 secondi per lato"],
     ["Schiena", "Seduto sui talloni, braccia avanti, 30 secondi"], ["Polpacci", "Mani al muro, gamba dietro tesa, 30 secondi per lato"]];
   const r05 = n => Math.round(n * 2) / 2;
+  /* «Impostazioni allenamento» (settings.js, chiave v3_allenamento): riscaldamento prima sì/no; stretching prima, dopo, prima e dopo, mai */
+  const pref = () => Object.assign({ warm: true, stretch: "both" }, (typeof lsGet === "function" && lsGet("v3_allenamento", {})) || {});
+  const warmOn = () => pref().warm !== false, strPre = () => ["prima", "both"].includes(pref().stretch), strPost = () => ["dopo", "both"].includes(pref().stretch);
   function steps() {
     if (W.kind === "stretch") return STAT.map(r => ({ nome: r[0], how: r[1], secs: 30, tips: [r[1] + ".", "Allunga piano, senza dolore."] }));
     const g = group(), out = [];
-    out.push({ nome: kid() ? "Bici o camminata veloce" : "Cardio leggero", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", a ritmo tranquillo", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
-    (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2] }));
+    if (warmOn()) out.push({ nome: kid() ? "Bici o camminata veloce" : "Cardio leggero", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", a ritmo tranquillo", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
+    if (strPre()) (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2] }));
     const p = P[W.day], it = p && p.items[0];
-    if (it && !kid() && it.unit !== "none") {
+    if (warmOn() && it && !kid() && it.unit !== "none") {
       const kg = planOf(it).kg;
       if (kg && kg >= 10) [[.4, 8], [.6, 5], [.8, 3]].forEach(([f, n]) => out.push({ nome: "Serie di avvicinamento", how: nameOf(it) + ": " + kgTxt(r05(kg * f)) + " kg × " + n, it, tips: ["Movimento identico alla serie vera.", "Serve a provare il gesto, non a stancarti."] }));
     }
@@ -128,7 +131,7 @@
   }
   function warmPage() {
     const L = steps(), i = Math.min(W.i, L.length - 1), st = L[i], tot = L.length, stretch = W.kind === "stretch";
-    const title = stretch ? "Stretching finale" : "Riscaldamento", last = i === tot - 1;
+    const title = stretch ? "Stretching finale" : warmOn() ? "Riscaldamento" : "Stretching", last = i === tot - 1;
     if (st.secs && W.left == null) W.left = st.secs;
     const started = st.secs && (W.run || W.left === 0);
     const clock = st.secs ? `<div class="v3-palestra-clock"><b id="v3-pal-clock" role="timer">${mmss(W.left)}</b><span>${W.left === 0 ? "Tempo finito ✓" : W.run ? "Il timer sta andando" : "Quando sei pronto, avvia il timer"}</span></div>` : "";
@@ -136,7 +139,7 @@
     const main = st.secs && !started
       ? primary("Avvia il timer", 'data-v3act="w-timer"') + ui.secondary("Salta questo passo", "w-next")
       : primary(doneLabel, 'data-v3act="w-next"');
-    const skip = stretch ? "Salta lo stretching" : kid() ? "Salta (chiedi all'adulto)" : "Salta il riscaldamento";
+    const skip = stretch || !warmOn() ? "Salta lo stretching" : kid() ? "Salta (chiedi all'adulto)" : "Salta il riscaldamento";
     const fig = st.it && imgOf(st.it) ? `<div class="v3-palestra-fig">${ui.fig(imgOf(st.it), nameOf(st.it), nameOf(st.it))}</div>` : "";
     return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back(stretch ? "Indietro" : "Esci")}<span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span></div>
       <div class="v3-bar" role="img" aria-label="${e(title)}: passo ${i + 1} di ${tot}"><i style="width:${Math.round((i + 1) / tot * 100)}%"></i></div>
@@ -144,7 +147,7 @@
       ${fig}${W.come ? ui.card(st.tips.map(t => `<p class="v3-palestra-note">${e(t)}</p>`).join("") + ui.leo("Come si fa: " + st.nome + "?")) : ""}${clock}
       <div class="v3-palestra-acts">${main}
         <div class="v3-palestra-tools"><button class="v3-palestra-tool" data-v3act="w-come" aria-expanded="${!!W.come}">${W.come ? "Nascondi" : "Come si fa"}</button><button class="v3-palestra-tool" data-v3act="w-skip">${e(skip)}</button></div>
-        ${!stretch && i === 0 && !kid() ? `<button class="v3-palestra-tool" data-v3act="w-quick">${W.quick ? "Versione completa" : "Versione rapida: 3 movimenti"}</button>` : ""}</div></div>`;
+        ${!stretch && i === 0 && !kid() && strPre() ? `<button class="v3-palestra-tool" data-v3act="w-quick">${W.quick ? "Versione completa" : "Versione rapida: 3 movimenti"}</button>` : ""}</div></div>`;
   }
 
   /* ---------- navigazione interna ---------- */
@@ -167,6 +170,7 @@
   function begin(k) {
     if (!P[k]) return;
     if (activeDay()) return startDay(activeDay());
+    if (!warmOn() && !strPre()) return startDay(k); // tutto spento: dritto al primo esercizio
     open("warm", () => { W = { kind: "risc", day: k, i: 0, quick: false, left: null, run: false }; });
   }
   function finishWarm() {
@@ -193,7 +197,7 @@
     if (ts.state === "fatta") {
       const d0 = doneToday(), nd = ts.next && P[ts.next] ? ts.next : null;
       today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? (P[d0.day].nome || "Seduta " + d0.day) : "Seduta") + " fatta ✓", sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica " + d0.fatica + "/10" : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
-        ui.row({ title: "Stretching finale", sub: "Circa 3 minuti, se ti va", act: "stretch", apri: "Inizia" }) +
+        (strPost() ? ui.row({ title: "Stretching finale", sub: "Circa 3 minuti, se ti va", act: "stretch", apri: "Inizia" }) : "") +
         (nd ? ui.row({ title: "Prossima: " + (P[nd].nome || "Seduta " + nd), sub: "Riposa e torna domani", act: "apri-seduta", arg: nd }) : "") + ageRow());
     } else {
       const k = ts.day;

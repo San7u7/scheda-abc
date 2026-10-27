@@ -137,14 +137,7 @@
   }
 
   /* ---------- azioni ---------- */
-  function openMeal(k) { // apre Cibo e poi il foglio del pasto esistente (ux.js «meal-open»: Fatto come da piano, Ho mangiato altro, L'ho saltato)
-    V3.go("cibo");
-    const t0 = Date.now();
-    (function tryOpen() {
-      if (V3.current() === "cibo" && S.tab === "oggi" && S.macro === "food") { S.mealKey = k; S.sheet = "meal"; renderSheet(); }
-      else if (Date.now() - t0 < 1500) setTimeout(tryOpen, 40);
-    })();
-  }
+  function openMeal(k) { V3.go("cibo", { meal: k }); } // apre Cibo direttamente sulla pagina del pasto k
   function waterSheet() {
     const w = water(), body = () => ui.big(`${ui.nf(w.l, 2)} <span class="v3-of">/${ui.nf(w.t, 2)} L</span>`, "Un bicchiere = 250 ml");
     const s = V3.sheet(`<h2 class="v3-sh1">Acqua di oggi</h2><div class="v3-oggi-w"><div data-oggi-w>${body()}</div>

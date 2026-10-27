@@ -11,17 +11,16 @@
   /* ---------- stato interno (mai in S) ---------- */
   const subs = [];                 // pila delle pagine interne: { p, k, … }
   let ci = null, ciDay = null;     // pasto al centro del carosello
-  let quizDay = null, quizAns = null, pianoDow = null, numPer = 0;
-  /* Navigazione piatta: una sola voce di history per tutte le pagine interne di Cibo (indietro di sistema = principale).
-     Da una pagina interna all'altra si sostituisce la pagina e si ricorda la precedente (parent) per «‹ Indietro».
-     Motivo: con più voci V3 annidate gesture.js aggiunge una sua voce-guardia dopo ogni ritorno e il secondo indietro
-     finirebbe su Oggi (vedi rapporto FASE 2). */
+  let pianoDow = null, numPer = 0;
+  /* Pagine interne annidate: una voce di history per pagina, indietro (di sistema o «‹ Indietro») torna alla precedente.
+     replace() sostituisce la pagina in cima senza nuova voce (es. «pasto» → «segnato»). */
   const top = () => subs[0] || null;
-  function open(o) {
-    if (!subs.length) { subs.push(o); V3.page(() => { subs.length = 0; }); return; }
-    o.parent = subs[0]; subs[0] = o; window.scrollTo(0, 0); V3.refresh();
-  }
-  function up() { const t = top(); if (t && t.parent) { subs[0] = t.parent; window.scrollTo(0, 0); V3.refresh(); } else V3.go("cibo"); }
+  function open(o) { subs.unshift(o); V3.page(() => { subs.shift(); }); }
+  function replace(o) { if (!subs.length) return open(o); subs[0] = o; window.scrollTo(0, 0); V3.refresh(); }
+  /* «Secondo te?»: risposta del giorno su chiave propria (additiva), così resta anche dopo una ricarica */
+  const QK = "v3_cibo_quiz";
+  const quizGet = iso => ((typeof lsGet === "function" ? lsGet(QK, {}) : {}) || {})[iso] || null;
+  function quizSet(iso, a) { const all = lsGet(QK, {}) || {}; all[iso] = a; lsSet(QK, all); }
 
   /* ---------- utilità ---------- */
   const today = () => localISO();
@@ -285,8 +284,9 @@
   function pageLearned(k) {
     const iso = today(), dw = dowOf(iso), text = mealText(dw, k), c = curFor(text, iso), z = quizFor(text, iso);
     let quiz = "";
-    if (quizDay !== iso) quiz = ui.card(`<p class="v3-cibo-q">Secondo te?</p><p class="v3-cibo-qq">${e(z.q)}</p><div class="v3-cibo-two">${z.o.map((o, j) => ui.secondary(o, "quiz", j)).join("")}</div>${ui.secondary("Salta la domanda", "quiz", -1)}`);
-    else if (quizAns && quizAns.k === k) quiz = ui.card(`<p class="v3-cibo-q">${quizAns.ok ? "Esatto!" : quizAns.skip ? "Domanda saltata" : "Quasi"}</p><p class="v3-rs">${e(z.x)}</p>`);
+    const qa = quizGet(iso);
+    if (!qa) quiz = ui.card(`<p class="v3-cibo-q">Secondo te?</p><p class="v3-cibo-qq">${e(z.q)}</p><div class="v3-cibo-two">${z.o.map((o, j) => ui.secondary(o, "quiz", j)).join("")}</div>${ui.secondary("Salta la domanda", "quiz", -1)}`);
+    else if (qa.k === k) quiz = ui.card(`<p class="v3-cibo-q">${qa.ok ? "Esatto!" : qa.skip ? "Domanda saltata" : "Quasi"}</p><p class="v3-rs">${e(z.x)}</p>`);
     return ui.back() + title(`${LAB(k)} ${segn(k)} ✓`, "Ecco cosa ti ha dato") + quiz + plateBox(mealNums(dw, k), data.today()) + rolesCard(text) +
       acts(ui.secondary("Torna ai pasti di oggi", "home") + ui.secondary("Ho sbagliato, togli il segno", "unmark", k)) + endCur(c);
   }
@@ -401,6 +401,8 @@
 
   /* ============================== REGISTRAZIONE ============================== */
   V3.register("cibo", {
+    /* V3.go("cibo", { meal: k }) apre direttamente il pasto k */
+    enter(o) { if (o && o.meal && MEALS.some(m => m[0] === o.meal)) open({ p: "pasto", k: o.meal }); },
     render(el) {
       const p = top();
       if (p && p.p === "guida") return false; // guida flessibile della vista vecchia (non c'è ancora il questionario)
@@ -411,11 +413,10 @@
     },
     on: {
       dot(i) { const c = document.querySelector("#view .v3-cibo-caro"); ci = +i; if (c && c._mark) { c._mark(ci); c._center(ci, true); } },
-      back() { up(); },
-      eat(k) { markEaten(k); ci = null; const t = top(); if (t && t.p === "learned") { V3.refresh(); return; } open({ p: "learned", k }); if (top().parent) top().parent = null; },
+      eat(k) { markEaten(k); ci = null; const t = top(); if (t && t.p === "learned") { V3.refresh(); return; } if (t && t.p === "pasto") replace({ p: "learned", k }); else open({ p: "learned", k }); },
       unmark(k) { const p = top(); unmark(k); if (p && p.p === "learned") V3.go("cibo"); else V3.refresh(); },
       qty(k) { editQty(k); },
-      quiz(j) { const p = top(), iso = today(), z = quizFor(mealText(dowOf(iso), p.k), iso); quizDay = iso; quizAns = { k: p.k, ok: +j === z.a, skip: +j < 0 }; V3.refresh(); },
+      quiz(j) { const p = top(), iso = today(), z = quizFor(mealText(dowOf(iso), p.k), iso); quizSet(iso, { k: p.k, j: +j, ok: +j === z.a, skip: +j < 0 }); V3.refresh(); },
       home() { V3.go("cibo"); },
       giornata() { open({ p: "giornata" }); },
       pasto(k) { open({ p: "pasto", k }); },

@@ -39,7 +39,9 @@
   #v3bar .v3-live { position: absolute; top: 2px; left: calc(50% + 14px); width: 8px; height: 8px; border-radius: 4px; background: var(--v3-lime); }
   body.v3-on #bar .tabs { display: none !important; }
   body.v3-on .sbar { bottom: var(--v3-bar); padding-bottom: 10px; }
-  body.v3-on .wrap { padding-bottom: calc(var(--v3-bar) + 40px) !important; }
+  body.v3-on .wrap { padding-bottom: calc(var(--v3-bar) + 24px) !important; }
+  /* body è flex con gap 12: i contenitori vuoti o con figli fissi aggiungevano ~48 px vuoti sopra la barra */
+  body.v3-on > #bar, body.v3-on > #overlay:empty, body.v3-on > #hello:empty, #v3-overlay { position: absolute; }
   body.v3-on.v3-live .wrap { padding-bottom: calc(var(--v3-bar) + 120px) !important; }
   body.v3-on .coach-fab { bottom: calc(var(--v3-bar) + 14px); }
   body.v3-on .coach-fab.insession { bottom: calc(var(--v3-bar) + 90px); }
@@ -73,7 +75,7 @@
   .v3-lime { background: var(--v3-lime); color: var(--v3-ink); border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
   .v3-lime-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .v3-lt { font-size: 17px; font-weight: 700; line-height: 1.3; }
-  .v3-lime .v3-in { background: var(--v3-ink); color: var(--v3-lime); min-height: 44px; padding: 0 16px; border-radius: 22px; border: 0; font-size: 14px; font-weight: 600; flex: none; }
+  .v3-lime .v3-in { background: var(--v3-ink); color: var(--v3-lime); min-height: 48px; padding: 0 16px; border-radius: 24px; border: 0; font-size: 14px; font-weight: 600; flex: none; }
   .v3-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .v3-tile { background: rgba(10,10,10,.08); border-radius: 14px; padding: 14px; min-height: 124px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; position: relative; border: 0; color: inherit; text-align: left; }
   .v3-tile[data-v3act]::after { content: "›"; position: absolute; top: 10px; right: 12px; font-size: 22px; font-weight: 700; line-height: 1; }
@@ -92,7 +94,7 @@
   .v3-leo { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0; background: transparent; border: 0; color: var(--v3-t1); font-size: 15px; font-weight: 700; flex: none; line-height: 1.15; text-align: left; white-space: nowrap; }
   .v3-leo i { width: 48px; height: 48px; border-radius: 24px; background: var(--v3-s3); border: 2px solid var(--v3-lime); color: var(--v3-lime); font-style: normal; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
   .v3-seg { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; background: var(--v3-s1); border-radius: 24px; padding: 4px; }
-  .v3-sg { min-height: 44px; border-radius: 22px; border: 0; background: transparent; color: var(--v3-t3); font-size: 15px; font-weight: 600; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v3-sg { min-height: 48px; border-radius: 24px; border: 0; background: transparent; color: var(--v3-t3); font-size: 15px; font-weight: 600; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .v3-sg[aria-pressed="true"] { background: var(--v3-s3); color: var(--v3-t1); }
   .v3-cc { background: var(--v3-s1); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
   .v3-cc svg { width: 100%; height: auto; display: block; }
@@ -110,6 +112,12 @@
   .v3-pill { position: absolute; transform: translate(-50%, -100%); background: #fff; color: var(--v3-ink); font-size: 14px; font-weight: 700; padding: 6px 10px; border-radius: 14px; white-space: nowrap; pointer-events: none; z-index: 2; font-variant-numeric: tabular-nums; }
   .v3-o65 .v3-lab, .v3-o65 .v3-sg, .v3-o65 .v3-back, .v3-o65 .v3-b2, .v3-o65 .v3-leg, .v3-o65 .v3-leo, .v3-o65 .v3-apri, .v3-o65 .v3-miss, .v3-o65 .v3-pill { font-size: 16px; }
   .v3-o65 .v3-rt { font-size: 17px; }
+
+  body.v3-nobar #v3bar { display: none; }
+  body.v3-on.v3-nobar .sbar { bottom: 0; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  body.v3-on.v3-nobar .wrap { padding-bottom: calc(var(--v3-bar) + 24px) !important; }
+  body.v3-on.v3-nobar .coach-fab.insession { bottom: calc(var(--v3-bar) + 6px); }
+  .v3-lgb { padding: 4px 0 16px; font-family: var(--v3-font); }
 
   /* foglio dal basso */
   #v3-overlay .v3-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 25; display: flex; align-items: flex-end; justify-content: center; font-family: var(--v3-font); color: var(--v3-t1); }
@@ -397,18 +405,28 @@
   /* stack delle pagine interne e dei fogli V3: ogni voce = una voce di history, così il tasto indietro (Android, swipe iOS) la chiude */
   const stack = [];
   let pending = null;
-  /* gesture.js ascolta popstate e sale di un livello. Secondo il browser il suo listener può girare prima del nostro
-     (a window l'ordine cattura/bolla non è garantito): ogni voce ricorda lo stato di navigazione al momento del push
-     e, quando la chiudiamo, lo ripristiniamo. Così il risultato è lo stesso in qualunque ordine. */
+  /* Un solo padrone della history: finché lo stack V3 non è vuoto, gesture.js non aggiunge voci-guardia e non gestisce
+     popstate (chiede a V3._owns / V3._busy). Ogni voce ricorda la navigazione prima del push (nav) e quella attesa
+     sopra di lei (exp): se nel frattempo l'app vecchia ha aperto qualcosa (foglio vecchio, ingranaggio, dettaglio di una
+     vista vecchia), indietro chiude solo quello e rimette la voce. Così ogni indietro torna alla schermata precedente. */
   const NAV = ["tab", "hub", "macro", "detail", "settings", "boardEdit"];
   const navSnap = () => NAV.reduce((o, k) => (o[k] = S[k], o), {});
-  function navRestore(o) { let ch = false; for (const k of NAV) if (S[k] !== o[k]) { S[k] = o[k]; ch = true; } if (ch) lsSet("tab2", S.tab); return ch; }
-  function push(close, sec, page) { stack.push({ close, sec, page: !!page, nav: navSnap() }); try { history.pushState({ v3d: stack.length }, ""); } catch (_) {} }
+  const sameNav = o => NAV.every(k => (S[k] || null) === (o[k] || null));
+  function navRestore(o) { let ch = false; for (const k of NAV) if ((S[k] || null) !== (o[k] || null)) { S[k] = o[k]; ch = true; } if (ch) lsSet("tab2", S.tab); return ch; }
+  function push(close, sec, page, legacy) { const nav = navSnap(); stack.push({ close, sec, page: !!page, legacy: !!legacy, nav, exp: nav }); try { history.pushState({ v3d: stack.length }, ""); } catch (_) {} }
+  const owns = ev => !!pending || stack.length > ((ev && ev.state && ev.state.v3d) || 0);
   window.addEventListener("popstate", ev => {
     if (pending) { const fn = pending; pending = null; ev.stopImmediatePropagation(); while (stack.length) { try { stack.pop().close(true); } catch (_) {} } fn(); return; }
     const depth = (ev.state && ev.state.v3d) || 0;
     if (stack.length > depth) {
       ev.stopImmediatePropagation();
+      const top = stack[stack.length - 1];
+      if (depth === stack.length - 1 && (S.sheet || !sameNav(top.exp))) { // qualcosa dell'app vecchia sopra la voce: chiudi solo quello
+        if (S.sheet) { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }
+        else { navRestore(top.exp); window.scrollTo(0, 0); render(); }
+        try { history.pushState({ v3d: stack.length }, ""); } catch (_) {}
+        return;
+      }
       let re = navRestore(stack[depth].nav);
       while (stack.length > depth) { const it = stack.pop(); if (it.page) re = true; try { it.close(true); } catch (err) { console.error(err); } }
       if (re) { if (stack.length === 0 || !stack[stack.length - 1].page) window.scrollTo(0, 0); render(); }
@@ -426,14 +444,16 @@
   };
   const atRoot = id => !S.settings && !S.ob && (id === "oggi" ? S.tab === "oggi" && !S.macro : id === "palestra" ? S.tab === "allenamento" && !S.detail : id === "cibo" ? S.tab === "oggi" && S.macro === "food" : id === "progressi" ? S.tab === "progressi" : false);
 
-  function navTo(id) {
+  function navTo(id, opts) {
     S.settings = null; S.hub = ""; S.macro = null; S.boardEdit = false; S.detail = null;
     S.tab = id === "palestra" ? "allenamento" : id === "progressi" ? "progressi" : "oggi";
     if (id === "cibo") S.macro = "food";
     lsSet("tab2", S.tab); lsSet("v3tab", id);
     window.scrollTo(0, 0); render();
+    const def = sections[id];
+    if (opts && def && typeof def.enter === "function" && current === id) { try { def.enter(opts); } catch (err) { console.error("[V3] enter " + id, err); } }
   }
-  function go(id) { if (!SECS.some(s => s[0] === id)) return; unwind(() => navTo(id)); }
+  function go(id, opts) { if (!SECS.some(s => s[0] === id)) return; unwind(() => navTo(id, opts)); }
 
   /* ---------- barra in basso ---------- */
   const bar = document.createElement("nav");
@@ -444,6 +464,7 @@
     const show = !!S.profile && !S.ob;
     bar.hidden = !show; document.body.classList.toggle("v3-on", show);
     const live = !!activeDay(); document.body.classList.toggle("v3-live", live && S.tab === "allenamento");
+    document.body.classList.toggle("v3-nobar", show && live && S.tab === "allenamento" && !S.settings && !!document.querySelector("#bar .sbar"));
     if (!show) return;
     bar.innerHTML = `<div>${SECS.map(([k, l]) => `<button type="button" data-v3go="${k}"${cur === k ? ' aria-current="page"' : ""}><span class="v3-tip"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg></span>${l}${k === "palestra" && live ? '<span class="v3-live" aria-label="seduta in corso"></span>' : ""}</button>`).join("")}</div>`;
   }
@@ -456,7 +477,9 @@
     current = derive();
     const v = document.getElementById("view"), def = current && sections[current];
     let used = false;
-    if (def && v && atRoot(current)) {
+    const lg = stack.length && stack[stack.length - 1].legacy;
+    if (lg && v) { v.classList.remove("v3", "v3-o65"); v.insertAdjacentHTML("afterbegin", `<div class="v3-lgb"><button class="v3-back" data-v3act="v3lb">‹ Indietro</button></div>`); }
+    else if (def && v && atRoot(current)) {
       const legacy = v.innerHTML;
       v.classList.add("v3"); v.classList.toggle("v3-o65", data.profile().over65);
       v.innerHTML = "";
@@ -492,6 +515,7 @@
     if (scrim) { scrim._v3.close(); return; }
     const b = ev.target.closest("[data-v3act]"); if (!b) return;
     const act = b.dataset.v3act, arg = b.dataset.v3arg, inSheet = b.closest(".v3-scrim");
+    if (act === "v3lb") { history.back(); return; }
     const handlers = inSheet ? inSheet._v3.on : (current && sections[current] && sections[current].on) || {};
     if (typeof handlers[act] === "function") { handlers[act](arg, b, ev); return; }
     if (act === "back" || act === "close") { history.back(); return; }
@@ -513,7 +537,10 @@
     page(onBack) { push(() => onBack(), current, true); window.scrollTo(0, 0); render(); },
     back: () => history.back(),
     /* apre una vista vecchia come pagina interna (es. editor scheda: {tab:"piano", hub:"train"}; menù: {tab:"piano", hub:"menu"}); indietro torna qui */
-    legacy(nav) { push(() => {}, current, true); for (const k of NAV) if (k in nav) S[k] = nav[k]; window.scrollTo(0, 0); render(); }
+    legacy(nav) { push(() => {}, current, true, true); for (const k of NAV) if (k in nav) S[k] = nav[k]; stack[stack.length - 1].exp = navSnap(); window.scrollTo(0, 0); render(); },
+    /* per gesture.js: V3 gestisce questo popstate / la history è di V3 (niente voci-guardia) */
+    _owns: owns,
+    _busy: () => !!pending || stack.length > 0
   };
   render();
 })();

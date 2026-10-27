@@ -571,7 +571,6 @@
   V3.register("progressi", {
     render(el) {
       memo = {};
-      if (sub === "legacy") return false; // vista vecchia (grafici di prima, CSV) come pagina interna
       if (sub && !allowed().includes(sub)) sub = null;
       el.innerHTML = sub ? innerPage(sub) : mainPage();
     },
@@ -579,7 +578,7 @@
       open(id) { if (!allowed().includes(id)) return; sub = id; V3.page(() => { sub = null; shown = new Set(); }); },
       sel(i) { sel[sub] = +i; shown = new Set(); V3.refresh(); },
       exlist() { exSheet(); },
-      legacy(psub) { const prev = sub; S.psub = psub || "carichi"; sub = "legacy"; V3.page(() => { sub = prev; }); },
+      legacy(psub) { S.psub = psub || "carichi"; V3.legacy({ tab: "progressi" }); }, // vista vecchia (grafici di prima, CSV) come pagina interna
       psap(id) { sapSheet(id || "main"); },
       fab() { fabSheet(); },
       medico() { medicoSheet(); },

@@ -7,6 +7,10 @@
   try { TABS[3][1] = "Profilo"; } catch (_) {}
   const pref = () => Object.assign({ sound: true, flash: true, awake: true, remind: "18:00", days: "flex" }, lsGet("prefs", {}));
   const setPref = (k, v) => { const p = pref(); p[k] = v; lsSet("prefs", p); };
+  /* «Impostazioni allenamento» (decisione 27/10): chiave nuova, letta da sec-palestra.js */
+  const rout = () => Object.assign({ warm: true, stretch: "both" }, lsGet("v3_allenamento", {}) || {});
+  const setRout = (k, v) => { const r = rout(); r[k] = v; lsSet("v3_allenamento", r); };
+  const STR = [["prima", "Prima"], ["dopo", "Dopo"], ["both", "Prima e dopo"], ["no", "Non lo faccio"]];
 
   /* ---------- avatar ---------- */
   const ICONS = {
@@ -56,6 +60,10 @@
       <h2 class="set-h" id="s-all">Allenamento</h2>
       <div class="block"><div class="hcard"><div><b>Quando ti alleni?</b><div class="seg wrap" role="group" style="margin-top:8px"><button data-act="days" data-v="flex" aria-pressed="${p.days === "flex"}">Quando vuoi</button><button data-act="days" data-v="fixed" aria-pressed="${p.days === "fixed"}">Giorni fissi</button></div>
         <p class="small muted" style="margin:6px 0 0">${p.days === "flex" ? "Fai le sedute in ordine, nei giorni che preferisci: ti suggerisco quando riposare." : "Segui i giorni della scheda: se ne salti uno, ti propongo di spostare la settimana."}</p></div>${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>
+      <h2 class="set-h" id="s-rout">Impostazioni allenamento</h2>
+      <div class="block"><div class="hcard"><div class="setrow"><span><b>Riscaldamento prima</b><small>Cardio leggero e serie di avvicinamento prima degli esercizi.</small></span><button class="bsw" data-act="rout-warm" role="switch" aria-checked="${rout().warm !== false}" aria-label="Riscaldamento prima"><span></span></button></div>
+        <div><b>Stretching</b><div class="seg wrap" role="group" aria-label="Stretching" style="margin-top:8px">${STR.map(([v, l]) => `<button data-act="rout-str" data-v="${v}" aria-pressed="${rout().stretch === v}">${l}</button>`).join("")}</div>
+        <p class="small muted" style="margin:6px 0 0">${rout().warm === false && !["prima", "both"].includes(rout().stretch) ? "«Inizia la seduta» ti porta subito al primo esercizio." : "Prima: movimenti dinamici. Dopo: allungamenti tenuti fermi."}</p></div></div></div>
       <h2 class="set-h" id="s-pro">Promemoria</h2>
       <div class="block"><div class="hcard"><p class="small muted" style="margin:0">Askesis non ha un server, quindi non può scriverti ad app chiusa. Per i promemoria usa il Calendario dell'iPhone: li crea lui, anche ad app chiusa.</p>
         <ul class="plain small muted" style="margin:0"><li>Ogni mattina alle 8: il tuo obiettivo del giorno.</li><li>Ogni sera alle 21: chiudi la giornata, pasti e acqua.</li><li>Lunedì e giovedì alle 7:15: la pesata. Ogni 4 settimane: le foto progressi.</li>${p.days === "fixed" && plan.length ? `<li>Nei giorni di allenamento, all'orario che scegli qui sotto.</li>` : `<li>All'orario che scegli: oggi seduta o riposo?</li>`}</ul>
@@ -171,6 +179,8 @@
     if (act === "set-close") { e.stopPropagation(); S.settings = null; S.crop = null; window.scrollTo(0, 0); render(); }
     else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar", "help"].includes(v) ? v : "main"; S.crop = null; S.avPick = null; window.scrollTo(0, 0); render(); }
     else if (act === "days") { e.stopPropagation(); setPref("days", v); render(); toast(v === "flex" ? "Ti alleni quando vuoi" : "Giorni fissi della scheda"); }
+    else if (act === "rout-warm") { e.stopPropagation(); setRout("warm", rout().warm === false); render(); }
+    else if (act === "rout-str") { e.stopPropagation(); setRout("stretch", v); render(); }
     else if (act === "pref") { e.stopPropagation(); const p = pref(); setPref(v, !p[v]); render(); }
     else if (act === "accent") { e.stopPropagation(); saveProfile({ colore: v }); }
     else if (act === "ics") { e.stopPropagation(); ics(); }

@@ -2,12 +2,13 @@
 /* Tutorial (team design): a 5-step tour on the real elements offered once by Leo, first-use hints for hidden gestures,
    and a «Come funziona» page in Impostazioni. No forced modal: «Salta» always visible. Loaded after settings.js. */
 (function () {
+  /* v3: il tour punta alla nuova barra in basso (#v3bar) e all'ingranaggio delle sezioni; senza bersaglio il fumetto resta al centro */
   const STEPS = [
-    [".now", "Adesso", () => { const b = document.querySelector(".now .now-go"); return `Qui trovi sempre la prossima cosa da fare${b ? `: ora è «${b.textContent.trim()}»` : ""}. Fatta quella, si aggiorna da sola.`; }],
-    [".mgrid .bx", "Oggi è tuo", "Tieni premuto un box per spostarlo o nasconderlo. Con il «+» in fondo aggiungi sezioni."],
-    ['.tabs [data-v="allenamento"]', "Allenamento", "Scegli la seduta e ti guido un esercizio alla volta. Attrezzo occupato? Tocca «Sostituisci»."],
-    ['.tabs [data-v="progressi"], .tabs [data-v="piano"]', "Progressi e Profilo", "In Progressi vedi carichi, peso e foto nel tempo. In Profilo trovi scheda, dieta e i tuoi alimenti."],
-    [".coach-fab", "Leo", "Io sono sempre qui in basso. Chiedimi qualsiasi cosa, anche a metà allenamento. Le impostazioni sono nell'ingranaggio in alto."]
+    ['#v3bar [data-v3go="oggi"]', "Oggi", "Qui trovi la prossima cosa da fare e i numeri della giornata."],
+    ['#v3bar [data-v3go="palestra"]', "Palestra", "Scegli la seduta e ti guido un esercizio alla volta. Da qui modifichi anche la scheda."],
+    ['#v3bar [data-v3go="cibo"]', "Cibo", "Segna i pasti con un tocco: ogni pasto segnato ti insegna qualcosa."],
+    ['#v3bar [data-v3go="progressi"]', "Progressi", "Carichi, calorie, peso e foto nel tempo."],
+    [".v3-gear", "Impostazioni e Leo", "Le impostazioni sono nell'ingranaggio in alto. Leo lo trovi in fondo a ogni pagina: «Chiedi a Leo»."]
   ];
   const layer = document.createElement("div"); layer.className = "tour"; layer.hidden = true; document.body.appendChild(layer);
   let step = -1;
@@ -16,7 +17,7 @@
   function show() {
     if (step < 0 || step >= STEPS.length) return end();
     const [sel, title, tx] = STEPS[step], text = typeof tx === "function" ? tx() : tx, first = document.querySelector(sel.split(",")[0]);
-    if (first && !first.closest(".tabs") && !first.classList.contains("coach-fab")) first.scrollIntoView({ block: "center" });
+    if (first && !first.closest(".tabs, #v3bar") && !first.classList.contains("coach-fab")) first.scrollIntoView({ block: "center" });
     setTimeout(() => {
       const r = rectOf(sel); const pad = 8;
       const hole = r ? `<div class="t-hole" style="left:${r.x - pad}px;top:${r.y - pad}px;width:${r.r - r.x + 2 * pad}px;height:${r.b - r.y + 2 * pad}px"></div>` : `<div class="t-dim"></div>`;
@@ -27,7 +28,7 @@
       layer.hidden = false; layer.querySelector('[data-tour="next"]').focus();
     }, 260);
   }
-  function start() { lsSet("tour_seen", true); S.tab = "oggi"; S.macro = null; S.settings = null; S.sheet = null; render(); step = 0; show(); }
+  function start() { lsSet("tour_seen", true); if (window.V3 && V3.go) { S.settings = null; S.sheet = null; V3.go("oggi"); } else { S.tab = "oggi"; S.macro = null; S.settings = null; S.sheet = null; render(); } step = 0; setTimeout(show, 120); }
   function end() { step = -1; layer.hidden = true; layer.innerHTML = ""; lsSet("tour_seen", true); }
   window.startTour = start;
   layer.addEventListener("click", e => { const b = e.target.closest("[data-tour]"); if (!b) { if (e.target === layer || e.target.classList.contains("t-hole") || e.target.classList.contains("t-dim")) end(); return; }
@@ -37,7 +38,7 @@
   // the offer: once, on Oggi, after the greeting
   const offerOff = () => { layer.hidden = true; layer.innerHTML = ""; };
   function offer() {
-    if (lsGet("tour_seen", false) || !S.profile || S.ob || S.tab !== "oggi" || S.sheet || document.querySelector(".hello, .aistep")) return;
+    if (lsGet("tour_seen", false) || !S.profile || S.ob || S.tab !== "oggi" || S.macro || S.sheet || document.querySelector(".hello, .aistep")) return;
     layer.innerHTML = `<div class="t-dim"></div><div class="t-bub" role="dialog" aria-label="Tutorial" style="top:30%"><div class="t-h">${window.coachAvatar ? coachAvatar(36) : ""}<b>Ti faccio vedere come funziona?</b></div><p>Ci vogliono 30 secondi. Puoi rivederlo quando vuoi da Impostazioni › Come funziona.</p>
       <div class="t-acts"><button class="link small" data-tour="later">Dopo</button><button class="primary sm" data-tour="go">Sì, mostrami</button></div></div>`;
     layer.hidden = false;
@@ -73,7 +74,7 @@
         ${item("Alimentazione", "Spunta i pasti del piano o scrivi cosa hai mangiato. Fotografa le etichette dei cibi che mangi spesso: poi li riconosco quando li scrivi.")}
         ${item("Progressi", "Carichi, calorie, peso e foto nel tempo. In Foto trovi «Il tuo percorso»: ogni 4 settimane confronto le tue foto.")}
         ${item("Profilo", "La scheda e il piano alimentare che segui: li guardi, li modifichi o ne carichi di nuovi. Qui trovi anche Leo.")}
-        ${item("Leo", "Il pulsante in basso a destra: chiedimi qualsiasi cosa. Come ti parlo lo scegli in Profilo › Il tuo coach.")}
+        ${item("Leo", "«Chiedi a Leo» in fondo a ogni pagina: chiedimi qualsiasi cosa. Come ti parlo lo scegli in Profilo › Il tuo coach.")}
         ${item("Gesti", "Scorri dal bordo sinistro per tornare indietro. Trascina in basso una finestra per chiuderla.")}
         ${item("I tuoi dati", "Restano solo su questo telefono. Fai ogni tanto un backup: Impostazioni › I tuoi dati.")}
       </ul><button class="primary go" data-act="tour-again">Rivedi il tour</button></div></div>`;

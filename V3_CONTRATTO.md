@@ -42,6 +42,7 @@ Quando la sezione è attiva: `#view` ha la classe `v3` (e `v3-o65` per gli over 
 })();
 ```
 
+- History (FASE 3): finché ci sono pagine/fogli V3 aperti la history è solo di `v3.js` (gesture.js non aggiunge voci). Le pagine interne si possono annidare: ogni indietro torna alla schermata precedente; un foglio vecchio, l'ingranaggio o un dettaglio di una vista vecchia aperti sopra una pagina si chiudono con un indietro, poi si torna alla pagina.
 - `render` deve essere **sincrono** e scrivere tutto in `el.innerHTML`. Restituire `false` = usa la vista vecchia (es. Palestra durante la seduta in corso finché non c'è una versione nuova).
 - Le azioni si collegano con `data-v3act="nome"` (+ `data-v3arg="valore"`): il guscio chiama `on[nome](arg, el, ev)` della sezione corrente. Niente `addEventListener` globali nelle sezioni.
 - Azioni comuni già gestite se la sezione non le ridefinisce: `back` / `close` (= indietro), `go` (arg = id sezione), `sap` (apre «Lo sapevi?» in un foglio).
@@ -54,10 +55,10 @@ Quando la sezione è attiva: `#view` ha la classe `v3` (e `v3-o65` per gli over 
 | Firma | Cosa fa |
 |---|---|
 | `V3.register(id, { render(el, ctx), on: {} })` | registra la sezione (`id` ∈ oggi, palestra, cibo, progressi) e la ridisegna se è aperta |
-| `V3.go(id)` | va a una sezione (chiude prima fogli e pagine interne aperti) |
+| `V3.go(id, opts?)` | va a una sezione (chiude prima fogli e pagine interne aperti); con `opts` chiama `enter(opts)` della sezione, se c'è (es. `V3.go("cibo", { meal: "pra" })` apre il pasto) |
 | `V3.page(onBack)` | apre una pagina interna: chiamala **dopo** aver cambiato lo stato interno; aggiunge una voce di history e ridisegna. Indietro (pulsante, tasto Android, swipe iOS) chiama `onBack()` e ridisegna |
 | `V3.back()` | indietro (= `history.back()`) |
-| `V3.legacy({ tab, hub, macro, detail, settings })` | apre una vista vecchia come pagina interna; indietro ripristina la sezione |
+| `V3.legacy({ tab, hub, macro, detail, settings })` | apre una vista vecchia come pagina interna (anche della sezione stessa, es. `{ tab: "progressi" }`), con pulsante «‹ Indietro» v3 in cima; indietro ripristina la sezione |
 | `V3.sheet(html, { on, label, onClose })` | foglio dal basso; restituisce `{ el, close() }`. I `data-v3act` dentro il foglio vanno a `opts.on`, altrimenti `close` lo chiude. Si chiude anche con tocco fuori, Esc, tasto indietro |
 | `V3.refresh()` | ridisegna (dopo un cambio di stato interno senza nuova pagina, es. selettore) |
 | `V3.current()` | id della sezione attiva (o `null` in Impostazioni) |
