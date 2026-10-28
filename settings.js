@@ -5,8 +5,11 @@
 (function () {
   const BACK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';
   try { TABS[3][1] = "Profilo"; } catch (_) {}
-  const pref = () => Object.assign({ sound: true, flash: true, awake: true, remind: "18:00", days: "flex" }, lsGet("prefs", {}));
-  const setPref = (k, v) => { const p = pref(); p[k] = v; lsSet("prefs", p); };
+  const pref = () => Object.assign({ sound: true, flash: true, awake: true, remind: "18:00", days: "flex", glass: true, anim: true }, lsGet("prefs", {}));
+  /* 28/10 «Effetto vetro» e «Animazioni» (Giovanni + squadra): iOS non passa «Riduci trasparenza» alle web app, quindi interruttori nostri */
+  const look = () => { const p = pref(); document.body.classList.toggle("no-glass", !p.glass); document.body.classList.toggle("no-anim", !p.anim); };
+  const setPref = (k, v) => { const p = pref(); p[k] = v; lsSet("prefs", p); look(); };
+  look();
   /* «Impostazioni allenamento» (decisione 27/10): chiave nuova, letta da sec-palestra.js */
   const rout = () => Object.assign({ warm: true, stretch: "both" }, lsGet("v3_allenamento", {}) || {});
   const setRout = (k, v) => { const r = rout(); r[k] = v; lsSet("v3_allenamento", r); };
@@ -56,7 +59,7 @@
       <nav class="set-idx" aria-label="Sezioni">${[["s-asp", "Aspetto"], ["s-all", "Allenamento"], ["s-pro", "Promemoria"], ["s-dati", "IA"], ["s-dati2", "Dati"]].map(([i, l]) => `<button data-jump="${i}">${l}</button>`).join("")}<button data-act="set-sub" data-v="help">Aiuto</button></nav>
       <h2 class="set-h" id="s-asp">Aspetto</h2>
       <div class="block"><div class="hcard"><button class="setrow link-row" data-act="set-sub" data-v="avatar">${userAvatar(48)}<span><b>La tua immagine</b><small>Foto, simbolo o iniziali</small></span><span class="hl">›</span></button>
-        <div><p class="small muted" style="margin:6px 0 8px">Colore dell'app</p><div class="swatches">${ACCENTS.map(([v, c, l]) => `<button class="sw" style="background:${c}" data-act="accent" data-v="${v}" aria-pressed="${(pr.colore || "lime") === v}" aria-label="${l}"></button>`).join("")}</div></div></div></div>
+        <div><p class="small muted" style="margin:6px 0 8px">Colore dell'app</p><div class="swatches">${ACCENTS.map(([v, c, l]) => `<button class="sw" style="background:${c}" data-act="accent" data-v="${v}" aria-pressed="${(pr.colore || "lime") === v}" aria-label="${l}"></button>`).join("")}</div></div>${tog("glass", p.glass, "Effetto vetro", "Barre trasparenti sopra i contenuti. Se il telefono scatta scorrendo, spegnilo.")}${tog("anim", p.anim, "Animazioni", "Movimenti di entrata e uscita")}</div></div>
       <h2 class="set-h" id="s-all">Allenamento</h2>
       <div class="block"><div class="hcard"><div><b>Quando ti alleni?</b><div class="seg wrap" role="group" style="margin-top:8px"><button data-act="days" data-v="flex" aria-pressed="${p.days === "flex"}">Quando vuoi</button><button data-act="days" data-v="fixed" aria-pressed="${p.days === "fixed"}">Giorni fissi</button></div>
         <p class="small muted" style="margin:6px 0 0">${p.days === "flex" ? "Fai le sedute in ordine, nei giorni che preferisci: ti suggerisco quando riposare." : "Segui i giorni della scheda: se ne salti uno, ti propongo di spostare la settimana."}</p></div>${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>

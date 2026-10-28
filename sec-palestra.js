@@ -122,9 +122,10 @@
   function stopTick() { if (tick) { clearInterval(tick); tick = null; } }
   function startTick() {
     stopTick(); W.run = true;
+    const end = Date.now() + W.left * 1000; // dall'istante di fine: in background il tempo non si congela
     tick = setInterval(() => {
       if (!W || sub !== "warm") return stopTick();
-      W.left = Math.max(0, W.left - 1);
+      W.left = Math.max(0, Math.round((end - Date.now()) / 1000));
       const c = document.getElementById("v3-pal-clock"); if (c) c.textContent = mmss(W.left);
       if (W.left === 0) { stopTick(); W.run = false; try { navigator.vibrate && navigator.vibrate(200); } catch (_) {} V3.refresh(); }
     }, 1000);

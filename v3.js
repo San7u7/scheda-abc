@@ -27,6 +27,16 @@
   :root { --v3-bg: #000; --v3-s1: #111; --v3-s2: #1a1a1a; --v3-s3: #2a2a2a; --v3-lime: var(--accent, #c6f24e); --v3-soft: var(--accent-soft, #222a10); --v3-ink: #0a0a0a;
     --v3-t1: #fff; --v3-t2: rgba(255,255,255,.8); --v3-t3: #b4b4b4; --v3-gap: 28px; --v3-tap: 48px; --v3-bar: calc(62px + max(22px, env(safe-area-inset-bottom, 0px))); --v3-font: "Inter", system-ui, -apple-system, sans-serif; }
 
+  /* vetro (28/10, tela «Effetto vetro e profondità»): solo cornici e riquadro del recupero; fogli pieni con la schermata dietro sfocata */
+  :root { --glass-bg: rgba(17,17,17,.72); --glass-blur: blur(18px) saturate(140%); --glass-line: rgba(255,255,255,.08); }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --glass-bg: rgba(17,17,17,.94); } }
+  @media (prefers-reduced-transparency: reduce) { :root { --glass-bg: #111; --glass-blur: none; } }
+  body.no-glass { --glass-bg: #111; --glass-blur: none; }
+  #v3bar, body.v3-on .sbar { background: var(--glass-bg) !important; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+  #v3-overlay .v3-scrim, .scrim { background: rgba(0,0,0,.45) !important; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  body.no-glass #v3-overlay .v3-scrim, body.no-glass .scrim { background: rgba(0,0,0,.72) !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .v3-sheet, .sheet { box-shadow: 0 -12px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.08); }
+  body.no-anim *, body.no-anim *::before, body.no-anim *::after { animation: none !important; transition: none !important; }
   /* barra in basso */
   #v3bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; height: var(--v3-bar); background: var(--v3-s1); border-top: 1px solid var(--v3-s2); padding: 8px max(8px, env(safe-area-inset-right, 0px)) max(22px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); box-sizing: border-box; font-family: var(--v3-font); }
   #v3bar[hidden] { display: none; }

@@ -34,7 +34,7 @@
   const skip = el => el.closest("input, textarea, select, .hscroll, .seg, [contenteditable], .bx-h, .pp-range");
   document.addEventListener("touchstart", e => {
     if (e.touches.length !== 1) { t = null; return; }
-    const p = e.touches[0], sheet = e.target.closest(".sheet");
+    const p = e.touches[0], sheet = e.target.closest(".sheet, .v3-sheet"); // 28/10: anche i fogli delle sezioni v3 si chiudono trascinando in giù
     t = { x: p.clientX, y: p.clientY, at: Date.now(), dx: 0, dy: 0, mode: null, sheet };
     if (sheet && !skip(e.target)) t.mode = "sheet?";
     else if (!S.sheet && standalone && p.clientX < 24 && level()) t.mode = "edge";
@@ -54,7 +54,7 @@
     if (!t) return; const v = t.dy / Math.max(1, Date.now() - t.at);
     if (t.mode === "sheet") {
       const sh = t.sheet, sc = sh.parentElement;
-      if (t.dy > 120 || (t.dy > 50 && v > .5)) { sh.style.transition = "transform .2s ease-in"; sh.style.transform = "translateY(100%)"; setTimeout(() => { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }, 180); }
+      if (t.dy > 120 || (t.dy > 50 && v > .5)) { sh.style.transition = "transform .2s ease-in"; sh.style.transform = "translateY(100%)"; setTimeout(() => { if (sc && sc._v3) { sc._v3.close(); return; } if (S.sheet === "chat") S.chatOpen = false; closeSheet(); }, 180); }
       else { sh.style.transition = "transform .22s cubic-bezier(.2,1,.3,1)"; sh.style.transform = ""; if (sc) sc.style.background = ""; }
     }
     if (t.mode === "edge") { edge.style.opacity = 0; edge.style.transform = ""; edge.classList.remove("ready"); if (t.dx >= 70) H.back(); }
