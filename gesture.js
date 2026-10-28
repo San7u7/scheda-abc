@@ -27,19 +27,21 @@
     if (S.sheet && S.sheet !== openSheet) { const d = document.querySelector(".sheet"), h = d && d.querySelector("h2"); if (h) { h.id = h.id || "sheet-title"; h.tabIndex = -1; d.setAttribute("aria-labelledby", h.id); try { h.focus({ preventScroll: true }); } catch (_) {} } }
     openSheet = S.sheet; };
 
-  /* ---------- tieni premuto − / + (chili e ripetizioni): ripete sempre più veloce (Giovanni 28/10) ---------- */
+  /* ---------- tieni premuto − / + (chili e ripetizioni): ripete sempre più veloce (Giovanni 28/10) ----------
+     data-hold="<chiave unica>": stessa ripetizione per i − / + delle sezioni v3 (grammi del pasto composto, alimenti.js) */
+  const HOLD = '[data-act="kg"], [data-act="repsd"], [data-hold]';
   let hold = null;
   const stopHold = () => { if (hold) { clearTimeout(hold.t); hold = null; } };
   document.addEventListener("pointerdown", e => {
-    const b = e.target.closest('[data-act="kg"], [data-act="repsd"]'); if (!b) return;
-    stopHold(); const sel = `[data-act="${b.dataset.act}"][data-v="${b.dataset.v}"]`;
+    const b = e.target.closest(HOLD); if (!b) return;
+    stopHold(); const sel = b.dataset.hold ? `[data-hold="${b.dataset.hold}"]` : `[data-act="${b.dataset.act}"][data-v="${b.dataset.v}"]`;
     hold = { n: 0, fired: false };
     const tick = () => { if (!hold) return; const el = document.querySelector(sel); if (!el) return stopHold(); hold.fired = true; hold.n++; el.click(); hold.t = setTimeout(tick, Math.max(50, 160 - hold.n * 8)); };
     hold.t = setTimeout(tick, 420);
   });
   ["pointerup", "pointercancel", "pointerleave"].forEach(t => document.addEventListener(t, e => { if (t === "pointerleave" && e.target !== document.documentElement) return; if (hold && hold.fired) { const h = hold; stopHold(); h.suppress = true; window._holdSuppress = Date.now(); } else stopHold(); }, true));
-  window.addEventListener("click", e => { if (e.isTrusted && window._holdSuppress && Date.now() - window._holdSuppress < 400 && e.target.closest('[data-act="kg"], [data-act="repsd"]')) { e.stopImmediatePropagation(); window._holdSuppress = 0; } }, true);
-  document.addEventListener("contextmenu", e => { if (e.target.closest('[data-act="kg"], [data-act="repsd"]')) e.preventDefault(); });
+  window.addEventListener("click", e => { if (e.isTrusted && window._holdSuppress && Date.now() - window._holdSuppress < 400 && e.target.closest(HOLD)) { e.stopImmediatePropagation(); window._holdSuppress = 0; } }, true);
+  document.addEventListener("contextmenu", e => { if (e.target.closest(HOLD)) e.preventDefault(); });
 
   /* ---------- touch gestures ---------- */
   const edge = document.createElement("div"); edge.className = "edge-back"; edge.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>';

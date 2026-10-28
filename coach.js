@@ -98,7 +98,7 @@ const addN = (a, b) => ({ kcal: a.kcal + (+b.kcal || 0), p: a.p + (+b.p || 0), c
 function intake(iso) {
   const v = dayLog(iso), dow = dowOf(iso), T = planTargets(); let eaten = ZERO(), rest = ZERO(); const restKeys = [];
   for (const [k] of MEALS) { const st = mealState(v, k);
-    if (st === "plan") eaten = addN(eaten, nutOf(dow, k));
+    if (st === "plan") eaten = addN(eaten, (v.snap && v.snap[k]) || (window.planNutOf ? planNutOf(dow, k) : nutOf(dow, k))); // 28/10: valori del piano in vigore quando il pasto è stato segnato
     else if (st === "custom") eaten = addN(eaten, v.custom[k]);
     else if (st === "open") { rest = addN(rest, nutOf(dow, k)); restKeys.push(k); } }
   for (const x of v.extra) eaten = addN(eaten, x);

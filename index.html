@@ -242,7 +242,7 @@ ul.plain { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column
 .fat { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .fat button { height: 44px; border-radius: 12px; border: 0; background: var(--raised); color: var(--muted); font-variant-numeric: tabular-nums; }
 .fat button[aria-pressed="true"] { background: var(--text); color: #000; font-weight: 600; }
-textarea { font-size: 16px; width: 100%; border: 0; border-radius: 14px; background: var(--raised); color: var(--text); padding: 12px 14px; resize: vertical; }
+textarea { flex-shrink: 0; min-height: 76px; box-sizing: border-box; font-size: 16px; width: 100%; border: 0; border-radius: 14px; background: var(--raised); color: var(--text); padding: 12px 14px; resize: vertical; }
 textarea::placeholder { color: var(--faint); }
 .thread { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .msg { border-radius: 16px; padding: 12px 14px; line-height: 22px; max-width: 92%; }
@@ -275,14 +275,15 @@ body.no-glass .toast { -webkit-backdrop-filter: none; backdrop-filter: none; bac
 .meal.skip .mt { color: var(--faint); text-decoration: line-through; }
 .extra { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--rule); }
 .extra > span:first-child { min-width: 0; }
-.ftab { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ftab { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .ftab td { padding: 8px 0; border-top: 1px solid var(--control); vertical-align: top; }
-.ftab td.r { text-align: right; white-space: nowrap; padding-left: 10px; }
+.ftab td { overflow-wrap: anywhere; }
+.ftab td.r { text-align: right; width: 44%; padding-left: 10px; }
 .ftab tr.tot td { font-weight: 600; }
 .fq { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; background: var(--raised); border-radius: 999px; }
 .fq button { width: 44px; height: 44px; border: 0; background: transparent; font-size: 18px; color: var(--muted); }
 .fq span { min-width: 54px; text-align: center; }
-.fact { display: flex; gap: 10px; justify-content: flex-end; }
+.fact { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: flex-end; }
 .fact .link { padding: 6px 0; }
 label.ghost.file-btn { display: flex; align-items: center; justify-content: center; }
 /* onboarding */
@@ -410,10 +411,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610281900"></script>
-<script src="lib.js?v=202610281900"></script>
-<script src="ai.js?v=202610281900"></script>
-<script src="coach.js?v=202610281900"></script>
+<script src="seed-abc.js?v=202610282200"></script>
+<script src="lib.js?v=202610282200"></script>
+<script src="ai.js?v=202610282200"></script>
+<script src="coach.js?v=202610282200"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -1160,7 +1161,7 @@ function renderSheet() {
       ${items.length ? `<table class="ftab"><tbody>${items.map((x, i) => `<tr><td>${esc(x.nome)}<br><span class="small faint">${x.per100 ? `${fmt(x.per100.kcal)} kcal per 100 g` : esc(x.quantita || "")}</span>
           ${x.per100 ? `<div class="fq"><button data-act="fg" data-i="${i}" data-v="-10" aria-label="Meno 10 g">−</button><span class="num">${fmt(x.g)} g</span><button data-act="fg" data-i="${i}" data-v="10" aria-label="Più 10 g">+</button></div>` : ""}</td>
           <td class="r">${fmt(Math.round(x.kcal))} kcal<br><span class="small faint">${fmt(Math.round(x.p * 10) / 10)} g di proteine</span><div class="fact">${!x.per100 && x.g ? `<button class="link small" data-act="fstar" data-i="${i}">Salva nei miei alimenti</button>` : ""}<button class="link small" data-act="fdel" data-i="${i}">Togli dal pasto</button></div></td></tr>`).join("")}
-        <tr class="tot"><td>Totale stimato</td><td class="r">${fmt(Math.round(tot.kcal))} kcal<br><span class="small faint">Proteine ${Math.round(tot.p)} g · Carboidrati ${Math.round(tot.c)} g · Grassi ${Math.round(tot.f)} g</span></td></tr></tbody></table>
+        <tr class="tot"><td>Totale stimato</td><td class="r">${fmt(Math.round(tot.kcal))} kcal</td></tr><tr><td colspan="2" class="r small faint" style="border-top:0;padding-top:0">Proteine ${Math.round(tot.p)} g · Carboidrati ${Math.round(tot.c)} g · Grassi ${Math.round(tot.f)} g</td></tr></tbody></table>
         ${f.note ? `<p class="small faint">${esc(f.note)}</p>` : ""}
         <button class="primary" data-act="savefood">Segna il pasto (${fmt(Math.round(tot.kcal))} calorie)</button>`
       : `<div class="hero"><div class="box"><label class="lab" for="fk">Calorie</label><input id="fk" inputmode="numeric" type="number" placeholder="0"></div><div class="box"><label class="lab" for="fp">Proteine (g)</label><input id="fp" inputmode="decimal" type="number" placeholder="0"></div></div>
@@ -1459,8 +1460,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610281900"></script>
-<script src="ux.js?v=202610281900"></script>
-<script src="hub.js?v=202610281900"></script><script src="board.js?v=202610281900"></script><script src="timer.js?v=202610281900"></script><script src="nutri.js?v=202610281900"></script><script src="photos.js?v=202610281900"></script><script src="coachui.js?v=202610281900"></script><script src="settings.js?v=202610281900"></script><script src="aikey.js?v=202610281900"></script><script src="tour.js?v=202610281900"></script><script src="gesture.js?v=202610281900"></script><script src="ds.js?v=202610281900"></script><script src="v3.js?v=202610281900"></script><script src="quiz.js?v=202610281900"></script><script src="sec-oggi.js?v=202610281900"></script><script src="sec-palestra.js?v=202610281900"></script><script src="sec-cibo.js?v=202610281900"></script><script src="sec-progressi.js?v=202610281900"></script>
+<script src="exdb.js?v=202610282200"></script>
+<script src="ux.js?v=202610282200"></script>
+<script src="hub.js?v=202610282200"></script><script src="board.js?v=202610282200"></script><script src="timer.js?v=202610282200"></script><script src="nutri.js?v=202610282200"></script><script src="photos.js?v=202610282200"></script><script src="coachui.js?v=202610282200"></script><script src="settings.js?v=202610282200"></script><script src="aikey.js?v=202610282200"></script><script src="tour.js?v=202610282200"></script><script src="gesture.js?v=202610282200"></script><script src="ds.js?v=202610282200"></script><script src="v3.js?v=202610282200"></script><script src="quiz.js?v=202610282200"></script><script src="cibo-base.js?v=202610282200"></script><script src="alimenti.js?v=202610282200"></script><script src="sec-oggi.js?v=202610282200"></script><script src="sec-palestra.js?v=202610282200"></script><script src="sec-cibo.js?v=202610282200"></script><script src="sec-progressi.js?v=202610282200"></script>
 
 </body></html>
