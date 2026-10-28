@@ -116,7 +116,7 @@
     if (warmOn()) out.push({ nome: "Bici o camminata veloce", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", a ritmo tranquillo", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
     if (strPre()) (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2] }));
     const p = P[W.day], it = p && p.items[0];
-    if (warmOn() && it && !kid() && it.unit !== "none") {
+    if (warmOn() && it && !kid() && it.unit !== "none" && !it.risc) { // con il riscaldamento automatico le serie leggere sono già in seduta
       const kg = planOf(it).kg;
       if (kg && kg >= 10) [[.4, 8], [.6, 5], [.8, 3]].forEach(([f, n]) => out.push({ nome: "Serie leggera di prova", how: nameOf(it) + ": " + kgTxt(r05(kg * f)) + " kg × " + n, it, tips: ["Movimento identico alla serie vera.", "Serve a provare il gesto, non a stancarti."] }));
     }
@@ -228,7 +228,7 @@
     const k = selDay, p = P[k]; if (!p) { sub = null; return home(); }
     const g = group(), dn = doneWeek(k);
     const list = p.items.map((it, j) => { const x = planOf(it), kg = it.unit === "none" ? null : x.kg;
-      const det = it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
+      const det = tipoOf(it) !== "uguali" ? SCH[tipoOf(it)][0] + " · " + it.sets + " serie" + (kg != null ? " · da " + kgTxt(kg) + " kg" : "") : it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
       const up = x.up && g !== "bambino" ? `<span class="v3-palestra-up">${g === "adulto" ? "+" + kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2)) + " kg oggi" : "Carico in aumento"}</span>` : "";
       return `<div class="v3-palestra-ex">${thumb(it, String(j + 1))}<span class="v3-rx"><span class="v3-rt" style="display:block">${e(nameOf(it))}</span><span class="v3-rs" style="display:block">${e(det)}</span>${up}</span></div>`; }).join("");
     const label = activeDay() === k ? tv("Riprendi la seduta", "Riprendi l'allenamento") : tv("Inizia la seduta", "Inizia l'allenamento");
@@ -260,6 +260,192 @@
       ui.end("Gli allungamenti tenuti fermi a lungo tolgono un po' di forza: meglio farli dopo i pesi.", { leoQ: "Che differenza c'è tra stretching dinamico e statico?" });
   }
 
+  /* ---------- Tappa A (28/10): schemi nella scheda, «Modifica esercizio», «Altre impostazioni», schema solo per oggi ---------- */
+  if (!document.getElementById("v3-pal-schemi")) {
+    const st = document.createElement("style");
+    st.id = "v3-pal-schemi";
+    st.textContent = `
+    .pal-hd { padding-left: 16px; } .pal-hd .v3-shp { color: var(--v3-t2); margin-top: 4px; }
+    .pal-lab { padding-left: 16px; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .pal-opts { display: flex; flex-direction: column; gap: 8px; }
+    .pal-opt { background: var(--v3-s2); border: 0; border-radius: 18px; min-height: 64px; padding: 10px 12px 10px 16px; display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; color: var(--v3-t1); font-family: inherit; box-sizing: border-box; }
+    .pal-opt[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+    .pal-opt .v3-rx { flex: 1; min-width: 0; } .pal-opt .v3-rs { font-size: 15px; }
+    .pal-rad { width: 52px; flex: none; display: flex; justify-content: center; }
+    .pal-rad i { width: 22px; height: 22px; border-radius: 11px; box-shadow: inset 0 0 0 2px var(--v3-t3); display: block; position: relative; }
+    .pal-opt[aria-checked="true"] .pal-rad i { box-shadow: inset 0 0 0 2px var(--accent); }
+    .pal-opt[aria-checked="true"] .pal-rad i::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--accent); }
+    .pal-tog { width: 52px; height: 48px; border: 0; background: transparent; padding: 0; flex: none; display: flex; align-items: center; justify-content: center; }
+    .pal-tog i { width: 52px; height: 32px; border-radius: 16px; background: var(--v3-s3); display: block; position: relative; transition: background .18s; }
+    .pal-tog i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 13px; background: var(--v3-t1); transition: left .18s; }
+    .pal-tog[aria-pressed="true"] i { background: var(--v3-lime); } .pal-tog[aria-pressed="true"] i::after { left: 23px; background: var(--v3-ink); }
+    body.no-anim .pal-tog i, body.no-anim .pal-tog i::after { transition: none; }
+    .pal-stps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+    .pal-stp { display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; min-width: 0; }
+    .pal-sl { padding-left: 16px; font-size: 16px; font-weight: 600; color: var(--v3-t2); line-height: 1.25; }
+    .stepper.pal-st { grid-template-columns: 48px minmax(0, 1fr) 48px; height: auto; }
+    .stepper.pal-st button { font-size: 22px; font-family: inherit; }
+    .pal-v { text-align: center; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--v3-t1); }
+    .pal-box { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .pal-box-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .pal-box-h b { color: var(--v3-lime); font-size: 17px; font-weight: 700; } .pal-box-h span { font-size: 14px; color: var(--v3-t2); }
+    .pal-ser { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; }
+    .pal-ser > div { background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 14px; padding: 10px 8px 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .pal-ser small { font-size: 14px; color: var(--v3-t2); } .pal-ser b { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; white-space: nowrap; } .pal-ser span { font-size: 15px; font-variant-numeric: tabular-nums; }
+    .pal-box p { margin: 0; font-size: 15px; color: var(--v3-t2); }
+    #view.v3 .pal-pg .v3-row .v3-apri { width: 96px; min-width: 96px; padding: 0; justify-content: center; flex: none; }
+    .pal-ta { width: 100%; box-sizing: border-box; min-height: 96px; border-radius: 18px; border: 0; background: var(--v3-s2); color: var(--v3-t1); font: 16px/1.4 var(--v3-font, Inter, system-ui, sans-serif); padding: 12px 16px; resize: vertical; }
+    `;
+    document.head.appendChild(st);
+  }
+  let ED = null; // { s, e, x (copia dell'esercizio della scheda), kg0 }
+  const T = () => S.training || { sedute: [] };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const tipiOk = () => { const g = group(), all = Object.keys(SCH);
+    if (g === "bambino") return ["uguali"];
+    if (g === "ragazzo") return all.filter(t => t !== "scalare");
+    if (g === "over65") return all.filter(t => t !== "scalare" && t !== "5x5");
+    return all; };
+  const caloOk = () => group() === "adulto";
+  const misOf = x => MISURA[x.misura] ? x.misura : x.corpo_libero ? "corpo" : "pesi";
+  const recTxt = s => { const m = Math.floor(s / 60), r = s % 60; return !m ? r + " secondi" : (m === 1 ? "1 minuto" : m + " minuti") + (r ? " e " + r + " secondi" : ""); };
+  const ruleTxt = { uguali: "Stesso peso in ogni serie", piramide_su: "+7% di peso, −2 ripetizioni", piramide_giu: "−10% di peso, +2 ripetizioni", pesante_scarico: "Poi −12% di peso, +3 ripetizioni", scalare: "2 cali da −25% sull'ultima", "5x5": "Stesso peso, 5 ripetizioni" };
+  const itemOf = (x, s, e2) => normEx(x, e2, String.fromCharCode(65 + s) + (e2 + 1));
+  /* schema di lavoro dell'editor: sempre completo, anche per gli esercizi senza schema */
+  function schOfX(x, kg) {
+    const s = x.schema || {}, tipo = SCH[s.tipo] ? s.tipo : "uguali";
+    return { tipo, serie: tipo === "uguali" ? +x.serie || 3 : +s.serie || +x.serie || 3, kg1: tipo === "uguali" ? (kg !== undefined ? kg : x.kg) : (s.kg1 != null ? +s.kg1 : kg !== undefined ? kg : x.kg), reps1: tipo === "uguali" ? +x.min || 8 : +s.reps1 || +x.min || 8, calo: !!s.calo };
+  }
+  /* scrive lo schema nella copia dell'esercizio (campi vecchi allineati, così coach, storico e Progressi restano coerenti) */
+  function putSch(x, sc) {
+    const tipo = tipiOk().includes(sc.tipo) ? sc.tipo : "uguali", calo = caloOk() && tipo !== "scalare" && !!sc.calo;
+    if (tipo === "uguali") {
+      const w = Math.max(0, (+x.max || +x.min || 8) - (+x.min || 8));
+      x.serie = sc.serie; if (misOf(x) === "pesi" && !kid()) x.kg = sc.kg1; x.min = sc.reps1; x.max = sc.reps1 + w;
+      if (calo) x.schema = { tipo, calo: true, da: new Date().toISOString() }; else delete x.schema;
+    } else {
+      x.serie = tipo === "5x5" ? 5 : sc.serie;
+      x.schema = { tipo, serie: x.serie, kg1: misOf(x) === "pesi" ? sc.kg1 : null, reps1: tipo === "5x5" ? 5 : sc.reps1, calo, da: new Date().toISOString() };
+    }
+  }
+  function serieBox(it, title) {
+    const all = targetSets(it), wk = all.filter(s => !s.w), wu = all.filter(s => s.w), noKg = it.unit === "none";
+    const lab = s => s.dr ? "Calo" : "S" + (wk.filter(z => !z.dr).indexOf(s) + 1);
+    const tiles = wk.map(s => `<div><small>${lab(s)}</small>${noKg ? "" : `<b>${s.kg == null ? "–" : kgTxt(s.kg)}</b>`}<span>× ${s.reps}</span></div>`).join("");
+    return `<div class="pal-box"><div class="pal-box-h"><b>${e(title || "Le tue serie")}</b><span>${e(ruleTxt[tipoOf(it)])}</span></div>
+      <div class="pal-ser" style="--n:${Math.min(4, wk.length)}">${tiles}</div>${wu.length ? `<p>Prima ${wu.length} serie di riscaldamento: ${e(wu.map(s => kgTxt(s.kg) + " × " + s.reps).join(", "))}</p>` : ""}</div>`;
+  }
+  const opt = (title, sub, on, act, arg) => `<button class="pal-opt" role="radio" aria-checked="${!!on}" data-v3act="${act}" data-v3arg="${e(arg)}"><span class="v3-rx"><span class="v3-rt" style="display:block">${e(title)}</span>${sub ? `<span class="v3-rs" style="display:block">${e(sub)}</span>` : ""}</span><span class="pal-rad" aria-hidden="true"><i></i></span></button>`;
+  const togRow = (title, sub, on, act, bg) => `<div class="v3-row"${bg ? ' style="background:var(--v3-s2)"' : ""}><span class="v3-rx"><span class="v3-rt" style="display:block">${e(title)}</span><span class="v3-rs" style="display:block">${e(sub)}</span></span><button class="pal-tog" aria-pressed="${!!on}" aria-label="${e(title)}" data-v3act="${act}"><i></i></button></div>`;
+  const stp = (label, key, val, unitTxt) => `<div class="pal-stp"><span class="pal-sl">${e(label)}</span><div class="stepper pal-st"><button data-v3act="stp" data-v3arg="${key}:-1" aria-label="${e(label)}: meno">−</button><span class="pal-v" aria-live="polite">${e(val)}</span><button data-v3act="stp" data-v3arg="${key}:1" aria-label="${e(label)}: più">+</button></div></div>`;
+  const STEP = { serie: [1, 1, 10], rest: [15, 15, 600], kg1: [.5, 0, 500], reps1: [1, 1, 60] };
+
+  /* foglio «Come fai le serie?» (26) → parametri e anteprima (27). ctx: {name, sub, x, kg, today, onSave(sc, rest)} */
+  function schemaSheet(ctx) {
+    const x = ctx.x, sc = schOfX(x, ctx.kg), noKg = misOf(x) !== "pesi";
+    let rest = +x.recupero || 90, mode = tipiOk().length > 1 ? "scelta" : "param";
+    const rl = misOf(x) === "tempo" ? "Secondi" : misOf(x) === "distanza" ? "Metri" : "Ripetizioni";
+    const preview = () => { const y = clone(x); putSch(y, sc); y.recupero = rest; return normEx(y, 1, "Z1"); };
+    function html() {
+      if (mode === "scelta") return `<div class="pal-hd"><h2 class="v3-sh1">${e(ctx.name)}</h2><p class="v3-shp">${e(ctx.sub)}</p></div><p class="pal-lab">Come fai le serie?</p>
+        <div class="pal-opts" role="radiogroup" aria-label="Come fai le serie">${tipiOk().map(t => opt(SCH[t][0], SCH[t][1], sc.tipo === t, "sc-tipo", t)).join("")}</div>
+        ${caloOk() && sc.tipo !== "scalare" ? togRow("Calo di peso sull'ultima serie", "Togli il 25% e continui senza pausa", sc.calo, "sc-calo", true) : ""}
+        ${primary("Avanti", 'data-v3act="sc-avanti"')}`;
+      const uq = sc.tipo === "uguali", f5 = sc.tipo === "5x5", it = preview();
+      return `<div class="pal-hd"><h2 class="v3-sh1">${e(SCH[sc.tipo][0])}</h2><p class="v3-shp">${e(ctx.name + (uq ? " · stesso peso in ogni serie" : " · imposti solo la prima serie"))}</p></div>
+        <div class="pal-stps">${f5 ? "" : stp("Serie", "serie", String(sc.serie))}${stp("Recupero", "rest", mmss(rest))}
+          ${noKg || kid() ? "" : stp(uq ? "Kg" : "Kg iniziali", "kg1", kgTxt(sc.kg1 || 0))}${f5 ? "" : stp(uq ? rl : rl + " iniziali", "reps1", String(sc.reps1))}</div>
+        ${serieBox(it)}${primary(ctx.today ? "Usa solo per oggi" : "Salva nella scheda", 'data-v3act="sc-save"')}${tipiOk().length > 1 ? ui.secondary("Cambia schema", "sc-cambia") : ui.secondary("Chiudi", "close")}`;
+    }
+    const sh = V3.sheet(html(), { label: "Come fai le serie", on: {
+      "sc-tipo"(t) { sc.tipo = t; if (t === "scalare") sc.calo = false; paint(); },
+      "sc-calo"() { sc.calo = !sc.calo; paint(); },
+      "sc-avanti"() { mode = "param"; paint(true); },
+      "sc-cambia"() { mode = "scelta"; paint(true); },
+      stp(a) { const [k, d] = a.split(":"), [st, lo, hi] = STEP[k];
+        if (k === "rest") rest = Math.min(hi, Math.max(lo, rest + st * d)); else sc[k] = Math.min(hi, Math.max(lo, +((+sc[k] || 0) + st * d).toFixed(2)));
+        paint(); },
+      "sc-save"() { ctx.onSave(sc, rest); sh.close(); }
+    } });
+    function paint(top) { sh.el.innerHTML = '<div class="v3-grab"></div>' + html(); if (top) sh.el.scrollTop = 0; }
+    return sh;
+  }
+  function restSheet(x, done) {
+    let r = +x.recupero || 90;
+    const html = () => `<div class="pal-hd"><h2 class="v3-sh1">Recupero</h2><p class="v3-shp">${e(recTxt(r))}, parte da solo</p></div><div class="pal-stps" style="grid-template-columns:minmax(0,1fr)">${stp("Tra una serie e l'altra", "rest", mmss(r))}</div>${primary("Fatto", 'data-v3act="ok"')}`;
+    const sh = V3.sheet(html(), { label: "Recupero", on: {
+      stp(a) { r = Math.min(600, Math.max(15, r + 15 * +a.split(":")[1])); sh.el.innerHTML = '<div class="v3-grab"></div>' + html(); },
+      ok() { done(r); sh.close(); } } });
+  }
+  function pickSheet(title, opts, cur, done) {
+    const sh = V3.sheet(`<div class="pal-hd"><h2 class="v3-sh1">${e(title)}</h2></div><div class="pal-opts" role="radiogroup" aria-label="${e(title)}">${opts.map(([v, t, s]) => opt(t, s, String(v) === String(cur), "pk", v)).join("")}</div>${ui.secondary("Chiudi", "close")}`,
+      { label: title, on: { pk(v) { done(v); sh.close(); } } });
+  }
+  function notaSheet(x, done) {
+    const sh = V3.sheet(`<div class="pal-hd"><h2 class="v3-sh1">Nota fissa</h2><p class="v3-shp">La vedi ogni volta in seduta</p></div><textarea class="pal-ta" id="pal-nota" maxlength="140" aria-label="Nota fissa" placeholder="Esempio: panca al foro 3, presa larga">${e(x.nota || "")}</textarea>${primary("Salva la nota", 'data-v3act="ok"')}`,
+      { label: "Nota fissa", on: { ok() { done((document.getElementById("pal-nota").value || "").trim()); sh.close(); } } });
+  }
+  function saveEd(quiet) {
+    const sd = T().sedute[ED.s]; if (!sd) return;
+    const x = clone(ED.x); x.corpo_libero = misOf(x) !== "pesi";
+    sd.esercizi[ED.e] = x;
+    const it = itemOf(x, ED.s, ED.e);
+    if (tipoOf(it) === "uguali" && !x.corpo_libero && x.kg !== ED.kg0 && S.state.ex[exKey(it)]) { S.state.ex[exKey(it)].kg = x.kg; persistState(); } // serie uguali: il peso scritto vale da subito
+    persistDoc("training", S.training); setTraining(S.training);
+    DAYS.forEach(k => { if (S.drafts[k] && !S.drafts[k].started) delete S.drafts[k]; }); saveDrafts(); // solo le anteprime: le sedute in corso restano
+    ED.x = clone(x); ED.kg0 = x.kg;
+    if (!quiet) toast(short(x.nome) + " salvata nella scheda", { sub: schLabel(it) });
+  }
+  function openEd(s, j) {
+    const x = T().sedute[s] && T().sedute[s].esercizi[j]; if (!x) return;
+    const it = itemOf(x, s, j), y = clone(x);
+    if (!y.schema && misOf(y) === "pesi") { const k = planOf(it).kg; if (k != null) y.kg = k; } // peso di oggi, non quello vecchio della scheda
+    open("esercizio", () => { ED = { s, e: j, x: y, kg0: y.kg }; });
+  }
+  const edSub = () => (T().sedute[ED.s].nome || tv("Seduta ", "Allenamento ") + String.fromCharCode(65 + ED.s)) + " · esercizio " + (ED.e + 1);
+  function schedaPage() {
+    const k = selDay && P[selDay] ? selDay : DAYS[0], s = DAYS.indexOf(k), sd = T().sedute[s], p = P[k];
+    const seg = DAYS.length > 1 ? ui.seg(DAYS.map(d => tv("Seduta ", "Allenamento ") + d), s, "sc-day", tv("Seduta", "Allenamento")) : "";
+    const rows = p.items.map((it, j) => ui.row({ title: nameOf(it), sub: it.unit === "none" && tipoOf(it) === "uguali" ? `${it.sets} × ${it.min === it.max ? it.min : it.min + "–" + it.max} · ${MISURA[it.misura].toLowerCase()}` : schLabel(it), act: "ed-open", arg: s + ":" + j, apri: "Modifica" })).join("");
+    return `<div class="pal-pg">${ui.back()}</div><div><h1 class="v3-t1">${e(dname(k))}</h1><p class="v3-sub">${e((sd.focus ? sd.focus + " · " : "") + pl(p.items.length, "esercizio", "esercizi"))}</p></div>${seg}
+      <div class="pal-pg">${ui.section("Esercizi", rows)}</div>${ui.secondary("Aggiungi, togli o sposta esercizi", "struttura")}`;
+  }
+  function edPage() {
+    const x = ED.x, it = itemOf(x, ED.s, ED.e), t = tipoOf(it);
+    return `${ui.back()}<div><h1 class="v3-t1">${e(short(x.nome))}</h1><p class="v3-sub">${e(edSub())}</p></div>${serieBox(it)}
+      <div class="pal-pg v3-sec">${ui.row({ title: "Come fai le serie", sub: SCH[t][0] + (it.schema && it.schema.calo && t !== "scalare" ? " + calo sull'ultima" : ""), act: "ed-schema", apri: "Cambia" })}
+      ${ui.row({ title: "Recupero", sub: recTxt(+x.recupero || 90) + ", parte da solo", act: "ed-rest", apri: "Cambia" })}
+      ${ui.row({ title: "Altre impostazioni", sub: "Riscaldamento, salto, note", act: "ed-altre" })}</div>
+      ${primary("Salva nella scheda", 'data-v3act="ed-save"')}`;
+  }
+  function altrePage() {
+    const x = ED.x, it = itemOf(x, ED.s, ED.e), m = misOf(x);
+    return `${ui.back()}<div><h1 class="v3-t1">Altre impostazioni</h1><p class="v3-sub">${e(short(x.nome))}</p></div><div class="pal-pg v3-sec">
+      ${ui.row({ title: "Come si misura", sub: MISURA[m], act: "al-mis", apri: "Cambia" })}
+      ${m === "pesi" && !kid() ? ui.row({ title: "Salto di peso", sub: kgTxt(it.salto) + " kg alla volta", act: "al-salto", apri: "Cambia" }) : ""}
+      ${m === "pesi" ? togRow("Riscaldamento automatico", x.risc ? "2 serie leggere prima" : "Spento", x.risc, "al-risc") : ""}
+      ${togRow("Un lato alla volta", x.lato ? "Prima un lato, poi l'altro" : "Spento", x.lato, "al-lato")}
+      ${ui.row({ title: "Nota fissa", sub: x.nota || "Nessuna nota", act: "al-nota", apri: "Scrivi" })}</div>`;
+  }
+  /* seduta in corso: «Cambia lo schema solo per oggi» (31) ricalcola le serie non fatte della bozza, la scheda non cambia */
+  window.PalSchema = {
+    oggi() {
+      const a = activeDay(); if (!a) return;
+      const d = draft(a), it = P[a].items.find(x => x.id === d.cur.id); if (!it) return;
+      const X = itOf(it, d), x = { nome: it.name, serie: X.sets, min: it.min, max: it.max, kg: X.kg, recupero: X.rest, misura: it.misura, schema: X.schema ? clone(X.schema) : undefined };
+      const cur = d.sets[it.id].find(s => !s.done && !s.w && !s.dr);
+      schemaSheet({ name: nameOf(it), sub: "Solo per oggi · la scheda resta com'è", x, kg: planOf(X).kg ?? (cur && cur.kg), today: true, onSave(sc, rest) {
+        const y = clone(x); putSch(y, sc);
+        d.sch = d.sch || {}; d.sch[it.id] = { schema: y.schema || { tipo: "uguali", serie: y.serie, kg1: y.kg }, rest, ...(y.schema ? {} : { min: y.min, max: y.max, kg: y.kg }) };
+        if (!y.schema) d.sch[it.id].schema.serie = y.serie;
+        const old = d.sets[it.id], fresh = draftSets(it, d), out = fresh.map((f, i) => old[i] && old[i].done ? old[i] : f);
+        old.forEach((s, i) => { if (i >= fresh.length && s.done) out.push(s); });
+        d.sets[it.id] = out; const nx = out.findIndex(s => !s.done); d.cur = { id: it.id, i: nx >= 0 ? nx : 0 };
+        saveDrafts(); render(); toast("Schema cambiato solo per oggi", { sub: nameOf(it) + ": " + SCH[tipoOf(itOf(it, d))][0] });
+      } });
+    }
+  };
+
   V3.register("palestra", {
     render(el) {
       if (activeDay()) { sub = null; stackSubs.length = 0; return false; } // seduta in corso: vista vecchia (serie, recupero a tutto schermo, fine)
@@ -267,13 +453,28 @@
       if (sub === "seduta") { el.innerHTML = seduta(); return; }
       if (sub === "settimana") { el.innerHTML = settimana(); return; }
       if (sub === "routine") { el.innerHTML = routine(); return; }
+      if (sub === "scheda" && DAYS.length) { el.innerHTML = schedaPage(); return; }
+      if (sub === "esercizio" && ED) { el.innerHTML = edPage(); return; }
+      if (sub === "altre" && ED) { el.innerHTML = altrePage(); return; }
       el.innerHTML = home();
     },
     on: {
       "apri-seduta"(k) { if (P[k]) open("seduta", () => { selDay = k; }); },
       settimana() { open("settimana"); },
       routine() { open("routine"); },
-      modifica() { V3.legacy({ tab: "piano", hub: "train" }); },
+      modifica() { if (!DAYS.length) return V3.legacy({ tab: "piano", hub: "train" }); const ts = data.todaySession(); open("scheda", () => { selDay = ts.day && P[ts.day] ? ts.day : DAYS[0]; }); },
+      struttura() { V3.legacy({ tab: "piano", hub: "train" }); },
+      "sc-day"(i) { if (DAYS[+i]) { selDay = DAYS[+i]; V3.refresh(); } },
+      "ed-open"(a) { const [s2, j] = String(a).split(":").map(Number); openEd(s2, j); },
+      "ed-schema"() { if (!ED) return; schemaSheet({ name: short(ED.x.nome), sub: edSub(), x: ED.x, today: false, onSave(sc, rest) { putSch(ED.x, sc); ED.x.recupero = rest; saveEd(); V3.refresh(); } }); },
+      "ed-rest"() { if (ED) restSheet(ED.x, r => { ED.x.recupero = r; saveEd(true); V3.refresh(); }); },
+      "ed-altre"() { if (ED) open("altre"); },
+      "ed-save"() { if (!ED) return; saveEd(); V3.back(); },
+      "al-mis"() { if (ED) pickSheet("Come si misura", [["pesi", "Con pesi", "Chili e ripetizioni"], ["corpo", "A corpo libero", "Solo ripetizioni"], ["tempo", "A tempo", "Secondi per serie"], ["distanza", "A distanza", "Metri per serie"]], misOf(ED.x), v => { ED.x.misura = v; saveEd(true); V3.refresh(); }); },
+      "al-salto"() { if (ED) pickSheet("Salto di peso", [[0.5, "0,5 kg"], [1, "1 kg"], [2, "2 kg"], [2.5, "2,5 kg"]].map(([v, t]) => [v, t, v === 2.5 ? "Bilanciere, esercizi grandi" : v <= 1 ? "Esercizi piccoli, cavi" : "Manubri"]), itemOf(ED.x, ED.s, ED.e).salto, v => { ED.x.salto = +v; saveEd(true); V3.refresh(); }); },
+      "al-risc"() { if (!ED) return; ED.x.risc = !ED.x.risc; saveEd(true); V3.refresh(); },
+      "al-lato"() { if (!ED) return; ED.x.lato = !ED.x.lato; saveEd(true); V3.refresh(); },
+      "al-nota"() { if (ED) notaSheet(ED.x, v => { ED.x.nota = v; saveEd(true); V3.refresh(); }); },
       stretch() { open("warm", () => { W = { kind: "stretch", day: null, i: 0, quick: false, left: null, run: false }; }); },
       inizia(k) {
         if (!P[k]) return;

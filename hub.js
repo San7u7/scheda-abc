@@ -133,6 +133,7 @@
       if (serie < 1 || serie > 10 || lo < 1 || hi < lo || hi > 50) return err("xe-err", "Serie da 1 a 10. Le ripetizioni minime non superano le massime.");
       const bw = $("#xe-bw").getAttribute("aria-pressed") === "true", prev = h.e === "new" ? {} : s.esercizi[h.e];
       const ex = { ...prev, nome, serie, min: lo, max: hi, kg: bw ? null : num2($("#xe-kg").value), recupero: Math.round(num2($("#xe-rec").value) || 90), tecnica: $("#xe-tec").value.trim(), corpo_libero: bw };
+      if (ex.schema) ex.schema = { ...ex.schema, serie }; // Tappa A: lo schema segue il numero di serie scritto qui
       if (prev.nome && prev.nome !== nome) { delete ex.lib; delete ex.demo; delete ex.en; delete ex.last; }
       if (h.e === "new") s.esercizi.push({ muscolo: "Altro", ...ex }); else s.esercizi[h.e] = ex;
       saveTraining(); S.sheet = null; render(); toast(h.e === "new" ? "Esercizio aggiunto" : "Esercizio aggiornato");

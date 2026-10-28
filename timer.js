@@ -22,7 +22,7 @@
   window.markDone = function () {
     const a = activeDay(), d = a && draft(a), it = d && P[a].items.find(x => x.id === d.cur.id), s = it && d.sets[it.id][d.cur.i], was = s && s.done;
     md0();
-    if (it && !was) { evOf(S.drafts[a]).push({ type: "done", t: Date.now(), ex: it.id, name: exName(it), reps: +s.reps || 0, rest: it.rest || 90 }); saveDrafts(); renderBar(); }
+    if (it && !was) { evOf(S.drafts[a]).push({ type: "done", t: Date.now(), ex: it.id, name: exName(it), reps: +s.reps || 0, rest: (typeof itOf === "function" ? itOf(it, S.drafts[a]) : it).rest || 90 }); saveDrafts(); renderBar(); }
   };
   document.addEventListener("click", e => {
     const b = e.target.closest('[data-act="tm-go"], [data-act="t15"], [data-act="tm-m15"]'); if (!b) return; const a = activeDay(); if (!a) return; const d = S.drafts[a], ev = evOf(d), last = ev[ev.length - 1];

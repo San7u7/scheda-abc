@@ -140,6 +140,7 @@ p { margin: 0; }
 .sets button.d { color: var(--text); border-color: var(--accent-soft); background: var(--accent-soft); }
 .sets button.d b { color: var(--accent); font-weight: 600; }
 .sets button[aria-current="true"] { border-color: var(--text); color: var(--text); }
+.sets button[data-k] { border-style: dashed; } /* riscaldamento e calo: serie di contorno */
 .row2 { display: flex; gap: 8px; }
 .row2 .ghost { flex: 1; }
 
@@ -409,10 +410,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610281300"></script>
-<script src="lib.js?v=202610281300"></script>
-<script src="ai.js?v=202610281300"></script>
-<script src="coach.js?v=202610281300"></script>
+<script src="seed-abc.js?v=202610281430"></script>
+<script src="lib.js?v=202610281430"></script>
+<script src="ai.js?v=202610281430"></script>
+<script src="coach.js?v=202610281430"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -423,10 +424,52 @@ function setTraining(t) {
   P = {}; DAYS = [];
   ((t && t.sedute) || []).forEach((sd, i) => {
     const id = String.fromCharCode(65 + i); DAYS.push(id);
-    P[id] = { day: sd.dow != null ? DOW[sd.dow] : "", dow: sd.dow, nome: sd.nome, focus: sd.focus || sd.nome || "", items: sd.esercizi.map((e, j) => ({ id: id + (j + 1), name: e.nome, en: e.en || "", sets: e.serie, min: e.min, max: e.max, last: e.last ?? null, kg: e.corpo_libero ? null : e.kg, rest: e.recupero || 90, mus: e.muscolo || "Altro", warm: e.warm ?? j === 0, tech: e.tecnica || "", note: e.note || "", unit: e.corpo_libero ? "none" : (e.unit || undefined), lib: e.lib || null, demo: e.demo || null })) };
+    P[id] = { day: sd.dow != null ? DOW[sd.dow] : "", dow: sd.dow, nome: sd.nome, focus: sd.focus || sd.nome || "", items: sd.esercizi.map((e, j) => normEx(e, j, id + (j + 1))) };
   });
   ALL = DAYS.flatMap(d => P[d].items.map(it => ({ ...it, day: d })));
 }
+/* Tappa A (28/10): schemi di allenamento. Campi nuovi dell'esercizio nella scheda, tutti facoltativi (retrocompatibili):
+   schema {tipo, serie, kg1, reps1, calo}, misura "pesi"|"corpo"|"tempo"|"distanza", salto (kg), risc, lato, nota.
+   Senza schema = «uguali» con serie/min/max/kg di sempre. */
+const SCH = { uguali: ["Serie uguali", "Stesso peso in ogni serie"], piramide_su: ["Piramide: peso che sale", "Più peso, meno ripetizioni"], piramide_giu: ["Piramide: peso che scende", "Parti pesante, poi alleggerisci"],
+  pesante_scarico: ["Una pesante, poi più leggere", "Serie di punta e serie di scarico"], scalare: ["Serie a scalare (drop set)", "Cali il peso senza pausa, 2 volte"], "5x5": ["5 serie da 5", "Per chi inizia, solo esercizi base"] };
+const MISURA = { pesi: "Con pesi", corpo: "A corpo libero", tempo: "A tempo", distanza: "A distanza" };
+function normEx(e, j, id) {
+  const mis = !e.corpo_libero && !(MISURA[e.misura] && e.misura !== "pesi" && e.corpo_libero == null) ? "pesi" : MISURA[e.misura] && e.misura !== "pesi" ? e.misura : "corpo", noKg = mis !== "pesi"; // corpo_libero resta la fonte (anche l'editor vecchio lo cambia)
+  const it = { id, name: e.nome, en: e.en || "", sets: e.serie, min: e.min, max: e.max, last: e.last ?? null, kg: noKg ? null : e.kg, rest: e.recupero || 90, mus: e.muscolo || "Altro", warm: e.warm ?? j === 0, tech: e.tecnica || "", note: e.note || "", unit: noKg ? "none" : (e.unit || undefined), lib: e.lib || null, demo: e.demo || null,
+    misura: mis, risc: !!e.risc, lato: !!e.lato, nota: e.nota || "", schema: e.schema && SCH[e.schema.tipo] ? { ...e.schema } : null };
+  it.salto = +e.salto || stepFor(it);
+  if (it.schema) it.sets = it.schema.tipo === "5x5" ? 5 : Math.max(1, +it.schema.serie || e.serie || 3);
+  return it;
+}
+const tipoOf = it => (it.schema && SCH[it.schema.tipo]) ? it.schema.tipo : "uguali";
+const r05 = x => Math.round(x * 2) / 2;
+/* funzione pura: kg e ripetizioni di ogni serie. o.kg1 = carico di partenza (dalla progressione), o.reps = ripetizioni per «uguali».
+   Ogni serie: {kg, reps}; w = riscaldamento, dr = calo (né l'uno né l'altro contano per record e aumenti) */
+function targetSets(it, o = {}) {
+  const sc = it.schema || {}, tipo = tipoOf(it), noKg = it.unit === "none", salto = +it.salto || stepFor(it);
+  const kg1raw = noKg ? null : o.kg1 !== undefined ? o.kg1 : sc.kg1 != null ? +sc.kg1 : it.kg;
+  const kg1 = kg1raw == null || kg1raw === "" || isNaN(+kg1raw) ? null : +kg1raw, K = x => kg1 == null ? null : r05(x);
+  const n = tipo === "5x5" ? 5 : Math.max(1, +sc.serie || it.sets || 3), r1 = tipo === "5x5" ? 5 : Math.max(1, +sc.reps1 || it.min || 8), W = [];
+  for (let i = 0; i < n; i++) {
+    let kg = kg1, reps = r1;
+    if (tipo === "uguali") reps = o.reps && o.reps[i] != null ? o.reps[i] : (it.min || r1);
+    else if (tipo === "piramide_su") { kg = kg1 == null ? null : i ? Math.max(K(kg1 * (1 + .07 * i)), W[i - 1].kg + salto) : kg1; reps = Math.max(4, r1 - 2 * i); }
+    else if (tipo === "piramide_giu") { kg = K(kg1 * Math.pow(.9, i)); reps = r1 + 2 * i; }
+    else if (tipo === "pesante_scarico" && i) { kg = K(kg1 * .88); reps = r1 + 3; }
+    W.push({ kg, reps });
+  }
+  const out = [];
+  if (it.risc && kg1 > 0) out.push({ kg: K(kg1 * .5), reps: 10, w: true }, { kg: K(kg1 * .7), reps: 5, w: true });
+  out.push(...W);
+  const last = W[W.length - 1];
+  if (last.kg > 0) {
+    if (tipo === "scalare") { const a = r05(last.kg * .75), b = r05(a * .75); out.push({ kg: a, reps: last.reps, dr: true }, { kg: b, reps: last.reps, dr: true }); }
+    else if (sc.calo) out.push({ kg: r05(last.kg * .75), reps: last.reps, dr: true });
+  }
+  return out;
+}
+const schLabel = it => { const t = tipoOf(it), c = it.schema && it.schema.calo && t !== "scalare" ? " + calo sull'ultima" : ""; return t === "uguali" ? `Serie uguali${c} · ${it.sets} × ${it.min === it.max ? it.min : it.min + "–" + it.max}` : `${SCH[t][0]}${c} · ${it.sets} serie`; };
 function syncPlan() {
   const T = planTargets(), pr = S.profile || {};
   Object.assign(PLAN, { kcal: T.kcal, pro: T.pro, cho: T.cho, fat: T.fat, fiber: T.fiber, waterL: T.waterL,
@@ -491,6 +534,14 @@ function baseline(it) {
   return { kg: null, lastSets: null };
 }
 function plan(it) {
+  if (tipoOf(it) !== "uguali" && exName(it) === it.name) { // schemi: si parte da kg1; dopo una seduta con lo schema, +salto se tutte le serie di lavoro hanno fatto le ripetizioni previste
+    const sc = it.schema, st = S.state.ex[exKey(it)], fresh = st && st.kg1 != null && st.tipo === sc.tipo && (!sc.da || (st.at || "") > sc.da);
+    const kg1 = it.unit === "none" ? null : fresh ? st.kg1 : (sc.kg1 != null ? +sc.kg1 : it.kg);
+    const closed = !!fresh && Array.isArray(st.tgt) && st.tgt.length > 0 && st.lastSets.length >= st.tgt.length && st.tgt.every((r, i) => st.lastSets[i] >= r);
+    const b = fresh ? { kg: st.kg1, lastSets: st.lastSets, from: "seduta" } : { kg: kg1, lastSets: null, from: "scheda" };
+    if (closed && kg1 != null) return { kg: +(kg1 + (+it.salto || stepFor(it))).toFixed(2), up: true, closed, b };
+    return { kg: kg1, up: false, closed, b };
+  }
   const b = baseline(it), ls = b.lastSets;
   const closed = !!ls && ls.length >= it.sets && ls.slice(0, it.sets).every(r => r >= it.max);
   if (closed && b.kg != null && it.unit !== "none") return { kg: +(b.kg + stepFor(it)).toFixed(2), up: true, closed, b };
@@ -509,13 +560,22 @@ function nextDay() {
 function doneToday() { const t = localISO(); return S.sessions.filter(s => localISO(new Date(s.date)) === t).sort((a, b) => a.date < b.date ? 1 : -1)[0] || null; }
 function draft(day) {
   const d = S.drafts[day] || (S.drafts[day] = { started: false, subs: {}, sets: {}, cur: null });
-  for (const it of P[day].items) if (!d.sets[it.id] || (!d.started && d.sets[it.id].length !== it.sets)) {
-    const pl = plan(it), ls = pl.b.lastSets;
-    d.sets[it.id] = Array.from({ length: it.sets }, (_, i) => ({ kg: it.unit === "none" ? null : pl.kg, reps: pl.up ? it.min : (ls ? (ls[i] ?? ls[0]) : it.min), done: false }));
+  for (const it of P[day].items) {
+    const fresh = draftSets(it, d);
+    if (!d.sets[it.id] || (!d.started && JSON.stringify(d.sets[it.id].map(x => [x.kg, x.reps, !!x.w])) !== JSON.stringify(fresh.map(x => [x.kg, x.reps, !!x.w])))) d.sets[it.id] = fresh;
   }
   if (!d.cur || !d.sets[d.cur.id]) d.cur = firstOpen(day, d);
   return d;
 }
+/* serie della bozza dallo schema (della scheda, o «solo per oggi» in d.sch); t = valori previsti, w/dr = riscaldamento/calo */
+function draftSets(it, d) {
+  const x = itOf(it, d), td = d && d.sch && d.sch[it.id] && d.sch[it.id].schema;
+  const pl = plan(x), ls = pl.b.lastSets, uq = tipoOf(x) === "uguali";
+  const kg1 = x.unit === "none" ? null : td && td.kg1 != null ? +td.kg1 : pl.kg;
+  const reps = uq ? Array.from({ length: x.sets }, (_, i) => pl.up ? x.min : (ls ? (ls[i] ?? ls[0]) : x.min)) : null;
+  return targetSets(x, { kg1, reps }).map(s => ({ kg: s.kg, reps: s.reps, done: false, ...(uq && !s.w && !s.dr ? {} : { t: [s.kg, s.reps] }), ...(s.w ? { w: 1 } : {}), ...(s.dr ? { dr: 1 } : {}) }));
+}
+const itOf = (it, d) => { const o = d && d.sch && d.sch[it.id]; if (!o) return it; const x = { ...it, ...o }; if (o.schema) x.sets = o.schema.tipo === "5x5" ? 5 : +o.schema.serie || it.sets; return x; };
 function firstOpen(day, d) {
   for (const it of P[day].items) { const i = d.sets[it.id].findIndex(s => !s.done); if (i >= 0) return { id: it.id, i }; }
   const it = P[day].items[P[day].items.length - 1]; return { id: it.id, i: 0 };
@@ -703,25 +763,28 @@ function viewAllenamento() {
     <div class="block"><button class="ghost" data-act="finish">Concludi ${laSed()}</button></div>`;
 }
 function activeCard(it, d) {
-  const sets = d.sets[it.id], i = d.cur.i, s = sets[i], pl = plan(it), b = pl.b, sub = curSub(it);
+  const sets = d.sets[it.id], i = d.cur.i, s = sets[i], X = itOf(it, d), sch = tipoOf(X) !== "uguali", pl = plan(X), b = pl.b, sub = curSub(it);
+  const work = sets.filter(x => !x.w && !x.dr), wi = s.w || s.dr ? -1 : work.indexOf(s), wn = sets.filter(x => x.w).indexOf(s);
+  const rl = it.misura === "tempo" ? "Secondi" : it.misura === "distanza" ? "Metri" : "Ripetizioni", tx = t => (t[0] != null ? fmt(t[0]) + " × " : "") + t[1];
+  const setLab = s.w ? `Riscaldamento ${wn + 1} di ${sets.filter(x => x.w).length}${s.t ? " · previsto " + tx(s.t) : ""}` : s.dr ? `Calo di peso, senza pausa${s.t ? " · previsto " + tx(s.t) : ""}` : `Serie ${wi + 1} di ${work.length}${s.t ? " · prevista " + tx(s.t) : ""}`;
   const lastTxt = b.lastSets ? `${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"}: ${b.kg != null && it.unit !== "none" ? fmt(b.kg) + " kg × " : ""}${b.lastSets.slice(0, it.sets).join(", ")}` : "Prima volta";
 
   const kgBox = it.unit === "none"
     ? `<div class="box"><span class="lab">Carico</span><span class="bw">Corpo libero</span></div>`
-    : `<div class="box"><label class="lab" for="kg">${unitLab(it)}</label><input id="kg" inputmode="decimal" type="text" autocomplete="off" value="${s.kg ?? ""}" placeholder="0" data-act="kgin"><div class="pm"><button data-act="kg" data-v="-1" aria-label="Meno 0,5 kg">−</button><button data-act="kg" data-v="1" aria-label="Più 0,5 kg">+</button></div></div>`;
+    : `<div class="box"><label class="lab" for="kg">${unitLab(it)}</label><input id="kg" inputmode="decimal" type="text" autocomplete="off" value="${s.kg == null ? "" : String(s.kg).replace(".", ",")}" placeholder="0" data-act="kgin"><div class="pm"><button data-act="kg" data-v="-1" aria-label="Meno 0,5 kg">−</button><button data-act="kg" data-v="1" aria-label="Più 0,5 kg">+</button></div></div>`;
   const label = `${it.unit === "none" ? "" : fmt(s.kg) + " kg × "}${s.reps ?? "–"}`;
   return `<section class="active" aria-label="Esercizio in corso">
     <div class="a-head"><div><div class="a-name">${esc(short(exName(it)))}</div>
-      <div class="small muted num">${it.sets} × ${it.min}–${it.max} · ${lastTxt}</div>
+      <div class="small muted num">${sch || X.risc || (X.schema && X.schema.calo) ? esc(schLabel(X)) : `${it.sets} × ${it.min}–${it.max} · ${lastTxt}`}</div>
       ${pl.up ? `<div class="small up">Oggi aumenta il carico: ${fmt(pl.kg)} kg</div><div class="small muted">Riparti da ${it.min} ripetizioni</div>` : ""}
       ${sub ? `<div class="small faint">Al posto di ${esc(short(it.name))}</div>` : ""}</div>
       <button class="icon-btn" data-act="sheet" data-v="ex" aria-label="Tecnica, note e sostituzione"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button></div>
-    ${it.warm && i === 0 && !s.done ? `<p class="small muted">Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.</p>` : ""}
-    <div class="setlab">Serie ${i + 1} di ${sets.length}${s.done ? " · fatta" : ""}</div>
-    <div class="hero">${kgBox}<div class="box"><span class="lab">Ripetizioni</span><span class="big">${s.reps ?? "–"}</span><div class="pm"><button data-act="repsd" data-v="-1" aria-label="Una ripetizione in meno">−</button><button data-act="repsd" data-v="1" aria-label="Una ripetizione in più">+</button></div></div></div>
+    ${it.warm && !X.risc && i === 0 && !s.done ? `<p class="small muted">Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.</p>` : ""}
+    <div class="setlab">${setLab}${s.done ? " · fatta" : ""}</div>
+    <div class="hero">${kgBox}<div class="box"><span class="lab">${rl}</span><span class="big">${s.reps ?? "–"}</span><div class="pm"><button data-act="repsd" data-v="-1" aria-label="Una ripetizione in meno">−</button><button data-act="repsd" data-v="1" aria-label="Una ripetizione in più">+</button></div></div></div>
     ${s.done ? `<div class="row2"><button class="primary" data-act="done">Correggi la serie: ${label}</button></div><button class="link small" data-act="undo">Segna come non fatta</button>` : `<button class="primary" data-act="done">Serie fatta: ${label}</button>`}
-    <div class="sets" role="group" aria-label="Serie" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}" aria-label="Serie ${k + 1}: ${it.unit === "none" ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"} ripetizioni${x.done ? ", fatta" : ""}">${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
-    <div class="setx">${!s.done && sets.length > 1 ? `<button data-act="delset">Togli la serie ${i + 1}</button>` : ""}<button data-act="addset">Aggiungi serie</button></div>
+    <div class="sets" role="group" aria-label="Serie" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}" aria-label="${x.w ? "Riscaldamento" : x.dr ? "Calo di peso" : "Serie " + (work.indexOf(x) + 1)}: ${it.unit === "none" ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"} ripetizioni${x.done ? ", fatta" : ""}"${x.w || x.dr ? ' data-k="' + (x.w ? "w" : "dr") + '"' : ""}>${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
+    <div class="setx">${!s.done && sets.length > 1 ? `<button data-act="delset">${s.w ? "Togli il riscaldamento" : s.dr ? "Togli il calo" : "Togli la serie " + (wi + 1)}</button>` : ""}<button data-act="addset">Aggiungi serie</button></div>
   </section>`;
 }
 
@@ -1053,6 +1116,8 @@ function renderSheet() {
   if (sh === "ex") {
     const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id), sub = curSub(it);
     html = `<h2>${esc(short(exName(it)))}</h2>
+      ${window.PalSchema && it.unit !== "none" ? `<button class="menu-btn" data-act="sch-oggi">Cambia lo schema solo per oggi</button>` : ""}
+      ${it.nota ? `<div class="alert">${esc(it.nota)}</div>` : ""}
       <div><b>Tecnica</b><p class="muted" style="margin-top:4px">${esc(it.tech)}</p>${sub && sub.cue ? `<p class="muted" style="margin-top:6px">Variante: ${esc(sub.cue)}</p>` : ""}</div>
       ${it.note ? `<div class="alert">${esc(it.note)}</div>` : ""}
       <p class="small faint">Recupero ${mmss(it.rest)} · ${esc(it.mus)}</p>
@@ -1143,11 +1208,12 @@ function markDone() {
   const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id), sets = d.sets[it.id], s = sets[d.cur.i];
   const wasDone = s.done; s.done = true;
   if (!wasDone) {
-    S.timer = { end: Date.now() + it.rest * 1000, total: it.rest };
+    const rest = itOf(it, d).rest || 90; S.timer = { end: Date.now() + rest * 1000, total: rest };
     try { navigator.vibrate && navigator.vibrate(30); } catch (_) {}
     const next = sets.findIndex(x => !x.done);
-    if (next >= 0) { if (it.unit !== "none") sets[next].kg = s.kg; sets[next].reps = s.reps; d.cur = { id: it.id, i: next }; }
-    else { d.cur = firstOpen(a, d); window.scrollTo({ top: 0, behavior: "smooth" }); if (sets.length !== it.sets) setTimeout(() => askKeepSets(it, sets.length, sets), 350); }
+    const copy = tipoOf(itOf(it, d)) === "uguali" && next >= 0 && !s.w && !s.dr && !sets[next].w && !sets[next].dr; // con gli schemi ogni serie tiene il suo peso
+    if (next >= 0) { if (copy) { if (it.unit !== "none") sets[next].kg = s.kg; sets[next].reps = s.reps; } d.cur = { id: it.id, i: next }; }
+    else { d.cur = firstOpen(a, d); window.scrollTo({ top: 0, behavior: "smooth" }); const wk = sets.filter(x => !x.w && !x.dr); if (wk.length !== itOf(it, d).sets && !(d.sch && d.sch[it.id])) setTimeout(() => askKeepSets(it, wk.length, wk), 350); }
   }
   saveDrafts(); render();
 }
@@ -1165,17 +1231,25 @@ function askKeepSets(it, n, sets) {
   const sd = S.training && S.training.sedute && S.training.sedute[it.id.charCodeAt(0) - 65], ex = sd && sd.esercizi[+it.id.slice(1) - 1]; if (!ex) return;
   const sh = V3.sheet(`<h2 class="v3-sh1">${n} serie invece di ${it.sets}</h2><p class="v3-shp">${esc(short(exName(it)))}. Le tieni anche le prossime volte?</p>${sets ? `<p class="v3-shp" style="color:var(--v3-t1)">${sets.map(x => (x.kg != null && it.unit !== "none" ? fmt(x.kg) + "×" : "") + x.reps).join(" · ")}</p>` : ""}
     <button class="v3-apri wide" data-v3act="keep">Sì, tieni ${n} serie</button><button class="v3-b2" data-v3act="close">No, solo per oggi</button>`,
-    { label: "Tieni le serie", on: { keep() { ex.serie = n; persistDoc("training", S.training); setTraining(S.training); sh.close(); toast(`${short(exName(it))}: ${n} serie nella scheda`); } } });
+    { label: "Tieni le serie", on: { keep() { ex.serie = n; if (ex.schema) ex.schema.serie = n; persistDoc("training", S.training); setTraining(S.training); sh.close(); toast(`${short(exName(it))}: ${n} serie nella scheda`); } } });
 }
 async function finish(meta) {
   const day = activeDay(), d = draft(day), items = [], ups = [];
   for (const it of P[day].items) {
-    const done = d.sets[it.id].filter(s => s.done).map(s => ({ kg: it.unit === "none" ? null : (s.kg === "" || s.kg == null ? null : +s.kg), reps: +s.reps || 0 }));
+    // il riscaldamento non entra nei progressi; i cali restano nello storico ma non contano per aumenti
+    const X = itOf(it, d), raw = d.sets[it.id].filter(s => s.done && !s.w), kgOf = s => it.unit === "none" ? null : (s.kg === "" || s.kg == null ? null : +s.kg);
+    const done = raw.map(s => ({ kg: kgOf(s), reps: +s.reps || 0, ...(s.dr ? { dr: 1 } : {}) }));
     if (!done.length) continue;
     const name = exName(it); items.push({ id: it.id, name, sets: done });
-    const kgs = done.map(s => s.kg).filter(x => x != null && x !== "");
-    S.state.ex[exKey(it)] = { kg: it.unit === "none" || !kgs.length ? null : Math.max(...kgs), lastSets: done.map(s => s.reps), date: localISO() };
-    if (done.length >= it.sets && done.every(s => s.reps >= it.max) && it.unit !== "none") ups.push(short(name));
+    const wk = raw.filter(s => !s.dr), kgs = wk.map(kgOf).filter(x => x != null);
+    if (tipoOf(X) !== "uguali" && !(d.sch && d.sch[it.id]) && name === it.name) { // schema della scheda: ricorda kg1, ripetizioni fatte e previste
+      const tg = d.sets[it.id].filter(s => !s.w && !s.dr).map(s => s.t ? s.t[1] : +s.reps);
+      S.state.ex[exKey(it)] = { kg: kgs.length ? Math.max(...kgs) : null, kg1: wk.length && kgOf(wk[0]) != null ? kgOf(wk[0]) : null, tipo: X.schema.tipo, lastSets: wk.map(s => +s.reps || 0), tgt: tg, date: localISO(), at: new Date().toISOString() };
+      if (wk.length >= tg.length && tg.every((r, i) => (+wk[i].reps || 0) >= r) && it.unit !== "none") ups.push(short(name));
+    } else if (tipoOf(X) === "uguali" && wk.length) {
+      S.state.ex[exKey(it)] = { kg: it.unit === "none" || !kgs.length ? null : Math.max(...kgs), lastSets: wk.map(s => +s.reps || 0), date: localISO() };
+      if (wk.length >= it.sets && wk.every(s => +s.reps >= it.max) && it.unit !== "none") ups.push(short(name));
+    }
   }
   await persistSession({ id: "s" + Date.now(), date: new Date().toISOString(), day, items, ...meta });
   await persistState();
@@ -1286,6 +1360,7 @@ document.addEventListener("click", e => {
   else if (act === "dstep") { const el = $("#durata"); el.value = Math.max(0, Math.round(num(el.value)) + (+v)); }
   else if (act === "savefinish") { const du = Math.round(num(($("#durata") || {}).value)) || null, no = (($("#snote") || {}).value || "").trim(); S.sheet = null; finish({ durata: du, fatica: S.fat, note: no }); }
   else if (act === "sheet") openSheet(v);
+  else if (act === "sch-oggi") { S.sheet = null; renderSheet(); if (window.PalSchema) setTimeout(() => PalSchema.oggi(), 0); }
   else if (act === "sub") doSub(b.dataset.k, v);
   else if (act === "meal" && mealState(dayLog(localISO()), v) === "custom") { const c = dayLog(localISO()).custom[v]; S.food = { key: v, text: c.text, items: [], note: "", busy: false, err: null }; openSheet("food"); }
   else if (act === "meal") { const d = dayLog(localISO()), st = mealState(d, v); delete d.custom[v]; delete d.skip[v]; d.meals[v] = st === "open"; saveDay(localISO()); render(); }
@@ -1384,8 +1459,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610281300"></script>
-<script src="ux.js?v=202610281300"></script>
-<script src="hub.js?v=202610281300"></script><script src="board.js?v=202610281300"></script><script src="timer.js?v=202610281300"></script><script src="nutri.js?v=202610281300"></script><script src="photos.js?v=202610281300"></script><script src="coachui.js?v=202610281300"></script><script src="settings.js?v=202610281300"></script><script src="aikey.js?v=202610281300"></script><script src="tour.js?v=202610281300"></script><script src="gesture.js?v=202610281300"></script><script src="ds.js?v=202610281300"></script><script src="v3.js?v=202610281300"></script><script src="sec-oggi.js?v=202610281300"></script><script src="sec-palestra.js?v=202610281300"></script><script src="sec-cibo.js?v=202610281300"></script><script src="sec-progressi.js?v=202610281300"></script>
+<script src="exdb.js?v=202610281430"></script>
+<script src="ux.js?v=202610281430"></script>
+<script src="hub.js?v=202610281430"></script><script src="board.js?v=202610281430"></script><script src="timer.js?v=202610281430"></script><script src="nutri.js?v=202610281430"></script><script src="photos.js?v=202610281430"></script><script src="coachui.js?v=202610281430"></script><script src="settings.js?v=202610281430"></script><script src="aikey.js?v=202610281430"></script><script src="tour.js?v=202610281430"></script><script src="gesture.js?v=202610281430"></script><script src="ds.js?v=202610281430"></script><script src="v3.js?v=202610281430"></script><script src="sec-oggi.js?v=202610281430"></script><script src="sec-palestra.js?v=202610281430"></script><script src="sec-cibo.js?v=202610281430"></script><script src="sec-progressi.js?v=202610281430"></script>
 
 </body></html>
