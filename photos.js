@@ -56,7 +56,7 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
       if (!out || !Array.isArray(out.distretti)) throw new Error("vuoto");
       lsSet("percorso", { at: Date.now(), weeks: cx.weeks, adh: cx.adh, n: st.s.photos.length, out });
       S.pp = null; S.ppOpen = true;
-    } catch (e) { S.pp = { err: e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova tra poco." : "Il confronto non è riuscito: riprova tra poco." }; }
+    } catch (e) { S.pp = { err: e && e.code === "timeout" ? "Leo non ha risposto in tempo. Riprova tra un minuto." : "Il confronto non è riuscito: riprova tra poco." }; }
     render();
   }
 
@@ -71,28 +71,28 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
       ${stable.length ? `<p class="small muted">Stabili: ${stable.map(esc).join(", ")}.</p>` : ""}
       ${action ? `<div class="pp-act"><b>Su cosa lavorare</b><p>${action}</p></div>` : ""}
       <details class="pp-fat"><summary>Mostra la stima del grasso</summary><p>${esc(o.grasso_tendenza || "non valutabile")}${o.grasso_range_attuale ? `, intorno al ${esc(o.grasso_range_attuale)}` : ""}. Stima da foto con errore di ±3–5 punti: non è una misura clinica.</p></details>
-      <p class="small faint">${esc(o.note_foto || "")} Confrontabilità delle foto: ${esc(o.confrontabilita || "–")}, confidenza ${esc(o.confidenza || "–")}. Analisi del ${dt(new Date(c.at).toISOString())}.</p></div>`;
+      <p class="small faint">${esc(o.note_foto || "")} Foto confrontabili: ${esc(o.confrontabilita || "–")} · Stima sicura: ${esc(o.confidenza || "–")}. Analisi del ${dt(new Date(c.at).toISOString())}.</p></div>`;
   }
 
   function percorso() {
     const st = state(), c = cache(), pp = S.pp || {};
     let body;
     if (pp.busy) body = `<button class="ghost" disabled>Sto confrontando le foto…</button><p class="small muted">Ci vuole circa mezzo minuto.</p>`;
-    else if (S.ppConsent) body = `<p>Le ${st.s.photos.length} foto vengono inviate a Google Gemini solo per questo confronto e non vengono salvate fuori dal telefono. Procedo?</p><div class="row2"><button class="primary" data-act="pp-go">Sì, confronta</button><button class="ghost" data-act="pp-no">Annulla</button></div>`;
+    else if (S.ppConsent) body = `<p>Le ${st.s.photos.length} foto vengono inviate a Google Gemini solo per questo confronto e non vengono salvate fuori dal telefono. Procedo?</p><div class="row2"><button class="primary" data-act="pp-go">Sì, invia e confronta</button><button class="ghost" data-act="pp-no">No, tienile sul telefono</button></div>`;
     else if (st.code === "few") body = `<p class="muted">Servono almeno due foto nella stessa posa, scattate a distanza di settimane. Inizia con una serie frontale, laterale e posteriore: sarà il tuo punto di partenza.</p>`;
     else if (st.code === "span") body = `<p class="muted">Il primo confronto è disponibile dal ${longDate(st.from)}. I cambiamenti si vedono in settimane, non in giorni.</p>`;
     else if (st.code === "wait") body = `<p class="muted">Il prossimo confronto è disponibile dal ${longDate(st.from)}. I cambiamenti si vedono in settimane, non in giorni.</p>`;
-    else body = !S.sample ? `<p class="muted">Per il confronto serve l'AI attiva: la trovi in Impostazioni.</p>` : `<button class="primary go" data-act="pp-ask">Confronta il tuo percorso</button><p class="small muted">Prima e ultima foto di ogni posa, ${Math.round(st.s.span / 7)} settimane di distanza.</p>`;
+    else body = !S.sample ? `<p class="muted">Per il confronto attiva Leo in Impostazioni.</p>` : `<button class="primary go" data-act="pp-ask">Confronta le foto con Leo</button><p class="small muted">Prima e ultima foto di ogni posa, ${Math.round(st.s.span / 7)} settimane di distanza.</p>`;
     const err = pp.err ? `<div class="alert">${esc(pp.err)}</div>` : "";
     const res = c ? (S.ppOpen || st.code !== "ok" ? result(c) : `<button class="link small" data-act="pp-open">Rivedi l'ultimo confronto</button>`) : "";
-    return `<div class="block"><div class="card pp"><h2>Il tuo <span class="hl">percorso</span></h2>${steps(st)}${shelf()}${body}${err}${res}</div></div>` + slider();
+    return `<div class="block"><div class="card pp"><h2>Foto del <span class="hl">corpo</span></h2>${steps(st)}${shelf()}${body}${err}${res}</div></div>` + slider();
   }
 
   function steps(st) {
     const n = POSES.filter(ps => S.photos.some(p => (p.pose || "frontale") === ps)).length, c = st.code;
     const s1 = n === 3, s2 = st.s.span >= MIN_SPAN, s3 = !!cache();
     const li = (done, t) => `<li class="${done ? "ok" : ""}"><span aria-hidden="true">${done ? "✓" : ""}</span>${t}</li>`;
-    return `<ol class="pp-steps">${li(s1, `Scatta la serie di partenza: frontale, laterale, posteriore${n && !s1 ? ` (${n} di 3)` : ""}`)}${li(s2, "Ripeti le stesse 3 foto dopo almeno 8 settimane")}${li(s3, "Confronta il percorso")}</ol>`;
+    return `<ol class="pp-steps">${li(s1, `Scatta la serie di partenza: frontale, laterale, posteriore${n && !s1 ? ` (${n} di 3)` : ""}`)}${li(s2, "Ripeti le stesse 3 foto dopo almeno 8 settimane")}${li(s3, "Confronta le foto")}</ol>`;
   }
   function shelf() {
     if (!S.assets) return `<div class="alert">Il salvataggio delle foto non è disponibile in questo browser.</div>`;
@@ -117,17 +117,16 @@ ${s.photos.map((p, i) => `${i + 1}. posa ${p.pose}, ${dt(p.date)}`).join("\n")}`
   const strip = h => h.replace(/<div class="posesel seg"[\s\S]*?<\/div>\s*<button class="primary file-btn">[\s\S]*?<\/button>/, "").replace(/<div class="ph-grid">[\s\S]*?<\/button><\/div>/, "")
     .replace(/<div class="empty"><h2>Nessuna foto ancora<\/h2>[\s\S]*?<\/div>/, "").replace(/<p class="small faint">Tocca una foto[\s\S]*?<\/p>/, "");
   window.viewPhotos = function () { return percorso() + strip(base()).replace(/(<button class="ph" data-act="pick" data-v="([^"]+)" aria-pressed="true">)/g, '$1<span class="ph-x pp-x" data-act="pp-del" data-v="$2" role="button" aria-label="Elimina questa foto">×</span>'); };
+  /* 28/10 (DS 1): toast standard con «Annulla»; la cancellazione vera parte dopo 5 secondi se non annulli */
   function undoToast(msg, undo, commit) {
-    document.querySelectorAll(".utoast").forEach(x => x.remove());
-    const t = document.createElement("div"); t.className = "toast utoast"; t.setAttribute("role", "status"); let undone = false;
-    t.innerHTML = `<span>${esc(msg)}</span><button>Annulla</button>`; document.body.appendChild(t);
-    t.querySelector("button").onclick = e => { e.stopPropagation(); undone = true; undo(); t.remove(); };
-    setTimeout(() => { t.remove(); if (!undone) commit(); }, 5000);
+    let undone = false;
+    toast(msg, { undo: () => { undone = true; undo(); } });
+    setTimeout(() => { if (!undone) commit(); }, 5000);
   }
   function delPhoto(id) {
     const i = S.photos.findIndex(p => p.id === id); if (i < 0) return; const ph = S.photos[i];
     S.photos.splice(i, 1); S.sel = S.sel.filter(x => x !== id); S.ppSel = null; S.analysis = null; render();
-    undoToast("Foto eliminata.", () => { S.photos.splice(i, 0, ph); render(); }, async () => {
+    undoToast("Foto eliminata", () => { S.photos.splice(i, 0, ph); render(); }, async () => {
       try { if (S.db) await S.db.doc(S.base + "/" + id).delete(); else { saveLocalPhotos(); const d = await idb(); d.transaction("blobs", "readwrite").objectStore("blobs").delete(ph.assetId || id); } } catch (_) {}
       delete S.blobs[id];
     });

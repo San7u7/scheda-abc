@@ -17,7 +17,9 @@
     #view.v3 .v3-oggi-tl .v3-rs { display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     #view.v3 .v3-oggi-ttl { display: flex; flex-direction: column; gap: 4px; }
     .v3-oggi-w { display: flex; flex-direction: column; gap: 12px; }
-    .v3-sheet .v3-oggi-w .v3-row { background: var(--v3-s2); }`;
+    .v3-sheet .v3-oggi-w .v3-row { background: var(--v3-s2); }
+    .v3-sheet .v3-oggi-w .v3-row.sm { min-height: 56px; }
+    .v3-sheet .v3-apri:disabled { opacity: .4; }`;
     document.head.appendChild(st);
   }
 
@@ -30,6 +32,7 @@
   const mstate = k => { const v = dayRaw(); return v ? mealState({ meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {} }, k) : "open"; };
   const kidWords = () => { const g = data.profile().group; return g === "bambino" || g === "over65"; };
   const sessName = n => kidWords() ? String(n).replace(/^Seduta\b/, "Allenamento") : n;
+  const weekLab = () => kidWords() ? "Allenamenti della settimana" : "Sedute della settimana";
 
   function timeline() {
     const dw = new Date().getDay(), plan = hasMealPlan(), items = [];
@@ -56,8 +59,8 @@
   }
   const rowOf = (x, on) => {
     const o = { title: x.title, sub: x.sub, when: x.when, on };
-    if (x.done) { o.value = "Fatto ✓"; o.sub = x.kind === "sess" ? x.sub : o.sub; }
-    else if (x.skip) o.value = "Saltato";
+    if (x.done) { o.value = x.kind === "meal" ? "Mangiato ✓" : kidWords() ? "Fatto ✓" : "Fatta ✓"; o.sub = x.kind === "sess" ? x.sub : o.sub; }
+    else if (x.skip) o.value = "Non mangiato";
     o.act = x.kind === "meal" ? "pasto" : x.kind === "week" ? "riepilogo" : "seduta"; o.arg = x.key || "";
     return ui.row(o);
   };
@@ -85,8 +88,8 @@
     const d = data.today();
     if (k === "sess") {
       const w = data.week().sessions;
-      if (!w.planned) return ({ label: "Sedute della settimana", value: "–", miss: "Crea la scheda", act: "go", arg: "palestra" });
-      return ({ label: "Sedute della settimana", value: w.done, of: w.planned, pct: ui.pct(w.done, w.planned), act: "riepilogo" });
+      if (!w.planned) return ({ label: weekLab(), value: "–", miss: "Crea la scheda", act: "go", arg: "palestra" });
+      return ({ label: weekLab(), value: w.done, of: w.planned, pct: ui.pct(w.done, w.planned), act: "riepilogo" });
     }
     if (k === "pro") return ({ label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), act: "go", arg: "cibo" });
     if (k === "kcal") return ({ label: "Calorie", value: d.kcal, of: d.kcalT, pct: ui.pct(d.kcal, d.kcalT), act: "go", arg: "cibo" });
@@ -107,7 +110,7 @@
     rest: ["Il muscolo cresce nei giorni di riposo", "Dopo lo sforzo il muscolo si ripara e si rinforza. Oggi proteine e sonno contano quanto la seduta.", "Cosa fare nel giorno di riposo?"],
     pro: ["Le proteine vanno divise nei pasti", "Il corpo le usa meglio se le distribuisci in 4 o 5 pasti, da 20 a 40 g ciascuno.", "Come divido le proteine nella giornata?"],
     water: ["Quanta acqua bere quando ti alleni", "Con il sudore perdi acqua e sali. In seduta bevi a piccoli sorsi, circa un bicchiere ogni 15 o 20 minuti.", "Quanta acqua devo bere oggi?"],
-    mov: ["Un'ora di movimento al giorno", "L'OMS consiglia almeno 60 minuti al giorno sotto i 18 anni. Valgono anche gioco, bici e corsa.", "Che cosa conta come movimento?"],
+    mov: ["Un'ora di movimento al giorno", "L'Organizzazione mondiale della sanità consiglia almeno 60 minuti al giorno sotto i 18 anni. Valgono anche gioco, bici e corsa.", "Che cosa conta come movimento?"],
     bones: ["Il movimento rende le ossa più forti", "Saltare, correre e sollevare pesi leggeri fa crescere ossa più dense. Le ossa costruite da giovani durano tutta la vita.", "Perché il movimento fa bene alle ossa?"],
     fv: ["Cinque porzioni di frutta e verdura", "Danno fibre, vitamine e acqua. Una porzione è circa un frutto o un piatto di verdura.", "Quanto è una porzione di verdura?"],
     o65: ["Le proteine proteggono i muscoli", "Dopo i 65 anni il muscolo si perde più in fretta. Proteine a ogni pasto e allenamento lo mantengono forte.", "Quante proteine mi servono?"]
@@ -123,10 +126,10 @@
   function mainPage() {
     const p = data.profile(), items = timeline(), up = upcoming(items), f = fact();
     const rows = up.length ? up.map((x, i) => rowOf(x, i === 0)).join("")
-      : ui.row({ title: items.length ? "Giornata completa" : "Niente in programma", sub: items.length ? "Hai segnato tutto per oggi" : "Inizia dal piano dei pasti", act: items.length ? null : "go", arg: "cibo" });
+      : ui.row({ title: items.length ? "Giornata completa" : "Nessun pasto in programma", sub: items.length ? "Hai segnato tutto per oggi" : "Crea il piano alimentare", act: items.length ? null : "go", arg: "cibo" });
     return ui.header(p.nome ? "Ciao " + p.nome : "Oggi") +
       `<section class="v3-sec">${ui.label("La tua giornata")}<div class="v3-oggi-tl">${rows}${items.length ? ui.secondary("Vedi tutta la giornata", "giornata") : ""}</div></section>` +
-      ui.limeBox({ title: "I numeri di oggi", action: { label: "Personalizza sezione", act: "riquadri" }, tiles: tileKeys().map(tile).filter(Boolean) }) +
+      ui.limeBox({ title: "I numeri di oggi", action: { label: "Scegli i numeri", act: "riquadri" }, tiles: tileKeys().map(tile).filter(Boolean) }) +
       ui.end(f[1], { act: "sap", arg: f[0], leoQ: f[3] });
   }
   function dayPage() {
@@ -149,22 +152,22 @@
     return { per, done: ss.length, planned: DAYS.length, kg: Math.round(per.reduce((m, d) => m + d.kg, 0)), fat: fat.length ? Math.round(fat.reduce((a, b) => a + b, 0) / fat.length) : null, gym: gym.length, proGym: gym.filter(d => d.proOk).length };
   }
   function weekPage() {
-    const w = weekData(wOff), kid = data.profile().group === "bambino", full = w.planned && w.done >= w.planned;
+    const w = weekData(wOff), kid = data.profile().group === "bambino", kw = kidWords(), full = w.planned && w.done >= w.planned;
     const nx = P[nextDay()], nxName = nx ? sessName(nx.nome || "Seduta " + nextDay()) : "";
-    const verdict = full ? (wOff === 0 && !kid && w.kg > weekData(1).kg ? "Settimana piena, carichi su" : "Settimana piena")
-      : wOff === 0 ? (w.done ? `${w.done} di ${w.planned}, manca ${nxName}` : "Settimana da iniziare") : `${w.done} di ${w.planned} sedute fatte`;
+    const verdict = full ? (wOff === 0 && !kid && w.kg > weekData(1).kg ? "Settimana piena, carichi in aumento" : "Settimana piena")
+      : wOff === 0 ? (w.done ? `${kw ? "Fatti" : "Fatte"} ${w.done} di ${w.planned}: resta ${nxName}` : "Settimana da iniziare") : `${w.done} di ${w.planned} ${kw ? "allenamenti fatti" : "sedute fatte"}`;
     const max = Math.max(1, ...w.per.map(d => kid ? d.n : d.kg));
     const bars = w.per.map((d, i) => { const v = kid ? d.n : d.kg; return `<span class="v3-wk-b${v ? (d.proOk ? " ok" : " lo") : ""}" style="height:${v ? Math.max(8, v / max * 100) : 3}%" title="${"LMMGVSD"[i]}"></span>`; }).join("");
-    const aria = w.per.filter(d => d.n).map(d => `${["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"][new Date(d.iso + "T12:00:00").getDay()]} ${kid ? d.n + " allenamento" : ui.nf(Math.round(d.kg)) + " kg"}${d.proOk ? ", proteine a obiettivo" : ", proteine sotto"}`).join("; ") || "Nessuna seduta";
+    const aria = w.per.filter(d => d.n).map(d => `${["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"][new Date(d.iso + "T12:00:00").getDay()]} ${kid ? d.n + " allenamento" : ui.nf(Math.round(d.kg)) + " kg"}${d.proOk ? ", proteine raggiunte" : ", proteine sotto"}`).join("; ") || (kw ? "Nessun allenamento" : "Nessuna seduta");
     const ups = DAYS.reduce((m, k) => m + (P[k] ? P[k].items.filter(it => plan(it).up).length : 0), 0);
     return ui.back() + `<div class="v3-oggi-ttl"><h1 class="v3-t1">La tua settimana</h1><p class="v3-sub v3-wk-v">${ui.esc(verdict)}</p></div>` +
-      ui.seg(["Questa settimana", "Precedente"], wOff, "wsel", "Settimana") +
-      ui.card(`<div class="v3-wk-h"><span>${kid ? "Allenamenti" : "Kg mossi"}</span><b>${w.done} di ${w.planned} ${kid ? "allenamenti" : "sedute"}</b></div>` +
+      ui.seg(["Questa settimana", "Settimana scorsa"], wOff, "wsel", "Settimana") +
+      ui.card(`<div class="v3-wk-h"><span>${kid ? "Allenamenti" : "Peso sollevato"}</span><b>${w.done} di ${w.planned} ${kw ? "allenamenti" : "sedute"}</b></div>` +
         `<p class="v3-bn">${kid ? w.done : ui.nf(w.kg) + ' <span class="v3-of">kg</span>'}</p>` +
         `<div class="v3-wk-c" role="img" aria-label="${ui.esc(aria)}">${bars}</div><div class="v3-wk-d" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>` +
-        `<p class="v3-bd">Pieno: proteine a obiettivo quel giorno</p>`) +
-      `<div class="v3-oggi-tl">${ui.row({ title: "Proteine a obiettivo", sub: w.gym ? `${w.proGym} ${w.proGym === 1 ? "seduta" : "sedute"} su ${w.gym}` : "Nessuna seduta ancora", act: "go", arg: "cibo" })}` +
-      ui.row(kid ? { title: "Prossimo allenamento", sub: nxName, act: "go", arg: "palestra" } : { title: w.fat != null ? `Fatica media ${w.fat} /10` : "Fatica non segnata", sub: ups ? `${ups} ${ups === 1 ? "carico pronto" : "carichi pronti"} a salire` : "Carichi stabili", act: "go", arg: "palestra" }) + `</div>` +
+        `<p class="v3-bd">Barra piena: proteine raggiunte quel giorno</p>`) +
+      `<div class="v3-oggi-tl">${ui.row({ title: "Proteine raggiunte", sub: w.gym ? `${w.proGym} ${kw ? (w.proGym === 1 ? "allenamento" : "allenamenti") : (w.proGym === 1 ? "seduta" : "sedute")} su ${w.gym}` : (kw ? "Nessun allenamento ancora" : "Nessuna seduta ancora"), act: "go", arg: "cibo" })}` +
+      ui.row(kid ? { title: "Prossimo allenamento", sub: nxName, act: "go", arg: "palestra" } : { title: w.fat != null ? `Fatica media: ${w.fat} su 10` : "Fatica non segnata", sub: ups ? `${ups} ${ups === 1 ? "carico pronto" : "carichi pronti"} a salire` : "Carichi stabili", act: "go", arg: "palestra" }) + `</div>` +
       ui.end("Il muscolo cresce a riposo, se mangi proteine.", { act: "sap", arg: "pro", leoQ: "Perché le proteine contano nei giorni di palestra?" });
   }
   if (!document.getElementById("v3-sec-oggi-wk")) { const st = document.createElement("style"); st.id = "v3-sec-oggi-wk"; st.textContent = `
@@ -187,10 +190,10 @@
   const TL = { sess: "Sedute della settimana", pro: "Proteine", water: "Acqua", kcal: "Calorie", carb: "Carboidrati", fat: "Grassi", peso: "Peso", mov: "Movimento", fv: "Frutta e verdura" };
   function tilesSheet() {
     const p = data.profile(), opts = Object.keys(TL).filter(k => !(p.minor && (k === "kcal" || k === "peso")));
-    let sel = tileKeys().slice();
-    const html = () => `<h2 class="v3-sh1">Scegli 4 riquadri</h2><p class="v3-shp">${sel.length === 4 ? "Tocca un riquadro scelto per toglierlo." : `Ne mancano ${4 - sel.length}: tocca per aggiungere.`}</p>
-      <div class="v3-oggi-w">${opts.map(k => { const i = sel.indexOf(k); return `<button class="v3-row${i >= 0 ? " on" : ""}" data-v3act="tsel" data-v3arg="${k}" aria-pressed="${i >= 0}" style="min-height:56px"><span class="v3-rx"><span class="v3-rt" style="display:block">${ui.esc(TL[k])}</span></span><span class="v3-val">${i >= 0 ? (i + 1) + " ✓" : ""}</span></button>`; }).join("")}</div>
-      <button class="v3-apri wide" data-v3act="tsave"${sel.length === 4 ? "" : " disabled style=\"opacity:.4\""}>Salva</button>${ui.secondary("Ripristina i riquadri iniziali", "treset")}`;
+    let sel = tileKeys().slice(); TL.sess = weekLab();
+    const html = () => `<h2 class="v3-sh1">Scegli 4 riquadri</h2><p class="v3-shp">${sel.length === 4 ? "Tocca un riquadro scelto per toglierlo." : `Scegline ancora ${4 - sel.length}.`}</p>
+      <div class="v3-oggi-w">${opts.map(k => { const i = sel.indexOf(k); return `<button class="v3-row sm${i >= 0 ? " on" : ""}" data-v3act="tsel" data-v3arg="${k}" aria-pressed="${i >= 0}"><span class="v3-rx"><span class="v3-rt" style="display:block">${ui.esc(TL[k])}</span></span><span class="v3-val">${i >= 0 ? (i + 1) + " ✓" : ""}</span></button>`; }).join("")}</div>
+      <button class="v3-apri wide" data-v3act="tsave"${sel.length === 4 ? "" : " disabled"}>Salva i 4 riquadri</button>${ui.secondary("Ripristina i riquadri iniziali", "treset")}`;
     const paint = () => { s.el.innerHTML = '<div class="v3-grab"></div>' + html(); };
     const s = V3.sheet(html(), { label: "Scegli 4 riquadri", on: {
       tsel(k) { const i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 4) sel.push(k); paint(); },

@@ -18,44 +18,46 @@
     const foods = S.foods || [];
     return `<h1>Il tuo <span class="hl">piano</span></h1><p class="muted" style="margin-top:4px">Cosa ti alleni e cosa mangi questa settimana.</p>
       <div class="block"><div class="hcard"><div class="hc-h"><span class="hc-ic">${'<svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg>'}</span><div><h2>Scheda di allenamento</h2><p class="small muted">${tr.sedute.length ? `${tr.sedute.length} sedute · ${nEx} esercizi` : "Nessuna scheda caricata"}</p></div></div>
-        ${tr.sedute.length ? ((lsGet("prefs", {}).days || "flex") === "fixed" ? `<div class="wstrip">${week}</div>` : `<p class="small muted" style="margin:0">Sedute ${tr.sedute.map((x, i) => String.fromCharCode(65 + i)).join(" · ")} in ordine, quando vuoi. I giorni fissi si attivano in Impostazioni.</p>`) : ""}
+        ${tr.sedute.length ? ((lsGet("prefs", {}).days || "flex") === "fixed" ? `<div class="wstrip">${week}</div>` : `<p class="small muted" style="margin:0">Sedute ${tr.sedute.map((x, i) => String.fromCharCode(65 + i)).join(" · ")} in ordine, quando vuoi.</p><p class="small muted" style="margin:0">Giorni fissi: Impostazioni.</p>`) : ""}
         <div class="hc-acts">${tr.sedute.length ? `<button class="primary go" data-act="hub" data-v="train">Modifica scheda</button>` : ""}${tr.sedute.length ? `<button class="link small" data-act="redo" data-v="2">Carica una nuova scheda</button>` : `<button class="primary go" data-act="redo" data-v="2">Carica la scheda</button>`}</div></div></div>
       <div class="block"><div class="hcard"><div class="hc-h"><span class="hc-ic">${'<svg viewBox="0 0 24 24"><path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v6M9 3v6M17 21V3c-2 1.5-3 4-3 7v3h3"/></svg>'}</span><div><h2>Piano alimentare</h2><p class="small muted">${hasMealPlan() ? `${esc(d.origine || "Piano caricato")} · circa ${fmt(PLAN.kcal)} kcal` : `Obiettivo calcolato: ${fmt(PLAN.kcal)} kcal`}</p></div></div>
-        <div class="mini-kv"><span><b>${fmt(PLAN.kcal)}</b>kcal</span><span><b>${PLAN.pro} g</b>proteine</span><span><b>${PLAN.cho || "–"} g</b>carbo</span><span><b>${PLAN.fat || "–"} g</b>grassi</span></div>
+        <div class="mini-kv"><span><b>${fmt(PLAN.kcal)}</b>kcal</span><span><b>${PLAN.pro} g</b>proteine</span><span><b>${PLAN.cho || "–"} g</b>carboidrati</span><span><b>${PLAN.fat || "–"} g</b>grassi</span></div>
         <div class="hc-acts">${hasMealPlan() ? `<button class="primary go" data-act="hub" data-v="menu">Vedi il menù</button><button class="ghost" data-act="hub" data-v="diet">Modifica i pasti</button>` : ""}${hasMealPlan() ? `<button class="link small" data-act="redo" data-v="3">Carica un nuovo piano</button>` : `<button class="primary go" data-act="redo" data-v="3">Carica il piano alimentare</button>`}</div></div></div>
       <div class="block"><div class="hcard"><div class="hc-h"><span class="hc-ic">${'<svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M8.5 6l1.5-2h4l1.5 2"/></svg>'}</span><div><h2>I miei alimenti</h2><p class="small muted">${foods.length ? `${foods.length} salvati, con i valori per 100 g` : "Fotografa l'etichetta di ciò che mangi spesso"}</p></div></div>
-        ${foods.length ? `<div class="flist">${foods.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map(x => `<div class="frow"><span><b>${esc(x.nome)}</b><small class="num">${fmt(x.per100.kcal)} kcal · P ${fmt(x.per100.p)} · C ${fmt(x.per100.c)} · G ${fmt(x.per100.f)} per 100 g</small></span><button class="link small" data-act="libdel" data-v="${x.id}">${S.confirmDel === x.id ? "Conferma" : "Elimina"}</button></div>`).join("")}</div>` : ""}
+        ${foods.length ? `<div class="flist">${foods.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map(x => `<div class="frow"><span><b>${esc(x.nome)}</b><small class="num">${fmt(x.per100.kcal)} kcal · Proteine ${fmt(x.per100.p)} · Carboidrati ${fmt(x.per100.c)} · Grassi ${fmt(x.per100.f)} (per 100 g)</small></span><button class="link small" data-act="libdel" data-v="${x.id}">${S.confirmDel === x.id ? "Sì, elimina " + esc(x.nome) : "Elimina"}</button></div>`).join("")}</div>` : ""}
         <div class="hc-acts"><label class="primary file-btn">${S.hubBusy ? "Leggo l'etichetta…" : "Aggiungi da foto"}<input type="file" accept="image/*" data-act="hub-food-photo" ${S.hubBusy ? "disabled" : ""}></label><button class="ghost" data-act="hub-sheet" data-v="food-new">Aggiungi a mano</button></div></div></div>
       `;
   }
-  window.rulesBlock = () => `<div class="block"><details class="hcard"><summary><h2>Regole e consigli</h2></summary><ul class="plain muted" style="margin-top:10px"><li>Prima le ripetizioni, poi il carico: quando chiudi il range in tutte le serie, il carico sale.</li><li>RIR 1–2 sui multiarticolari, 0–1 nell'ultima serie degli isolamenti.</li><li>Riscaldamento: 5–8 minuti di cardio, stretching sotto i 60″ per posizione, 1 serie di avvicinamento sul primo esercizio di ogni gruppo muscolare.</li><li>Scarico: con fatica ≥ 8/10 per due settimane, una settimana a metà serie.</li>${(PLAN.rules || []).map(r => `<li>${esc(r)}</li>`).join("")}${supplements().map(x => `<li>${esc(x.name)}${x.plan ? ": " + esc(x.plan) : ""}.</li>`).join("")}</ul></details></div>`;
+  window.rulesBlock = () => `<div class="block"><details class="hcard"><summary><h2>Regole e consigli</h2></summary><ul class="plain muted" style="margin-top:10px"><li>Arriva al massimo delle ripetizioni in ogni serie: poi aumenta il carico.</li><li>Chiudi ogni serie con 1–2 ripetizioni ancora in canna.</li><li>Riscaldamento: 5–8 minuti di bici o camminata, stretching di meno di un minuto per posizione, 1 serie leggera sul primo esercizio di ogni muscolo.</li><li>Fatica 8 o più per 2 settimane? Una settimana con metà serie.</li><li>Dubbi su queste regole? Chiedi a Leo.</li>${(PLAN.rules || []).map(r => `<li>${esc(r)}</li>`).join("")}${supplements().map(x => `<li>${esc(x.name)}${x.plan ? ": " + esc(x.plan) : ""}.</li>`).join("")}</ul></details></div>`;
   window.settingsBlocks = () => { const pr = S.profile || {}; return `
       <div class="block"><div class="hcard"><div class="hc-h"><span class="hc-ic">${'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>'}</span><div><h2>Profilo e obiettivo</h2><p class="small muted">${pr.nome ? `${esc(pr.nome)}, ${pr.eta} anni, ${fmt(pr.peso)} kg · ${esc(goalName())}` : "Da completare"}</p></div></div>
         <div class="hc-acts"><button class="ghost" data-act="redo" data-v="1">Modifica profilo e colore</button></div></div></div>
       ${S.site && typeof aiKeyBox === "function" ? `<div class="block">${aiKeyBox()}</div>` : ""}
       <div class="block"><div class="hcard"><h2>I tuoi dati</h2><p class="small muted">${S.site ? "Restano solo su questo telefono: se cancelli i dati del browser li perdi." : "Sono salvati nel tuo account."}</p>
-        <div class="hc-acts">${S.site ? `<button class="primary go" data-act="backup">Fai un backup</button><label class="ghost file-btn">Recupera un backup<input type="file" accept=".json,application/json" data-act="restore"></label><p class="small muted" style="margin:0">Il backup contiene sedute, pasti, foto, impostazioni e chiave IA. Salvalo in File o mandatelo per email: serve per cambiare telefono o reinstallare l'app.</p>` : ""}${S.downloads ? `<button class="ghost" data-act="export" data-v="sedute">Esporta allenamenti (CSV)</button><button class="ghost" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}<button class="link small" data-act="wipe" style="color:var(--warn-ink)">${S.confirmWipe ? "Conferma: cancella tutti i miei dati" : "Cancella tutti i miei dati"}</button></div></div></div>
+        <div class="hc-acts">${S.site ? `<button class="primary go" data-act="backup">Fai un backup</button><label class="ghost file-btn">Recupera un backup<input type="file" accept=".json,application/json" data-act="restore"></label><p class="small muted" style="margin:0">Il backup contiene sedute, pasti, foto, impostazioni e chiave IA. Salvalo in File o mandatelo per email: serve per cambiare telefono o reinstallare l'app.</p>` : ""}${S.downloads ? `<button class="ghost" data-act="export" data-v="sedute">Esporta allenamenti (CSV)</button><button class="ghost" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}<button class="link small" data-act="wipe" style="color:var(--warn-ink)">${S.confirmWipe ? "Sì, cancella tutti i miei dati" : "Cancella tutti i miei dati"}</button></div></div></div>
       <p class="credits">Foto in bianco e nero da collezioni aperte (CC0, pubblico dominio, CC BY 2.0 di vanitystudiosphotography su Flickr). Animazioni degli esercizi: Free Exercise DB (pubblico dominio). Le calorie sono stime; l'app non sostituisce medico, dietista o allenatore.</p>`;
   }
 
   /* ---------- training editor ---------- */
+  /* glossario 28/10: «Seduta» per adulto e ragazzo, «Allenamento» per bambino e over 65 */
+  const altG = () => { try { const g = window.V3 && V3.data.profile().group; return g === "bambino" || g === "over65"; } catch (_) { return false; } };
   function trainEditor() {
     const tr = T(), locked = !!activeDay();
     return `${backBtn}<h1>Modifica la <span class="hl">scheda</span></h1>
       ${locked ? `<div class="alert" style="margin-top:12px">Hai una seduta in corso: concludila o scartala prima di cambiare la scheda.</div>` : `<p class="muted" style="margin-top:4px">Tocca un esercizio per cambiarlo. Le frecce cambiano l'ordine.</p>`}
       ${tr.sedute.map((s, si) => `<div class="block"><div class="hcard">
         <div class="ed-h"><div><h2>${String.fromCharCode(65 + si)} · ${esc(s.nome || "Seduta")}</h2><p class="small muted">${esc(s.focus || "")}</p></div>${locked ? "" : `<button class="ghost sm" data-act="hub-sheet" data-v="sess-edit" data-s="${si}">Modifica</button>`}</div>
-        <div class="ed-list">${s.esercizi.map((e, ei) => `<div class="ed-row"><button class="ed-main" data-act="hub-sheet" data-v="ex-edit" data-s="${si}" data-e="${ei}" ${locked ? "disabled" : ""}><b>${esc(e.nome)}</b><small class="num">${e.serie}×${e.min}${e.max !== e.min ? "–" + e.max : ""}${e.corpo_libero ? " · corpo libero" : e.kg != null ? ` · ${fmt(e.kg)} kg` : ""} · rec. ${mmss(e.recupero || 90)}</small></button>
-          ${locked ? "" : `<button class="icon-btn sm" data-act="ex-move" data-s="${si}" data-e="${ei}" data-v="-1" aria-label="Sposta su" ${ei === 0 ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button><button class="icon-btn sm" data-act="ex-move" data-s="${si}" data-e="${ei}" data-v="1" aria-label="Sposta giù" ${ei === s.esercizi.length - 1 ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>`}</div>`).join("")}</div>
+        <div class="ed-list">${s.esercizi.map((e, ei) => `<div class="ed-row"><button class="ed-main" data-act="hub-sheet" data-v="ex-edit" data-s="${si}" data-e="${ei}" ${locked ? "disabled" : ""}><b>${esc(e.nome)}</b><small class="num">${e.serie} serie × ${e.min}${e.max !== e.min ? "–" + e.max : ""}${e.corpo_libero ? " · corpo libero" : e.kg != null ? ` · ${fmt(e.kg)} kg` : ""} · recupero ${mmss(e.recupero || 90)}</small></button>
+          ${locked ? "" : `<button class="icon-btn sm" data-act="ex-move" data-s="${si}" data-e="${ei}" data-v="-1" aria-label="Sposta ${esc(e.nome)} su" ${ei === 0 ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button><button class="icon-btn sm" data-act="ex-move" data-s="${si}" data-e="${ei}" data-v="1" aria-label="Sposta ${esc(e.nome)} giù" ${ei === s.esercizi.length - 1 ? "disabled" : ""}><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>`}</div>`).join("")}</div>
         ${locked ? "" : `<button class="ghost" data-act="hub-sheet" data-v="ex-edit" data-s="${si}" data-e="new">+ Aggiungi esercizio</button>`}</div></div>`).join("")}
-      ${locked ? "" : `<div class="block"><button class="ghost" data-act="sess-add">+ Aggiungi una seduta</button></div>`}`;
+      ${locked ? "" : `<div class="block"><button class="ghost" data-act="sess-add">${altG() ? "+ Aggiungi un allenamento" : "+ Aggiungi una seduta"}</button></div>`}`;
   }
 
   /* ---------- diet: menu and editor ---------- */
   function dayChips() { const dw = S.dietDow ?? new Date().getDay(); return `<div class="seg scroll" role="group" aria-label="Giorno">${DOWI.map((d, i) => `<button data-act="ddow" data-v="${d}" aria-pressed="${d === dw}">${DOWN[i]}</button>`).join("")}</div>`; }
   function menuView(edit) {
     const dw = S.dietDow ?? new Date().getDay(), tot = MEALS.reduce((m, [k]) => m + nutOf(dw, k).kcal, 0);
-    return `${backBtn}<h1>${edit ? "Modifica i <span class=\"hl\">pasti</span>" : "Il tuo <span class=\"hl\">menù</span>"}</h1><p class="muted" style="margin-top:4px">${edit ? "Tocca un pasto per cambiarlo: puoi applicare la modifica anche agli altri giorni." : `${esc((S.diet || {}).origine || "Piano caricato")}. Questo giorno: circa ${fmt(tot)} kcal${Math.abs(tot - PLAN.kcal) > 20 ? `. L'obiettivo di ${fmt(PLAN.kcal)} kcal è la media della settimana: i singoli giorni variano un po'.` : "."}`}</p>
+    return `${backBtn}<h1>${edit ? "Modifica i <span class=\"hl\">pasti</span>" : "Il tuo <span class=\"hl\">menù</span>"}</h1><p class="muted" style="margin-top:4px">${edit ? "Tocca un pasto per cambiarlo: puoi applicare la modifica anche agli altri giorni." : `${esc((S.diet || {}).origine || "Piano caricato")}. Questo giorno: circa ${fmt(tot)} kcal${Math.abs(tot - PLAN.kcal) > 20 ? `. ${fmt(PLAN.kcal)} kcal è la media settimanale.` : "."}`}</p>
       <div class="block">${dayChips()}</div>
       <div class="block stack" style="gap:8px">${MEALS.map(([k, l]) => { const m = mealOf(dw, k), n = nutOf(dw, k);
         return `<${edit ? "button" : "div"} class="mrow" ${edit ? `data-act="hub-sheet" data-v="meal-edit" data-k="${k}"` : ""}><span class="mr-l">${l}${m ? ` · ${fmt(n.kcal)} kcal` : ""}</span><b>${m ? esc(m.t) : "Non previsto"}</b>${m && m.i.length ? `<ul class="plain muted small">${m.i.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${edit ? `<span class="mr-edit">Modifica ${ARROW}</span>` : ""}</${edit ? "button" : "div"}>`; }).join("")}</div>
@@ -81,26 +83,26 @@
       const s = T().sedute[h.s], isNew = h.e === "new", e = isNew ? { nome: "", serie: 3, min: 8, max: 12, kg: null, recupero: 90, tecnica: "", corpo_libero: false } : s.esercizi[h.e];
       html = `<div class="block-h"><h2>${isNew ? "Nuovo esercizio" : "Modifica esercizio"}</h2><button class="link small" data-act="close" style="padding:0">Annulla</button></div>
         ${field("xe-nome", "Nome", e.nome)}
-        <div class="grid3">${field("xe-serie", "Serie", e.serie, "text", "numeric")}${field("xe-min", "Rip. min", e.min, "text", "numeric")}${field("xe-max", "Rip. max", e.max, "text", "numeric")}</div>
-        <div class="grid3">${field("xe-kg", "Kg", e.kg, "text", "decimal")}${field("xe-rec", "Recupero s", e.recupero, "text", "numeric")}<div class="field"><span class="lab">Corpo libero</span><button class="pill-t" data-act="xe-bw" aria-pressed="${!!e.corpo_libero}" id="xe-bw">${e.corpo_libero ? "Sì" : "No"}</button></div></div>
+        <div class="grid3">${field("xe-serie", "Serie", e.serie, "text", "numeric")}${field("xe-min", "Ripetizioni minime", e.min, "text", "numeric")}${field("xe-max", "Ripetizioni massime", e.max, "text", "numeric")}</div>
+        <div class="grid3">${field("xe-kg", "Carico (kg)", e.kg, "text", "decimal")}${field("xe-rec", "Recupero (secondi)", e.recupero, "text", "numeric")}<div class="field"><span class="lab">Senza pesi</span><button class="pill-t" data-act="xe-bw" aria-pressed="${!!e.corpo_libero}" id="xe-bw">${e.corpo_libero ? "Sì" : "No"}</button></div></div>
         <div class="field"><label for="xe-tec">Tecnica e consigli</label><textarea id="xe-tec" rows="3">${esc(e.tecnica || "")}</textarea></div>
         <div id="xe-err"></div>
-        <button class="primary" data-act="xe-save">${isNew ? "Aggiungi" : "Salva"}</button>
-        ${isNew ? "" : `<button class="link small" data-act="xe-del" style="align-self:center;color:var(--warn-ink)">${S.confirmXe ? "Conferma: elimina l'esercizio" : "Elimina esercizio"}</button>`}`;
+        <button class="primary" data-act="xe-save">${isNew ? "Aggiungi alla seduta" : "Salva nella scheda"}</button>
+        ${isNew ? "" : `<button class="link small" data-act="xe-del" style="align-self:center;color:var(--warn-ink)">${S.confirmXe ? "Sì, elimina " + esc(e.nome || "l'esercizio") : "Elimina esercizio"}</button>`}`;
     } else if (sh === "sess-edit") {
       const s = T().sedute[h.s];
       html = `<div class="block-h"><h2>Seduta ${String.fromCharCode(65 + h.s)}</h2><button class="link small" data-act="close" style="padding:0">Annulla</button></div>
         ${field("se-nome", "Nome", s.nome)}${field("se-focus", "Muscoli allenati", s.focus)}
-        <div class="field"><span class="lab">Giorno della settimana</span><div class="seg scroll" role="group">${DOWI.map((d, i) => `<button data-act="se-dow" data-v="${d}" aria-pressed="${s.dow === d}">${DOWN[i]}</button>`).join("")}<button data-act="se-dow" data-v="" aria-pressed="${s.dow == null}">Libero</button></div></div>
+        <div class="field"><span class="lab">Giorno della settimana</span><div class="seg scroll" role="group">${DOWI.map((d, i) => `<button data-act="se-dow" data-v="${d}" aria-pressed="${s.dow === d}">${DOWN[i]}</button>`).join("")}<button data-act="se-dow" data-v="" aria-pressed="${s.dow == null}">Nessun giorno fisso</button></div></div>
         <button class="primary" data-act="se-save">Salva</button>
-        <button class="link small" data-act="se-del" style="align-self:center;color:var(--warn-ink)">${S.confirmSe ? "Conferma: elimina la seduta e i suoi esercizi" : "Elimina seduta"}</button>`;
+        <button class="link small" data-act="se-del" style="align-self:center;color:var(--warn-ink)">${S.confirmSe ? `Sì, elimina la seduta e i suoi ${s.esercizi.length} esercizi` : "Elimina seduta"}</button>`;
     } else if (sh === "meal-edit") {
       const dw = S.dietDow ?? new Date().getDay(), m = mealOf(dw, h.k) || { t: "", i: [], kcal: 0, p: 0, c: 0, f: 0 }, l = (MEALS.find(x => x[0] === h.k) || [])[1];
       html = `<div class="block-h"><h2>${l} · ${DOW[dw]}</h2><button class="link small" data-act="close" style="padding:0">Annulla</button></div>
-        ${field("me-t", "Titolo del pasto", m.t)}
-        <div class="field"><label for="me-i">Alimenti e grammature (uno per riga)</label><textarea id="me-i" rows="5">${esc((m.i || []).join("\n"))}</textarea></div>
-        <div class="grid4">${field("me-k", "Kcal", m.kcal, "text", "numeric")}${field("me-p", "Prot. g", m.p, "text", "decimal")}${field("me-c", "Carbo g", m.c, "text", "decimal")}${field("me-f", "Grassi g", m.f, "text", "decimal")}</div>
-        ${S.sample ? `<button class="ghost" data-act="me-est">${S.hubBusy ? "Calcolo…" : "Calcola calorie dagli alimenti"}</button>` : ""}
+        ${field("me-t", "Nome del pasto", m.t)}
+        <div class="field"><label for="me-i">Alimenti e grammi, uno per riga</label><textarea id="me-i" rows="5">${esc((m.i || []).join("\n"))}</textarea></div>
+        <div class="grid4">${field("me-k", "Calorie (kcal)", m.kcal, "text", "numeric")}${field("me-p", "Proteine (g)", m.p, "text", "decimal")}${field("me-c", "Carboidrati (g)", m.c, "text", "decimal")}${field("me-f", "Grassi (g)", m.f, "text", "decimal")}</div>
+        ${S.sample ? `<button class="ghost" data-act="me-est">${S.hubBusy ? "Calcolo le calorie…" : "Calcola calorie dagli alimenti"}</button>` : ""}
         <div class="field"><span class="lab">Applica a</span><div class="seg" role="group"><button data-act="me-scope" data-v="day" aria-pressed="${(S.meScope || "day") === "day"}">Solo ${DOW[dw].toLowerCase()}</button><button data-act="me-scope" data-v="all" aria-pressed="${S.meScope === "all"}">Tutti i giorni</button></div></div>
         <button class="primary" data-act="me-save">Salva il pasto</button>
         ${m.t ? `<button class="link small" data-act="me-clear" style="align-self:center">Togli questo pasto dal piano</button>` : ""}`;
@@ -108,7 +110,7 @@
       html = `<div class="block-h"><h2>Nuovo alimento</h2><button class="link small" data-act="close" style="padding:0">Annulla</button></div>
         ${field("fn-nome", "Nome", "")}
         <p class="small muted">Valori per 100 g, come sull'etichetta.</p>
-        <div class="grid4">${field("fn-k", "Kcal", "", "text", "numeric")}${field("fn-p", "Prot. g", "", "text", "decimal")}${field("fn-c", "Carbo g", "", "text", "decimal")}${field("fn-f", "Grassi g", "", "text", "decimal")}</div>
+        <div class="grid4">${field("fn-k", "Calorie (kcal)", "", "text", "numeric")}${field("fn-p", "Proteine (g)", "", "text", "decimal")}${field("fn-c", "Carboidrati (g)", "", "text", "decimal")}${field("fn-f", "Grassi (g)", "", "text", "decimal")}</div>
         ${field("fn-por", "Porzione abituale (g)", "100", "text", "numeric")}
         <div id="fn-err"></div><button class="primary" data-act="fn-save">Salva alimento</button>`;
     }
@@ -128,7 +130,7 @@
     else if (act === "xe-save") {
       const h = S.hubArg, s = T().sedute[h.s], nome = $("#xe-nome").value.trim(), serie = Math.round(num2($("#xe-serie").value) || 0), lo = Math.round(num2($("#xe-min").value) || 0), hi = Math.round(num2($("#xe-max").value) || lo);
       if (!nome) return err("xe-err", "Scrivi il nome dell'esercizio.");
-      if (serie < 1 || serie > 10 || lo < 1 || hi < lo || hi > 50) return err("xe-err", "Controlla serie (1–10) e ripetizioni (minimo ≤ massimo).");
+      if (serie < 1 || serie > 10 || lo < 1 || hi < lo || hi > 50) return err("xe-err", "Serie da 1 a 10. Le ripetizioni minime non superano le massime.");
       const bw = $("#xe-bw").getAttribute("aria-pressed") === "true", prev = h.e === "new" ? {} : s.esercizi[h.e];
       const ex = { ...prev, nome, serie, min: lo, max: hi, kg: bw ? null : num2($("#xe-kg").value), recupero: Math.round(num2($("#xe-rec").value) || 90), tecnica: $("#xe-tec").value.trim(), corpo_libero: bw };
       if (prev.nome && prev.nome !== nome) { delete ex.lib; delete ex.demo; delete ex.en; delete ex.last; }
@@ -143,18 +145,18 @@
     else if (act === "se-del") { if (!S.confirmSe) { S.confirmSe = true; renderSheet(); return; } T().sedute.splice(S.hubArg.s, 1); saveTraining(); S.sheet = null; render(); toast("Seduta eliminata"); }
     else if (act === "me-scope") { S.meScope = v; document.querySelectorAll('[data-act="me-scope"]').forEach(x => x.setAttribute("aria-pressed", String(x === b))); }
     else if (act === "me-est") {
-      const items = $("#me-i").value.trim(); if (!items || !S.sample) return; S.hubBusy = true; b.textContent = "Calcolo…"; b.disabled = true;
+      const items = $("#me-i").value.trim(); if (!items || !S.sample) return; S.hubBusy = true; b.textContent = "Calcolo le calorie…"; b.disabled = true;
       try { const out = await S.sample.json(NUT_PROMPT + "\n\nDESCRIZIONE:\n" + items, { fast: true, modelTier: "quick" }); const tot = (out.alimenti || []).reduce((a2, x) => ({ kcal: a2.kcal + num(x.kcal), p: a2.p + num(x.p), c: a2.c + num(x.c), f: a2.f + num(x.f) }), { kcal: 0, p: 0, c: 0, f: 0 });
-        $("#me-k").value = Math.round(tot.kcal); $("#me-p").value = Math.round(tot.p); $("#me-c").value = Math.round(tot.c); $("#me-f").value = Math.round(tot.f); } catch (_) { toast("Stima non riuscita: scrivi tu i valori"); }
+        $("#me-k").value = Math.round(tot.kcal); $("#me-p").value = Math.round(tot.p); $("#me-c").value = Math.round(tot.c); $("#me-f").value = Math.round(tot.f); } catch (_) { toast("Calcolo non riuscito", { sub: "Controlla la connessione o scrivi tu i valori" }); }
       S.hubBusy = false; b.textContent = "Calcola calorie dagli alimenti"; b.disabled = false;
     }
     else if (act === "me-save" || act === "me-clear") {
       const dw = S.dietDow ?? new Date().getDay(), k = S.hubArg.k, d = S.diet || (S.diet = { fonte: "piano", giorni: {} }); d.giorni = d.giorni || {}; d.fonte = "piano";
       const meal = act === "me-clear" ? null : { t: $("#me-t").value.trim(), i: $("#me-i").value.split(/\n+/).map(x => x.trim()).filter(Boolean), kcal: Math.round(num2($("#me-k").value) || 0), p: num2($("#me-p").value) || 0, c: num2($("#me-c").value) || 0, f: num2($("#me-f").value) || 0 };
-      if (meal && !meal.t) return toast("Scrivi il titolo del pasto");
+      if (meal && !meal.t) return toast("Scrivi il nome del pasto");
       for (const day of (S.meScope === "all" && act === "me-save" ? DOWI : [dw])) { d.giorni[day] = d.giorni[day] || {}; if (meal) d.giorni[day][k] = { ...meal }; else delete d.giorni[day][k]; }
       const days = Object.values(d.giorni).filter(g => Object.keys(g).length); if (days.length) { d.kcal = Math.round(days.reduce((a2, g) => a2 + Object.values(g).reduce((s2, m) => s2 + (m.kcal || 0), 0), 0) / days.length); d.p = Math.round(days.reduce((a2, g) => a2 + Object.values(g).reduce((s2, m) => s2 + (m.p || 0), 0), 0) / days.length); }
-      saveDiet(); S.sheet = null; render(); toast(act === "me-clear" ? "Pasto tolto" : "Pasto salvato");
+      saveDiet(); S.sheet = null; render(); { const lbl = (MEALS.find(x => x[0] === k) || [])[1] || ""; toast(act === "me-clear" ? "Pasto tolto" : "Pasto salvato", { sub: act === "me-clear" ? DOW[dw] + ", " + lbl.toLowerCase() : lbl + " · " + fmt(meal.kcal) + " kcal" }); }
     }
     else if (act === "fn-save") {
       const nome = $("#fn-nome").value.trim(), k = num2($("#fn-k").value);
@@ -165,7 +167,7 @@
   }, true);
   document.addEventListener("change", async e => {
     const t = e.target; if (!t.dataset || t.dataset.act !== "hub-food-photo" || !t.files || !t.files[0]) return;
-    if (!S.sample) { toast("Per leggere le etichette attiva l'AI gratuita qui sotto"); return; }
+    if (!S.sample) { toast("Per leggere le etichette serve l'IA", { sub: "Attivala in Impostazioni" }); return; }
     S.hubBusy = true; render();
     try {
       const blob = await shrink(t.files[0]), out = await S.sample.json(LABEL_PROMPT, { images: [blob], modelTier: "quick", fast: true });

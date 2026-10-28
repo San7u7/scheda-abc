@@ -205,7 +205,7 @@ async function askCoach(q) {
     const r = await S.sample(hist, { modelTier: "default", cache: false, onText: u => { S.coachLive = u.text; const el = document.getElementById("live"); if (el) el.innerHTML = fmtChat(u.text); } });
     S.chat.msgs.push({ role: "assistant", content: r.text || "Nessuna risposta: riprova." });
   } catch (e) {
-    S.chat.msgs.push({ role: "assistant", content: e && e.code === "not_granted" ? "Serve il permesso per far rispondere Claude: riapri l'app e consenti l'accesso." : e && e.code === "rate_limited" ? "Troppe domande ravvicinate: riprova tra qualche minuto." : "Non sono riuscito a rispondere. Riprova tra poco." });
+    S.chat.msgs.push({ role: "assistant", content: e && e.code === "not_granted" ? "Non ho il permesso di rispondere. Riapri l'app e tocca Consenti." : e && e.code === "rate_limited" ? "Troppe domande ravvicinate: riprova tra qualche minuto." : "Non sono riuscito a rispondere. Riprova tra poco." });
   }
   S.chat.msgs = S.chat.msgs.slice(-40); S.coachBusy = false; S.coachLive = "";
   lsSet("chat", S.chat); if (S.db) S.db.doc(S.base + "/chat").set({ kind: "chat", msgs: S.chat.msgs }).catch(() => {});

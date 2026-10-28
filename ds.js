@@ -15,7 +15,7 @@
   .faint { font-size: var(--t-4); }
 
   /* buttons: 3 levels */
-  .primary { min-height: 52px; height: auto; border-radius: 999px; background: var(--accent); color: var(--lime-ink); font-weight: 700; font-size: 16px; }
+  .primary { min-height: 48px; height: auto; border-radius: 999px; background: var(--accent); color: var(--lime-ink); font-weight: 700; font-size: 16px; }
   .ghost, .ghost.sm, .ghost.dark, .hc-acts .ghost, .row2 .ghost, label.ghost { min-height: 44px; border: 0 !important; border-radius: 999px; background: var(--raised) !important; color: var(--text); font-weight: 600; font-size: var(--t-3); }
   .ghost:active { background: var(--control) !important; }
   .link, .link.small { color: var(--accent); font-weight: 600; font-size: var(--t-3) !important; text-decoration: none; min-height: 44px; }
@@ -25,7 +25,9 @@
   .card.lime .ghost, .now .ghost { background: rgba(0,0,0,.1) !important; color: var(--lime-ink); }
   .card.lime .link, .now .link, .now .now-alt { color: var(--lime-ink); text-decoration: underline; text-underline-offset: 3px; }
   /* the warning action keeps its own colour */
-  [data-act="wipe"] { color: var(--warn-ink, #ffb340) !important; }
+  [data-act="wipe"] { color: var(--warn, #ffb340) !important; }
+  /* controlli a destra delle righe: stessa larghezza, linea destra regolare (sez. 10, 4-5) */
+  .v3-row .v3-apri, .v3-row .v3-b2 { min-width: 76px; justify-content: center; } /* 28/10: stessa larghezza, senza mandare a capo i testi */
 
   /* one card model */
   .card, .hcard, .mbox, .stile, .pcard, .dcard, .mcard { border-radius: var(--r-card); }
@@ -71,9 +73,14 @@
   .primary, .v3-apri, .v3-lime .v3-in, .sbar .fine, .sbar.tm .fine, .tmm-apri, .dc-go, .bx-fine, .mb-quick {
     background: color-mix(in srgb, var(--accent) 16%, transparent) !important; box-shadow: inset 0 0 0 1.5px var(--accent) !important; color: var(--accent) !important; border: 0 !important; }
   .primary:active, .v3-apri:active, .v3-lime .v3-in:active, .sbar .fine:active, .tmm-apri:active { background: color-mix(in srgb, var(--accent) 28%, transparent) !important; }
-  #tm-mini.over .tmm-apri { background: rgba(255,179,64,.16) !important; box-shadow: inset 0 0 0 1.5px #ffb340 !important; color: #ffb340 !important; }
+  #tm-mini.over .tmm-apri { background: color-mix(in srgb, var(--warn, #ffb340) 16%, transparent) !important; box-shadow: inset 0 0 0 1.5px var(--warn, #ffb340) !important; color: var(--warn, #ffb340) !important; }
   /* serie: − / + di chili e ripetizioni più piccoli, in proporzione ai numeri */
   .hero .pm { min-height: 40px !important; } .hero .pm button { min-height: 40px !important; height: 40px !important; font-size: 18px !important; }
+
+  /* 28/10 (Giovanni): tutti i box «aggiungi / togli» alti 40 px, anche nel recupero */
+  .hero .pm, .setx, .v3-pm2, .stepper, .fq, .tmf-adj { min-height: 40px !important; height: auto !important; }
+  .hero .pm button, .setx button, .v3-pm2 button, .stepper button, .fq button, .tmf-adj .tmf-15 { min-height: 40px !important; height: 40px !important; }
+  .stepper { grid-template-rows: 40px; } .stepper input { font-size: 22px; }
 `;
   document.head.appendChild(st);
   // keep this sheet last even if a module injects styles later

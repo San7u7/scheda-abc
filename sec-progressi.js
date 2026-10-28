@@ -3,7 +3,7 @@
    Pagina principale: box lime «Per chiudere la settimana» + 5 sezioni (La mia settimana, Forza e carichi, Cibo e allenamento, Peso, Foto del corpo).
    Minori: solo settimana + Forza (ragazzo, kg e record) o «Prossima volta» (bambino, solo ripetizioni); niente peso, foto, calorie.
    Dati solo da V3.data e dalle funzioni esistenti (exHistory, weights, mealState). Unica scrittura: «Nascondi il peso» su chiave propria v3_peso_nascosto.
-   Correlazione mai causa: le frasi dicono «insieme», mai «grazie a». Sotto soglia: «Servono più dati: ancora N». */
+   Correlazione mai causa: le frasi dicono «insieme», mai «grazie a». Sotto soglia: «Ancora pochi dati: ne servono N». */
 (function () {
   if (!window.V3) return;
   const { ui, data } = V3;
@@ -33,6 +33,7 @@
   const prof = () => data.profile();
   const grp = () => prof().group;
   const kid = () => grp() === "bambino", minor = () => prof().minor, o65 = () => prof().over65;
+  const aw = () => minor() || o65(); // glossario: «Allenamento» per minori e over 65, «Seduta» per gli altri
   const planned = () => (typeof DAYS !== "undefined" ? DAYS.length : 0);
   const of = (t, u) => ` <span class="v3-of">/${esc(t)}${u ? " " + esc(u) : ""}</span>`;
   const pl = t => `<p class="v3-progressi-pl">${esc(t)}</p>`;
@@ -160,9 +161,9 @@
   const POSES = [["frontale", "Fronte"], ["laterale", "Lato"], ["posteriore", "Schiena"]];
   const photosOf = pose => (S.photos || []).filter(p => (p.pose || "frontale") === pose).slice().sort((a, b) => a.date < b.date ? -1 : 1);
 
-  /* ---------- pagina «Servono più dati» ---------- */
+  /* ---------- pagina «Ancora pochi dati» ---------- */
   function needCard(n, done, tot, unit, btn) {
-    return `<div><p class="v3-progressi-nd">Servono più dati</p><p class="v3-bd">ancora ${esc(n)} ${esc(unit)}</p></div>
+    return `<div><p class="v3-progressi-nd">Ancora pochi dati</p><p class="v3-bd">ne servono ${esc(n)} ${esc(unit)}</p></div>
       <div class="v3-bar" role="img" aria-label="${done} ${esc(unit)} su ${tot}"><i style="width:${Math.min(100, Math.round(done / tot * 100))}%"></i></div>${pl(`${done} ${unit} su ${tot} per il grafico`)}${btn || ""}`;
   }
   const btnGo = (label, id) => `<button class="v3-b2" data-v3act="go" data-v3arg="${id}">${esc(label)}</button>`;
@@ -189,23 +190,23 @@
         if (full.length >= 2 && part.length >= 2 && avg(full.map(b => b.sessions)) - avg(part.map(b => b.sessions)) >= 0.3) return "Colazione e allenamenti vanno insieme";
         return avg(bs.map(b => b.sessions)) >= planned() * 0.8 ? "Allenamenti regolari" : "Ogni allenamento conta"; }
       const ok = bs.filter(b => b.proPct != null && b.logged >= 3), full = ok.filter(b => b.sessions >= b.sessionsT && b.sessionsT), part = ok.filter(b => b.sessions < b.sessionsT);
-      if (full.length >= 2 && part.length >= 2) { const d = avg(full.map(b => b.proPct)) - avg(part.map(b => b.proPct)); if (d >= 3) return "Più sedute, più proteine"; if (d <= -3) return "Più sedute, meno proteine"; }
-      return avg(bs.map(b => b.sessions)) >= planned() * 0.8 ? "Sedute regolari" : "Meno sedute del piano";
+      if (full.length >= 2 && part.length >= 2) { const d = avg(full.map(b => b.proPct)) - avg(part.map(b => b.proPct)); if (d >= 3) return o65() ? "Più allenamenti, più proteine" : "Più sedute, più proteine"; if (d <= -3) return o65() ? "Più allenamenti, meno proteine" : "Più sedute, meno proteine"; }
+      return avg(bs.map(b => b.sessions)) >= planned() * 0.8 ? (o65() ? "Allenamenti regolari" : "Sedute regolari") : (o65() ? "Meno allenamenti del piano" : "Meno sedute del piano");
     },
     card(i) {
-      const bs = this.series(i), n = bs.length, last = n - 1, cl = bs.filter(b => !b.live), K = kid(), M = minor();
-      const word = M ? "allenamenti" : "sedute", T = Math.max(1, ...bs.map(b => b.sessionsT || 0));
+      const bs = this.series(i), n = bs.length, last = n - 1, cl = bs.filter(b => !b.live), K = kid(), M = minor(), A = aw();
+      const word = A ? "allenamenti" : "sedute", T = Math.max(1, ...bs.map(b => b.sessionsT || 0));
       let head;
       if (o65()) {
-        if (i === 0) { const c5 = cl.slice(-5); head = bigS(`${c5.reduce((s, b) => s + b.sessions, 0)} sedute su ${c5.reduce((s, b) => s + b.sessionsT, 0)}`, `nelle ultime ${c5.length} settimane`); }
-        else head = bigS(`${Math.round(avg(cl.map(b => b.sessions)) / (i === 2 ? 2 : 1))} sedute al mese`, i === 1 ? "in media negli ultimi mesi" : "in media nell'ultimo anno");
+        if (i === 0) { const c5 = cl.slice(-5); head = bigS(`${c5.reduce((s, b) => s + b.sessions, 0)} allenamenti su ${c5.reduce((s, b) => s + b.sessionsT, 0)}`, `nelle ultime ${c5.length} settimane`); }
+        else head = bigS(`${Math.round(avg(cl.map(b => b.sessions)) / (i === 2 ? 2 : 1))} allenamenti al mese`, i === 1 ? "in media negli ultimi mesi" : "in media nell'ultimo anno");
       } else if (i === 2) head = bigS(`${Math.round(avg(cl.map(b => b.sessions)))} ${word} al mese`, `in media · erano ${bs[0].sessions} a ${bs[0].tl}`);
       else { const a = avg(cl.map(b => b.sessions)), a1 = avg(cl.slice(-4).map(b => b.sessions)), a0 = avg(cl.slice(-8, -4).map(b => b.sessions));
         head = K ? bigS(`Circa ${Math.round(a)}`, `${word} a settimana`) : bigS(`${nf(i === 0 ? a1 : a)} ${word}`, i === 0 && a0 != null ? `a settimana · ${sgn(Math.round((a1 - a0) * 10) / 10)} sul mese prima` : `a settimana negli ultimi 3 mesi`); }
       const xi = o65() ? (n === 6 && i === 0 ? [0, 2, 5] : bs.map((_, k) => k)) : n === 9 ? [0, 4, 8] : n === 13 ? [0, 4, 8, 12] : [0, 4, 8, 11];
       const sMax = Math.max(T, ...bs.map(b => b.sessions)), all = o65();
-      let h = head + pl(i === 0 || (i === 1 && !o65()) ? `${M ? "Allenamenti" : "Sedute"} fatte su ${T}` : `${M ? "Allenamenti" : "Sedute"} nel periodo`)
-        + ui.chart.bars({ vals: bs.map(b => b.sessions), max: sMax, ticks: [[T, String(T)], [0, "0"]], all, fmt: String, tip: k => `${bs[k].tl}: ${bs[k].sessions} ${word}`, aria: `${M ? "Allenamenti" : "Sedute"} per periodo` });
+      let h = head + pl(i === 0 || (i === 1 && !o65()) ? `${A ? "Allenamenti fatti" : "Sedute fatte"} su ${T}` : `${A ? "Allenamenti" : "Sedute"} nel periodo`)
+        + ui.chart.bars({ vals: bs.map(b => b.sessions), max: sMax, ticks: [[T, String(T)], [0, "0"]], all, fmt: String, tip: k => `${bs[k].tl}: ${bs[k].sessions} ${word}`, aria: `${A ? "Allenamenti" : "Sedute"} per periodo` });
       if (M) { const cMax = i === 2 ? 31 : 7;
         h += pl(i === 2 ? "Giorni con colazione nel mese" : "Giorni con colazione, su 7") + ui.chart.bars({ vals: bs.map(b => b.col), max: cMax, ticks: [[cMax, String(cMax)], [0, "0"]], xl: xl(bs, xi), all, fmt: String, tip: k => `${bs[k].tl}: colazione ${bs[k].col} giorni`, aria: "Giorni con colazione" }); }
       else { const p = bs.map(b => b.proPct || 0);
@@ -214,16 +215,16 @@
     },
     rows() {
       const w = data.week(), M = minor();
-      const r1 = ui.row({ title: M ? "Allenamenti" : "Sedute", sub: "Questa settimana", value: planned() ? `${w.sessions.done}${of(w.sessions.planned)}` : "–" });
+      const r1 = ui.row({ title: aw() ? "Allenamenti" : "Sedute", sub: "Questa settimana", value: planned() ? `${w.sessions.done}${of(w.sessions.planned)}` : "–" });
       if (M) { const col = w.days.filter(d => !d.future && colDone(d.iso)).length; return r1 + ui.row({ title: "Colazione", sub: "Giorni di questa settimana", value: `${col}${of(7)}` }); }
       const a = w.avg.all;
       return r1 + ui.row({ title: "Proteine al giorno", sub: a.n ? "Media dei giorni chiusi" : "Nessun giorno chiuso", value: a.n ? `${a.pro}${of(a.proT, "g")}` : "–" });
     },
     lab: "Questa settimana",
     sap: () => minor() ? ["Perché conta la colazione?", ["Dopo la notte il corpo ha bisogno di energia.", "Qui vedi se le settimane con la colazione hanno anche più allenamenti: vanno insieme, ma conta anche altro."]]
-      : ["Perché contano le proteine?", ["Dopo la seduta i muscoli si riparano con le proteine dei pasti.", "Qui vedi se le settimane con più sedute hanno anche più proteine."]],
-    graf: () => `Ogni barra è un periodo: sopra ${minor() ? "gli allenamenti, sotto i giorni con colazione" : "le sedute, sotto le proteine"}. La barra bianca è adesso, ancora in corso: per questo è più bassa.`,
-    leoQ: () => minor() ? "Cosa mi manca questa settimana?" : "Come vanno sedute e proteine nelle ultime settimane?"
+      : ["Perché contano le proteine?", [o65() ? "Dopo l'allenamento i muscoli si riparano con le proteine dei pasti." : "Dopo la seduta i muscoli si riparano con le proteine dei pasti.", `Qui vedi se le settimane con più ${o65() ? "allenamenti" : "sedute"} hanno anche più proteine.`]],
+    graf: () => `Ogni barra è un periodo: sopra ${minor() ? "gli allenamenti, sotto i giorni con colazione" : (o65() ? "gli allenamenti, sotto le proteine" : "le sedute, sotto le proteine")}. La barra bianca è adesso, ancora in corso: per questo è più bassa.`,
+    leoQ: () => minor() ? "Cosa mi manca questa settimana?" : o65() ? "Come vanno allenamenti e proteine nelle ultime settimane?" : "Come vanno sedute e proteine nelle ultime settimane?"
   };
 
   /* --- Forza e carichi (adulto, ragazzo, over 65) e Prossima volta (bambino) --- */
@@ -265,7 +266,7 @@
         const r1 = ui.row({ title: isKid ? "Da battere la prossima volta" : "Da battere", sub: b.alt, value: esc(b.v) });
         if (isKid || minor()) return r1 + ui.row({ title: "Allenamenti", sub: "Questa settimana", value: planned() ? `${w.sessions.done}${of(w.sessions.planned)}` : "–" });
         if (n >= 3) { const wk = agg("week", 13), ws = nn(e.pts.slice(-n).map(p => wk[p.wi] && wk[p.wi].kcalRest)), v = ws.length ? Math.round(avg(ws)) : null;
-          return r1 + ui.row({ title: "Calorie a riposo", sub: `Nelle ${n} settimane ferme`, value: v == null ? "–" : `${v}%${of("100%")}` }); }
+          return r1 + ui.row({ title: "Calorie a riposo", sub: "Giorni senza allenamento", value: v == null ? "–" : `${v}%${of("100%")}` }); }
         const a = w.avg.all, kg = prof().peso || (W().last && W().last.kg);
         return r1 + ui.row({ title: "Proteine al giorno", sub: a.n && kg ? "Media dei giorni chiusi" : "Nessun giorno chiuso", value: a.n && kg ? `${nf(a.pro / kg)}${of(nf(a.proT / kg), "g/kg")}` : "–" });
       },
@@ -300,9 +301,9 @@
     verdict(i) {
       if (this.need()) return "Ancora pochi dati";
       const [g, r] = this.k(), bs = this.series(i).filter(b => !b.live), G = avg(nn(bs.map(b => b[g]))), R = avg(nn(bs.map(b => b[r])));
-      const what = o65() ? "proteine" : "calorie", rest = o65() ? "Senza ginnastica" : "A riposo";
+      const what = o65() ? "proteine" : "calorie", rest = o65() ? "Senza allenamento" : "A riposo";
       if (R != null && R < 92 && (G == null || R < G - 3)) return `${rest}, meno ${what} del piano`;
-      if (G != null && G < 92) return o65() ? "Con ginnastica, meno proteine" : "In palestra mangi meno del piano";
+      if (G != null && G < 92) return o65() ? "Con allenamento, meno proteine" : "Giorni di palestra: sotto il piano";
       if ((R != null && R > 110) || (G != null && G > 110)) return `Sopra il piano, ${what}`;
       return "Vicino al piano, sempre";
     },
@@ -310,10 +311,10 @@
       const [g, r] = this.k(), bs = this.series(i), cl = bs.filter(b => !b.live), G = avg(nn(cl.map(b => b[g]))), R = avg(nn(cl.map(b => b[r])));
       const n = bs.length, xi = o65() ? (n === 6 && i === 0 ? [0, 2, 5] : bs.map((_, k) => k)) : n === 5 ? [0, 2, 4] : n === 13 ? [0, 4, 8, 12] : [0, 4, 8, 11];
       const food = o65() ? FOOD.legumi : FOOD.yogurt;
-      const head = bigS(R == null ? "Riposo –" : `Riposo ${Math.round(R)}%`, `${o65() ? "proteine del piano" : "del piano"} · ${o65() ? "ginnastica" : "palestra"} ${G == null ? "–" : Math.round(G) + "%"}`);
+      const head = bigS(R == null ? "Riposo –" : `Riposo ${Math.round(R)}%`, `${o65() ? "proteine del piano" : "del piano"} · ${o65() ? "allenamento" : "palestra"} ${G == null ? "–" : Math.round(G) + "%"}`);
       return ui.hf(head, ui.fig(food[0], food[1], food[2])) + pl(o65() ? "Proteine, % del piano" : "Calorie, % del piano")
-        + ui.chart.pairs({ gym: bs.map(b => b[g]), rest: bs.map(b => b[r]), lab: bs.map(b => b.tl), xl: xl(bs, xi), aria: o65() ? "Proteine nei giorni con e senza ginnastica" : "Calorie nei giorni di palestra e di riposo" })
-        + `<p class="v3-leg"><span><i class="v3-k1"></i>${o65() ? "Con ginnastica" : "Palestra"}</span><span><i class="v3-k2"></i>${o65() ? "Senza" : "Riposo"}</span><span><i class="v3-k3"></i>Piano</span></p>`
+        + ui.chart.pairs({ gym: bs.map(b => b[g]), rest: bs.map(b => b[r]), lab: bs.map(b => b.tl), xl: xl(bs, xi), aria: o65() ? "Proteine nei giorni con e senza allenamento" : "Calorie nei giorni di palestra e di riposo" })
+        + `<p class="v3-leg"><span><i class="v3-k1"></i>${o65() ? "Con allenamento" : "Palestra"}</span><span><i class="v3-k2"></i>${o65() ? "Senza" : "Riposo"}</span><span><i class="v3-k3"></i>Piano</span></p>`
         + `<p class="v3-progressi-cred">${esc(food[3])}</p>`;
     },
     rows() {
@@ -322,16 +323,16 @@
         return ui.row({ title: "Proteine al giorno", sub: a.n ? "Media dei giorni chiusi" : "Nessun giorno chiuso", value: a.n ? `${a.pro}${of(a.proT, "g")}` : "–" })
           + ui.row({ title: "Per ogni kg di peso", sub: "Dopo i 65 anni: 1,0-1,5 g", value: a.n && kg ? `${nf(a.pro / kg)} g` : "–" }); }
       const a = w.avg.rest, miss = a.n ? a.kcalT - a.kcal : null;
-      const r1 = ui.row({ title: "A riposo, questa settimana", sub: !a.n ? "Nessun giorno di riposo chiuso" : miss > 0 ? `Mancano ${nf(miss)} kcal al giorno` : "In linea con il piano", value: a.n ? `${nf(a.kcal)}${of(nf(a.kcalT))}` : "–" });
+      const r1 = ui.row({ title: "A riposo, questa settimana", sub: !a.n ? "Nessun giorno di riposo chiuso" : miss > 0 ? `${nf(miss)} calorie sotto il piano, al giorno` : "In linea con il piano", value: a.n ? `${nf(a.kcal)}${of(nf(a.kcalT))}` : "–" });
       const f = fabbisogno();
-      const r2 = f.need ? ui.row({ title: "Il tuo fabbisogno reale", sub: `Servono più dati: ancora ${f.need} giorni`, value: "–" })
+      const r2 = f.need ? ui.row({ title: "Il tuo fabbisogno reale", sub: `Ancora pochi dati: ne servono ${f.need} giorni`, value: "–" })
         : f.noWeight ? ui.row({ title: "Il tuo fabbisogno reale", sub: "Servono più pesate nelle ultime 4 settimane", value: "–" })
         : ui.row({ title: "Il tuo fabbisogno reale", sub: "Come si calcola", act: "fab", apri: false }).replace("</button>", `<span class="v3-val">${nf(f.lo)}-${nf(f.hi)}</span></button>`);
       return r1 + r2;
     },
-    sap: () => o65() ? ["Proteine anche a riposo", ["I muscoli si rinforzano anche nei giorni senza ginnastica.", "Un pranzo con legumi, pesce o uova arriva a circa 25 g di proteine."]]
+    sap: () => o65() ? ["Proteine anche a riposo", ["I muscoli si rinforzano anche nei giorni senza allenamento.", "Un pranzo con legumi, pesce o uova arriva a circa 25 g di proteine."]]
       : ["Cosa mangiare a riposo?", ["Nei giorni senza palestra i muscoli recuperano e usano energia.", "Se a riposo resti sotto il piano, segui le porzioni del piano anche lì."]],
-    graf: () => `Ogni coppia è un periodo: bianco i giorni ${o65() ? "con ginnastica" : "di palestra"}, grigio quelli ${o65() ? "senza" : "di riposo"}. La riga tratteggiata è il piano (100%).`,
+    graf: () => `Ogni coppia è un periodo: bianco i giorni ${o65() ? "con allenamento" : "di palestra"}, grigio quelli ${o65() ? "senza" : "di riposo"}. La riga tratteggiata è il piano (100%).`,
     leoQ: () => o65() ? "Quante proteine mi servono al giorno?" : "Quanto devo mangiare nei giorni di riposo?"
   };
 
@@ -343,7 +344,7 @@
       if (e.length < 8) return [8 - e.length, e.length, 8, "pesate", btnPeso];
       if (span < 21) return [21 - span, span, 21, "giorni di pesate", btnPeso]; return null; },
     verdict() {
-      if (calo()) return "Peso in calo: parliamone";
+      if (calo()) return "Peso in calo: parlane col medico";
       if (this.need()) return "Ancora pochi dati";
       const r = rateOf(addDays(today(), -28)), g = prof().obiettivo;
       if (r == null || Math.abs(r) < 0.1) return o65() ? "Stabile, come deve essere" : "Stabile nelle ultime 4 settimane";
@@ -387,7 +388,7 @@
     title: "Foto del corpo", legacy: "foto", lab: "", noLeg: false,
     opts: () => POSES.map(p => p[1]), def: () => Math.max(0, POSES.findIndex(([p]) => photosOf(p).length)),
     need: () => null,
-    verdict: () => (S.photos || []).length ? "Solo sul tuo telefono" : "Spente, le attivi tu",
+    verdict: () => (S.photos || []).length ? "Solo sul tuo telefono" : "Nessuna foto: le aggiungi tu",
     pair(pose) {
       const l = photosOf(pose); if (!l.length) return null;
       const pk = pick[pose] || {}, a = l.find(p => p.id === pk.a) || l[0], b = l.find(p => p.id === pk.b) || l[l.length - 1];
@@ -397,7 +398,7 @@
       const [pose, lab] = POSES[i];
       if (!S.assets) return bigS("Non disponibili", "Questo browser non salva le foto") + `<div class="v3-progressi-frame">${sagoma(i)}</div>`;
       const pr = this.pair(pose);
-      if (!pr) return bigS("Nessuna foto", `${lab}: scatta la prima quando vuoi`) + `<div class="v3-progressi-frame">${sagoma(i)}</div>` + pl("Così ti metterai nella foto");
+      if (!pr) return bigS("Nessuna foto", `${lab}: scatta la prima quando vuoi`) + `<div class="v3-progressi-frame">${sagoma(i)}</div>` + pl("Mettiti in questa posa");
       const [a, b] = pr, one = a.id === b.id;
       const pic = (p, side) => `<div class="v3-progressi-pic">${shown.has(p.id)
         ? `<div class="v3-progressi-blur on"><img src="${esc(p.url)}" alt="Foto ${esc(pose)} del ${esc(longDate(isoOf(p.date)))}"><button class="v3-progressi-show" data-v3act="hidep" data-v3arg="${esc(p.id)}">Nascondi</button></div>`
@@ -410,7 +411,7 @@
       const near = iso => { const a7 = W().avg7; let best = null; for (const x of a7) if (Math.abs(days(x.date, iso)) <= 7 && (!best || Math.abs(days(x.date, iso)) < Math.abs(days(best.date, iso)))) best = x; return best; };
       const wa = near(da), wb = near(db), dw = wa && wb ? sgn(Math.round((wb.kg - wa.kg) * 10) / 10) + " kg" : "–";
       return bigS(`${wk} ${plural(wk, "settimana", "settimane")}`, "tra le due foto") + `<div class="v3-progressi-pair">${pic(a, "a")}${pic(b, "b")}</div>`
-        + `<div class="v3-progressi-nums"><div><p class="v3-progressi-nl">Sedute</p><p class="v3-progressi-nv">${ses}</p></div><div><p class="v3-progressi-nl">Proteine</p><p class="v3-progressi-nv">${pro}</p></div><div><p class="v3-progressi-nl">Peso</p><p class="v3-progressi-nv">${hidden() ? "Nascosto" : dw}</p></div></div>`;
+        + `<div class="v3-progressi-nums"><div><p class="v3-progressi-nl">${aw() ? "Allenamenti" : "Sedute"}</p><p class="v3-progressi-nv">${ses}</p></div><div><p class="v3-progressi-nl">Proteine</p><p class="v3-progressi-nv">${pro}</p></div><div><p class="v3-progressi-nl">Peso</p><p class="v3-progressi-nv">${hidden() ? "Nascosto" : dw}</p></div></div>`;
     },
     rows(i) {
       const [pose, lab] = POSES[i], l = photosOf(pose), last = l[l.length - 1];
@@ -420,9 +421,9 @@
       return ui.row({ title: "Prossima foto", sub: "Al massimo una ogni 4 settimane", value: esc(next) }) + up;
     },
     sap: () => ["Come scattare bene", ["Stessa luce, stessa ora, stessa posa.", "Meglio al mattino, prima di colazione. Le foto restano sul telefono."]],
-    graf: () => "Qui il grafico sono le due foto: tocca una data per scegliere quali confrontare. Sotto vedi sedute, proteine e peso tra le due.",
+    graf: () => `Qui il grafico sono le due foto: tocca una data per scegliere quali confrontare. Sotto vedi ${aw() ? "allenamenti" : "sedute"}, proteine e peso tra le due.`,
     leoQ: () => "Ogni quanto conviene fare le foto del corpo?",
-    moreLabel: "Confronto con l'AI e tutte le foto"
+    moreLabel: "Confronta le foto con Leo"
   };
   function sagoma(pose) {
     const f = 'fill="rgba(255,255,255,.22)"';
@@ -435,34 +436,34 @@
 
   /* ============================== PAGINA PRINCIPALE ============================== */
   function lime() {
-    const w = data.week(), pd = w.sessions.planned, dn = w.sessions.done, M = minor();
-    const sed = pd ? { label: M ? "Allenamenti" : "Sedute", value: String(dn), of: pd, pct: ui.pct(dn, pd), miss: dn >= pd ? "Settimana chiusa" : `${dn >= pd - 1 ? "Manca" : "Mancano"} ${pd - dn} ${M ? plural(pd - dn, "allenamento", "allenamenti") : plural(pd - dn, "seduta", "sedute")}` }
-      : { label: M ? "Allenamenti" : "Sedute", value: "–", miss: "Crea la scheda in Palestra" };
+    const w = data.week(), pd = w.sessions.planned, dn = w.sessions.done, M = minor(), A = aw();
+    const sed = pd ? { label: A ? "Allenamenti" : "Sedute", value: String(dn), of: pd, pct: ui.pct(dn, pd), miss: dn >= pd ? "Settimana chiusa" : `Ancora ${pd - dn} ${A ? plural(pd - dn, "allenamento", "allenamenti") : plural(pd - dn, "seduta", "sedute")}` }
+      : { label: A ? "Allenamenti" : "Sedute", value: "–", miss: "Crea la scheda in Palestra" };
     const t = today(), v = S.days[t], water = v ? (v.water || 0) * 0.25 : 0, wT = planTargets().waterL;
-    const acqua = { label: "Acqua oggi", value: nf(water), of: nf(wT), unit: "L", pct: wT ? Math.round(water / wT * 100) : 0, miss: water >= wT ? "Fatto" : `Mancano ${nf(wT - water)} L` };
+    const acqua = { label: "Acqua oggi", value: nf(water), of: nf(wT), unit: "L", pct: wT ? Math.round(water / wT * 100) : 0, miss: water >= wT ? "Fatto" : `Ancora ${nf(wT - water)} L` };
     let tiles;
     if (M) {
       const past = w.days.filter(d => !d.future), col = past.filter(d => colDone(d.iso)).length, p3 = past.filter(d => mealsDone(d.iso) >= 3).length;
-      tiles = [sed, { label: "Colazione", value: String(col), of: 7, pct: ui.pct(col, 7), miss: col >= 7 ? "Tutti i giorni" : `Mancano ${7 - col} ${plural(7 - col, "giorno", "giorni")}` },
-        { label: "Giorni con 3 pasti", value: String(p3), of: 7, pct: ui.pct(p3, 7), miss: p3 >= 7 ? "Tutti i giorni" : `Mancano ${7 - p3} ${plural(7 - p3, "giorno", "giorni")}` }, acqua];
+      tiles = [sed, { label: "Colazione", value: String(col), of: 7, pct: ui.pct(col, 7), miss: col >= 7 ? "Tutti i giorni" : `Ancora ${7 - col} ${plural(7 - col, "giorno", "giorni")}` },
+        { label: "Giorni con 3 pasti", value: String(p3), of: 7, pct: ui.pct(p3, 7), miss: p3 >= 7 ? "Tutti i giorni" : `Ancora ${7 - p3} ${plural(7 - p3, "giorno", "giorni")}` }, acqua];
     } else {
       const pe = w.protein.eaten, pt = w.protein.target;
-      const pro = { label: "Proteine", value: nf(pe), of: nf(pt), unit: "g", pct: ui.pct(pe, pt), miss: pe >= pt ? "Fatto" : `Mancano ${nf(pt - pe)} g` };
-      const kc = (lab, a) => a.n ? { label: lab, value: nf(a.kcal), of: nf(a.kcalT), pct: ui.pct(a.kcal, a.kcalT), miss: a.kcal >= a.kcalT ? "Media: in linea" : `Media: mancano ${nf(a.kcalT - a.kcal)} kcal` } : { label: lab, value: "–", miss: "Nessun giorno chiuso" };
+      const pro = { label: "Proteine", value: nf(pe), of: nf(pt), unit: "g", pct: ui.pct(pe, pt), miss: pe >= pt ? "Fatto" : `Ancora ${nf(pt - pe)} g` };
+      const kc = (lab, a) => a.n ? { label: lab, value: nf(a.kcal), of: nf(a.kcalT), pct: ui.pct(a.kcal, a.kcalT), miss: a.kcal >= a.kcalT ? "Media: in linea" : `Media: ${nf(a.kcalT - a.kcal)} calorie sotto il piano` } : { label: lab, value: "–", miss: "Nessun giorno chiuso" };
       if (o65()) { const past = w.days.filter(d => d.closed), lg = past.filter(d => d.logged).length;
-        tiles = [sed, pro, { label: "Giorni con i pasti segnati", value: String(lg), of: past.length || 0, pct: ui.pct(lg, past.length || 1), miss: past.length ? (lg >= past.length ? "Tutti" : `Mancano ${past.length - lg} ${plural(past.length - lg, "giorno", "giorni")}`) : "La settimana è appena iniziata" }, acqua]; }
+        tiles = [sed, pro, { label: "Giorni con i pasti segnati", value: String(lg), of: past.length || 0, pct: ui.pct(lg, past.length || 1), miss: past.length ? (lg >= past.length ? "Tutti" : `Ancora ${past.length - lg} ${plural(past.length - lg, "giorno", "giorni")}`) : "La settimana è appena iniziata" }, acqua]; }
       else tiles = [sed, pro, kc("Calorie palestra", w.avg.gym), kc("Calorie riposo", w.avg.rest)];
     }
-    return ui.limeBox({ title: kid() ? "Cosa ti manca questa settimana" : "Per chiudere la settimana", tiles });
+    return ui.limeBox({ title: kid() ? "Questa settimana" : "Per chiudere la settimana", tiles });
   }
   function rowSub(id) {
     const w = data.week();
-    if (id === "settimana") { if (SEC.settimana.need()) return S.sessions.length ? "Servono più dati" : "Inizia la prima seduta";
-      const a = avg(agg("week", 13).filter(b => !b.live).slice(-4).map(b => b.sessions)); return kid() ? `Circa ${Math.round(a)} allenamenti a settimana` : `${nf(a)} ${minor() ? "allenamenti" : "sedute"} a settimana`; }
-    if (id === "forza" || id === "fare") { const d = SEC[id], n = d.need(); if (n) return `Servono più dati: ancora ${n[0]} ${n[3]}`; const e = d.cur(0);
+    if (id === "settimana") { if (SEC.settimana.need()) return S.sessions.length ? "Ancora pochi dati" : (aw() ? "Inizia il primo allenamento" : "Inizia la prima seduta");
+      const a = avg(agg("week", 13).filter(b => !b.live).slice(-4).map(b => b.sessions)); return kid() ? `Circa ${Math.round(a)} allenamenti a settimana` : `${nf(a)} ${aw() ? "allenamenti" : "sedute"} a settimana`; }
+    if (id === "forza" || id === "fare") { const d = SEC[id], n = d.need(); if (n) return `Ancora ${n[0]} ${n[3]}`; const e = d.cur(0);
       return id === "fare" ? `Prova ${toBeat(e).txt}: ${e.short.toLowerCase()}` : `Da battere: ${e.short.toLowerCase()} ${toBeat(e).txt}`; }
-    if (id === "cibo") { if (SEC.cibo.need()) return "Servono più dati"; const [, r] = SEC.cibo.k(), R = avg(nn(SEC.cibo.series(0).filter(b => !b.live).map(b => b[r])));
-      return R == null ? "Nessun giorno di riposo segnato" : `${o65() ? "Senza ginnastica" : "A riposo"}: ${Math.round(R)}% del piano`; }
+    if (id === "cibo") { if (SEC.cibo.need()) return "Ancora pochi dati"; const [, r] = SEC.cibo.k(), R = avg(nn(SEC.cibo.series(0).filter(b => !b.live).map(b => b[r])));
+      return R == null ? "Nessun giorno di riposo segnato" : `${o65() ? "Senza allenamento" : "A riposo"}: ${Math.round(R)}% del piano`; }
     if (id === "peso") { const l = W().last, c = calo(); if (hidden()) return c ? "Peso in calo: parlane col medico" : "Nascosto · lo registri sempre"; if (!l) return "Registra la prima pesata";
       if (c) return `${nf(c.kg)} kg in meno: parlane col medico`; const r = rateOf(addDays(today(), -28)); return `${nf(W().avg7[W().avg7.length - 1].kg)} kg${r != null ? ` · ${sgn(r)} a settimana` : ""}`; }
     if (id === "foto") { const n = (S.photos || []).length; return n ? `${n} ${plural(n, "foto", "foto")} · solo sul telefono` : "Nessuna foto · le aggiungi tu"; }
@@ -501,21 +502,21 @@
   const close = `<button class="v3-b2" data-v3act="close">Chiudi</button>`;
   function sapSheet(id) {
     const d = id === "main" ? null : SEC[id];
-    const s = d ? d.sap() : kid() ? ["La colazione dà energia", ["Dopo la notte il corpo ha bisogno di energia.", "Nel riquadro verde vedi cosa ti manca questa settimana."]]
-      : minor() ? ["La colazione aiuta ad allenarsi", ["Dopo la notte il corpo ha bisogno di energia per allenarsi.", "Nel riquadro verde vedi cosa manca per chiudere la settimana."]]
-      : o65() ? ["Proteine a ogni pasto", ["Dopo i 65 anni conviene avere proteine a ogni pasto: legumi, pesce, uova o latticini.", "Nel riquadro verde vedi cosa manca per chiudere la settimana."]]
-      : ["Proteine e recupero", ["Dopo la seduta i muscoli si riparano con le proteine dei pasti.", "Nel riquadro verde vedi cosa manca per chiudere la settimana."]];
+    const s = d ? d.sap() : kid() ? ["La colazione dà energia", ["Dopo la notte il corpo ha bisogno di energia.", "Nel riquadro «Questa settimana» vedi cosa resta da fare."]]
+      : minor() ? ["La colazione aiuta ad allenarsi", ["Dopo la notte il corpo ha bisogno di energia per allenarsi.", "Nel riquadro «Per chiudere la settimana» vedi cosa resta da fare."]]
+      : o65() ? ["Proteine a ogni pasto", ["Dopo i 65 anni conviene avere proteine a ogni pasto: legumi, pesce, uova o latticini.", "Nel riquadro «Per chiudere la settimana» vedi cosa resta da fare."]]
+      : ["Proteine e recupero", ["Dopo la seduta i muscoli si riparano con le proteine dei pasti.", "Nel riquadro «Per chiudere la settimana» vedi cosa resta da fare."]];
     const how = d ? `<p class="v3-progressi-shl">Come si legge</p><p class="v3-shp">${esc(d.graf())}</p>` : "";
     V3.sheet(`<h2 class="v3-sh1">${esc(s[0])}</h2>${s[1].map(l => `<p class="v3-shp">${esc(l)}</p>`).join("")}${how}${ui.leo(d ? d.leoQ() : null)}${close}`);
   }
   function fabSheet() {
     const f = fabbisogno(); if (f.need || f.noWeight) return;
-    V3.sheet(`<h2 class="v3-sh1">Il tuo fabbisogno reale</h2><p class="v3-shp">Si calcola dalle calorie medie delle ultime 4 settimane (${nf(f.kcal)} kcal al giorno) e da come cambia il peso (${sgn(f.rate)} kg a settimana).</p><p class="v3-shp">Risultato: ${nf(f.lo)}-${nf(f.hi)} kcal al giorno. Il piano ne prevede in media ${nf(f.kT)}.</p><p class="v3-progressi-note">Portalo al dietista: decide lui.</p>${close}`);
+    V3.sheet(`<h2 class="v3-sh1">Il tuo fabbisogno reale</h2><p class="v3-shp">Si calcola dalle calorie medie delle ultime 4 settimane (${nf(f.kcal)} calorie al giorno) e da come cambia il peso (${sgn(f.rate)} kg a settimana).</p><p class="v3-shp">Risultato: tra ${nf(f.lo)} e ${nf(f.hi)} calorie al giorno. Il piano ne prevede in media ${nf(f.kT)}.</p><p class="v3-progressi-note">Portalo al dietista: decide lui.</p>${close}`);
   }
   function medicoSheet() {
     const c = calo(); if (!c) return;
     const wk = agg("week", 6).filter(b => !b.live), s = wk.reduce((x, b) => x + b.sessions, 0), t = wk.reduce((x, b) => x + b.sessionsT, 0), pp = nn(wk.map(b => b.proPct));
-    V3.sheet(`<h2 class="v3-sh1">Riepilogo per il medico</h2><p class="v3-shp">Peso medio da ${nf(c.from)} kg (${esc(longDate(c.fromDate))}) a ${nf(c.to)} kg oggi: ${nf(c.kg)} kg in meno.</p><p class="v3-shp">Sedute: ${s} su ${t} nelle ultime ${wk.length} settimane.${pp.length ? ` Proteine: in media il ${Math.round(avg(pp))}% del piano.` : ""}</p><p class="v3-shp">Mostralo al medico o al dietista alla prossima visita.</p>${close}`);
+    V3.sheet(`<h2 class="v3-sh1">Riepilogo per il medico</h2><p class="v3-shp">Peso medio da ${nf(c.from)} kg (${esc(longDate(c.fromDate))}) a ${nf(c.to)} kg oggi: ${nf(c.kg)} kg in meno.</p><p class="v3-shp">${aw() ? "Allenamenti" : "Sedute"}: ${s} su ${t} nelle ultime ${wk.length} settimane.${pp.length ? ` Proteine: in media il ${Math.round(avg(pp))}% del piano.` : ""}</p><p class="v3-shp">Mostralo al medico o al dietista alla prossima visita.</p>${close}`);
   }
   function exSheet() {
     const d = SEC[sub], l = d.list(), i = sel[sub] || 0;
@@ -540,11 +541,11 @@
     #view.v3 .v3-progressi-cred { font-size: 12px; color: var(--v3-t3); line-height: 1.4; }
     #view.v3 .v3-progressi-d1, #view.v3 .v3-progressi-d2 { width: 12px; height: 12px; border-radius: 6px; display: inline-block; box-sizing: border-box; }
     #view.v3 .v3-progressi-d1 { background: var(--v3-t1); } #view.v3 .v3-progressi-d2 { border: 2px solid var(--v3-t1); }
-    #view.v3 .v3-progressi-tog { width: 56px; height: 48px; border: 0; background: transparent; padding: 0; flex: none; display: flex; align-items: center; justify-content: center; }
-    #view.v3 .v3-progressi-tog i { width: 56px; height: 32px; border-radius: 16px; background: var(--v3-s3); display: block; position: relative; }
+    #view.v3 .v3-progressi-tog { width: 52px; height: 48px; border: 0; background: transparent; padding: 0; flex: none; display: flex; align-items: center; justify-content: center; }
+    #view.v3 .v3-progressi-tog i { width: 52px; height: 32px; border-radius: 16px; background: var(--v3-s3); display: block; position: relative; }
     #view.v3 .v3-progressi-tog i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 13px; background: var(--v3-t1); }
     #view.v3 .v3-progressi-tog[aria-pressed="true"] i { background: var(--v3-lime); }
-    #view.v3 .v3-progressi-tog[aria-pressed="true"] i::after { left: 27px; background: var(--v3-ink); }
+    #view.v3 .v3-progressi-tog[aria-pressed="true"] i::after { left: 23px; background: var(--v3-ink); }
     #view.v3 .v3-progressi-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     #view.v3 .v3-progressi-pair.one { grid-template-columns: minmax(0, 1fr); }
     #view.v3 .v3-progressi-pic { display: flex; flex-direction: column; gap: 8px; min-width: 0; }

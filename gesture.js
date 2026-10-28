@@ -61,7 +61,7 @@
       if (Math.abs(t.dx) > Math.abs(t.dy) || t.dy < 0) { t.mode = Math.abs(t.dy) > 6 || Math.abs(t.dx) > 6 ? null : t.mode; return; }
       if (t.dy > 8 && t.sheet.scrollTop <= 0) { t.mode = "sheet"; t.sheet.style.transition = "none"; }
     }
-    if (t.mode === "sheet") { if (e.cancelable) e.preventDefault(); const y = Math.max(0, t.dy); t.sheet.style.transform = `translateY(${y}px)`; const sc = t.sheet.parentElement; if (sc) sc.style.background = `rgba(0,0,0,${Math.max(0, .6 - y / 600)})`; }
+    if (t.mode === "sheet") { if (e.cancelable) e.preventDefault(); const y = Math.max(0, t.dy); t.sheet.style.transform = `translateY(${y}px)`; const sc = t.sheet.parentElement; if (sc) sc.style.setProperty("background", `rgba(0,0,0,${Math.max(0, .45 - y / 800)})`, "important"); }
     if (t.mode === "edge") { const x = Math.min(Math.max(0, t.dx), 120); edge.style.opacity = Math.min(1, x / 70); edge.style.transform = `translate(${x - 44}px, -50%)`; edge.classList.toggle("ready", x >= 70); }
   }, { passive: false });
   document.addEventListener("touchend", () => {

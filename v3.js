@@ -29,9 +29,11 @@
 
   /* vetro (28/10, tela «Effetto vetro e profondità»): solo cornici e riquadro del recupero; fogli pieni con la schermata dietro sfocata */
   :root { --glass-bg: rgba(17,17,17,.72); --glass-blur: blur(18px) saturate(140%); --glass-line: rgba(255,255,255,.08); }
+  /* 28/10 sistema: un solo arancione di avviso e il vetro fumé del riquadro recupero come token */
+  :root { --warn: #ffb340; --glass-fume: rgba(22,22,22,.88); --glass-fume-blur: blur(16px) saturate(120%); }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --glass-bg: rgba(17,17,17,.94); } }
   @media (prefers-reduced-transparency: reduce) { :root { --glass-bg: #111; --glass-blur: none; } }
-  body.no-glass { --glass-bg: #111; --glass-blur: none; }
+  body.no-glass { --glass-bg: #111; --glass-blur: none; --glass-fume: #161616; --glass-fume-blur: none; }
   #v3bar, body.v3-on .sbar { background: var(--glass-bg) !important; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--glass-line); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
   #v3-overlay .v3-scrim, .scrim { background: rgba(0,0,0,.45) !important; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
   body.no-glass #v3-overlay .v3-scrim, body.no-glass .scrim { background: rgba(0,0,0,.72) !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -89,14 +91,16 @@
   .v3-rt { font-size: 16px; font-weight: 700; }
   .v3-rs { font-size: 16px; color: var(--v3-t2); margin-top: 2px; line-height: 1.35; }
   .v3-val { font-size: 18px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .v3-apri { background: var(--v3-lime); color: var(--v3-ink); font-size: 14px; font-weight: 700; min-height: 48px; padding: 0 18px; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; border: 0; flex: none; box-sizing: border-box; }
+  .v3-apri { background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); font-size: 14px; font-weight: 700; min-height: 48px; padding: 0 18px; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; border: 0; flex: none; box-sizing: border-box; }
   .v3-apri.wide { width: 100%; font-size: 15px; }
+  .v3-apri:active, .v3-lime .v3-in:active { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+  .v3-row .v3-apri { min-width: 76px; }
   .v3-b2 { min-height: 48px; width: 100%; border-radius: 24px; border: 2px solid var(--v3-lime); background: transparent; color: var(--v3-t1); font-size: 15px; font-weight: 600; padding: 0 16px; box-sizing: border-box; }
   .v3-back { align-self: flex-start; min-height: 48px; padding: 0 18px; border: 2px solid var(--v3-lime); border-radius: 24px; color: var(--v3-t1); font-size: 15px; font-weight: 600; background: transparent; display: inline-flex; align-items: center; }
   .v3-lime { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); color: var(--v3-t1); border-radius: 24px; /* 28/10: lime trasparente come il box Tempo totale */ padding: 16px; display: flex; flex-direction: column; gap: 16px; }
   .v3-lime-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .v3-lt { font-size: 17px; font-weight: 700; line-height: 1.3; }
-  .v3-lime .v3-in { background: var(--v3-lime); color: var(--v3-ink); min-height: 48px; padding: 0 16px; border-radius: 24px; border: 0; font-size: 14px; font-weight: 600; flex: none; }
+  .v3-lime .v3-in { background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); min-height: 48px; padding: 0 16px; border-radius: 24px; border: 0; font-size: 14px; font-weight: 600; flex: none; }
   .v3-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .v3-tile { background: rgba(10,10,10,.08); border-radius: 14px; padding: 14px; min-height: 124px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; position: relative; border: 0; color: inherit; text-align: left; }
   .v3-tile[data-v3act]::after { content: "›"; position: absolute; top: 10px; right: 12px; font-size: 22px; font-weight: 700; line-height: 1; }
@@ -110,15 +114,15 @@
   .v3-lime .v3-bar i { background: var(--v3-lime); }
   .v3-lime .v3-tile { background: color-mix(in srgb, var(--accent) 8%, transparent); } .v3-lime .v3-tile[data-v3act]::after { color: var(--v3-lime); } .v3-lime .v3-lt { color: var(--v3-lime); }
   .v3-end { display: flex; gap: 12px; align-items: center; }
-  .v3-sap { background: var(--v3-soft); border-radius: 16px; min-height: 72px; padding: 14px 16px; flex: 1; min-width: 0; box-sizing: border-box; border: 0; color: var(--v3-t1); text-align: left; cursor: pointer; }
+  .v3-sap { background: var(--v3-soft); border-radius: 16px; min-height: 72px; padding: 16px; flex: 1; min-width: 0; box-sizing: border-box; border: 0; color: var(--v3-t1); text-align: left; cursor: pointer; }
   .v3-st { display: block; font-size: 17px; font-weight: 700; color: var(--v3-lime); margin-bottom: 4px; }
   .v3-sx { display: block; font-size: 16px; line-height: 1.4; }
-  .v3-leo { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0; background: transparent; border: 0; color: var(--v3-t1); font-size: 15px; font-weight: 700; flex: none; line-height: 1.15; text-align: left; white-space: nowrap; }
+  .v3-leo { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0; background: transparent; border: 0; color: var(--v3-t1); font-size: 15px; font-weight: 700; flex: none; line-height: 1.15; text-align: left; white-space: nowrap; }
   .v3-leo i { width: 48px; height: 48px; border-radius: 24px; background: var(--v3-s3); border: 2px solid var(--v3-lime); color: var(--v3-lime); font-style: normal; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
   .v3-seg { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; background: var(--v3-s1); border-radius: 24px; padding: 4px; }
   .v3-sg { min-height: 48px; border-radius: 24px; border: 0; background: transparent; color: var(--v3-t3); font-size: 15px; font-weight: 600; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .v3-sg[aria-pressed="true"] { background: var(--v3-s3); color: var(--v3-t1); }
-  .v3-cc { background: var(--v3-s1); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .v3-cc { background: var(--v3-s1); border-radius: 24px; /* 28/10 Giovanni: righe 18, card 24 */ padding: 16px; display: flex; flex-direction: column; gap: 12px; }
   .v3-cc svg { width: 100%; height: auto; display: block; }
   .v3-bn { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.1; }
   .v3-bd { font-size: 16px; color: var(--v3-t2); margin-top: 4px !important; }
@@ -142,7 +146,7 @@
   .v3-lgb { padding: 4px 0 16px; font-family: var(--v3-font); }
 
   /* foglio dal basso */
-  #v3-overlay .v3-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 25; display: flex; align-items: flex-end; justify-content: center; font-family: var(--v3-font); color: var(--v3-t1); }
+  #v3-overlay .v3-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 25; display: flex; align-items: flex-end; justify-content: center; font-family: var(--v3-font); color: var(--v3-t1); }
   .v3-sheet { width: 100%; max-width: 560px; background: var(--v3-s1); border-radius: 24px 24px 0 0; padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px)) max(16px, env(safe-area-inset-left, 0px)); box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; max-height: 88vh; max-height: 88dvh; overflow-y: auto; animation: v3up .22s ease-out; }
   .v3-sheet > * { flex-shrink: 0; margin: 0; }
   .v3-grab { width: 40px; height: 4px; border-radius: 2px; background: var(--v3-s3); align-self: center; }
@@ -310,7 +314,7 @@
     /* tile: {label, value, of, unit, pct, miss, act, arg}  →  «3.380 /3.400» */
     tile(t) {
       const tag = t.act ? "button" : "div", w = t.pct != null ? Math.max(0, Math.min(100, t.pct)) : null;
-      return `<${tag} class="v3-tile"${A(t.act, t.arg)}><span class="v3-tl">${e(t.label)}</span><span class="v3-num">${typeof t.value === "number" ? nf(t.value) : e(t.value)}${t.of != null ? ` <span class="v3-of">/${typeof t.of === "number" ? nf(t.of) : e(t.of)}${t.unit ? " " + e(t.unit) : ""}</span>` : t.unit ? ` <span class="v3-of">${e(t.unit)}</span>` : ""}</span>${w != null ? `<span class="v3-bar" role="img" aria-label="${w}%"><i style="width:${w}%"></i></span>` : ""}${t.miss ? `<span class="v3-miss">${e(t.miss)}</span>` : ""}</${tag}>`;
+      return `<${tag} class="v3-tile"${A(t.act, t.arg)}><span class="v3-tl">${e(t.label)}</span><span class="v3-num">${typeof t.value === "number" ? nf(t.value) : e(t.value)}${t.of != null ? ` <span class="v3-of">/${typeof t.of === "number" ? nf(t.of) : e(t.of)}${t.unit ? " " + e(t.unit) : ""}</span>` : t.unit ? ` <span class="v3-of">${e(t.unit)}</span>` : ""}</span>${w != null ? `<span class="v3-bar" role="img" aria-label="${w}% dell'obiettivo"><i style="width:${w}%"></i></span>` : ""}${t.miss ? `<span class="v3-miss">${e(t.miss)}</span>` : ""}</${tag}>`;
     },
     /* o: {title, action: {label, act, arg}, tiles: [tile…] (2×2), html (contenuto extra)} — un solo box lime per vista */
     limeBox: o => `<div class="v3-lime"><div class="v3-lime-h"><p class="v3-lt">${e(o.title)}</p>${o.action ? `<button class="v3-in"${A(o.action.act, o.action.arg)}>${e(o.action.label)}</button>` : ""}</div>${o.tiles ? `<div class="v3-grid">${o.tiles.map(ui.tile).join("")}</div>` : ""}${o.html || ""}</div>`,
@@ -488,7 +492,7 @@
     const live = !!activeDay(); document.body.classList.toggle("v3-live", live && S.tab === "allenamento");
     document.body.classList.toggle("v3-nobar", show && live && S.tab === "allenamento" && !S.settings && !!document.querySelector("#bar .sbar"));
     if (!show) return;
-    bar.innerHTML = `<div>${SECS.map(([k, l]) => `<button type="button" data-v3go="${k}"${cur === k ? ' aria-current="page"' : ""}><span class="v3-tip"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg></span>${l}${k === "palestra" && live ? '<span class="v3-live" aria-label="seduta in corso"></span>' : ""}</button>`).join("")}</div>`;
+    bar.innerHTML = `<div>${SECS.map(([k, l]) => `<button type="button" data-v3go="${k}"${cur === k ? ' aria-current="page"' : ""}><span class="v3-tip"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg></span>${l}${k === "palestra" && live ? `<span class="v3-live" aria-label="${(() => { try { return ["bambino", "over65"].includes(data.profile().group) ? "allenamento in corso" : "seduta in corso"; } catch (_) { return "seduta in corso"; } })()}"></span>` : ""}</button>`).join("")}</div>`;
   }
 
   /* ---------- router: dopo la vista vecchia, se la sezione è registrata la sostituisce ---------- */

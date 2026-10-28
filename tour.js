@@ -8,7 +8,7 @@
     ['#v3bar [data-v3go="palestra"]', "Palestra", "Scegli la seduta e ti guido un esercizio alla volta. Da qui modifichi anche la scheda."],
     ['#v3bar [data-v3go="cibo"]', "Cibo", "Segna i pasti con un tocco: ogni pasto segnato ti insegna qualcosa."],
     ['#v3bar [data-v3go="progressi"]', "Progressi", "Carichi, calorie, peso e foto nel tempo."],
-    [".v3-gear", "Impostazioni e Leo", "Le impostazioni sono nell'ingranaggio in alto. Leo lo trovi in fondo a ogni pagina: «Chiedi a Leo»."]
+    [".v3-gear", "Impostazioni e Leo", "Impostazioni: ingranaggio in alto. Leo: in fondo a ogni pagina."]
   ];
   const layer = document.createElement("div"); layer.className = "tour"; layer.hidden = true; document.body.appendChild(layer);
   let step = -1;
@@ -24,7 +24,7 @@
       const below = r && r.b + 200 < innerHeight;
       const pos = !r ? "top:30%" : below ? `top:${r.b + 16}px` : `bottom:${innerHeight - r.y + 16}px`;
       layer.innerHTML = hole + `<div class="t-bub" role="dialog" aria-modal="false" aria-label="${title}" style="${pos}"><div class="t-h">${window.coachAvatar ? coachAvatar(30) : ""}<b>${title}</b><span class="small muted">${step + 1} di ${STEPS.length}</span></div><p>${text}</p>
-        <div class="t-acts"><button class="link small" data-tour="skip">Salta</button><button class="primary sm" data-tour="next">${step === STEPS.length - 1 ? "Fatto" : "Avanti"}</button></div></div>`;
+        <div class="t-acts"><button class="link small" data-tour="skip">Salta il giro</button><button class="primary sm" data-tour="next">${step === STEPS.length - 1 ? "Ho capito" : "Avanti"}</button></div></div>`;
       layer.hidden = false; layer.querySelector('[data-tour="next"]').focus();
     }, 260);
   }
@@ -39,8 +39,8 @@
   const offerOff = () => { layer.hidden = true; layer.innerHTML = ""; };
   function offer() {
     if (lsGet("tour_seen", false) || !S.profile || S.ob || S.tab !== "oggi" || S.macro || S.sheet || document.querySelector(".hello, .aistep")) return;
-    layer.innerHTML = `<div class="t-dim"></div><div class="t-bub" role="dialog" aria-label="Tutorial" style="top:30%"><div class="t-h">${window.coachAvatar ? coachAvatar(36) : ""}<b>Ti faccio vedere come funziona?</b></div><p>Ci vogliono 30 secondi. Puoi rivederlo quando vuoi da Impostazioni › Come funziona.</p>
-      <div class="t-acts"><button class="link small" data-tour="later">Dopo</button><button class="primary sm" data-tour="go">Sì, mostrami</button></div></div>`;
+    layer.innerHTML = `<div class="t-dim"></div><div class="t-bub" role="dialog" aria-label="Tutorial" style="top:30%"><div class="t-h">${window.coachAvatar ? coachAvatar(36) : ""}<b>Vuoi un giro di 30 secondi?</b></div><p>Ci vogliono 30 secondi. Puoi rivederlo quando vuoi da Impostazioni › Come funziona.</p>
+      <div class="t-acts"><button class="link small" data-tour="later">Più tardi</button><button class="primary sm" data-tour="go">Sì, mostrami</button></div></div>`;
     layer.hidden = false;
   }
   setTimeout(function wait() { if (document.querySelector(".hello, .aistep")) return setTimeout(wait, 1500); offer(); }, 1200);
@@ -66,17 +66,17 @@
   window.renderSheet = function () { dropTip(); s0(); setTimeout(hint, 400); };
 
   function how() {
-    const item = (t, d) => `<li><b>${t}</b><br><span class="muted">${d}</span></li>`;
+    const item = (t, s, d) => `<li><b>${t}</b><br><span class="muted">${s}</span><details><summary>Apri</summary><p class="small muted" style="margin:6px 0 0">${d}</p></details></li>`;
     return `<div class="block how"><div class="hcard"><h2>Come funziona</h2>
       <ul class="plain how-list">
-        ${item("Oggi", "In cima «Adesso» ti dice la prossima cosa da fare. Sotto i tuoi numeri e le sezioni: tieni premuto per spostarle o nasconderle, «+» per aggiungerle.")}
-        ${item("Allenamento", "Scegli la seduta e segui un esercizio alla volta. Scorri di lato per cambiare esercizio, «Sostituisci» se l'attrezzo è occupato. Se salti un giorno, sposti le sedute della settimana.")}
-        ${item("Alimentazione", "Spunta i pasti del piano o scrivi cosa hai mangiato. Fotografa le etichette dei cibi che mangi spesso: poi li riconosco quando li scrivi.")}
-        ${item("Progressi", "Carichi, calorie, peso e foto nel tempo. In Foto trovi «Il tuo percorso»: ogni 4 settimane confronto le tue foto.")}
-        ${item("Profilo", "La scheda e il piano alimentare che segui: li guardi, li modifichi o ne carichi di nuovi. Qui trovi anche Leo.")}
-        ${item("Leo", "«Chiedi a Leo» in fondo a ogni pagina: chiedimi qualsiasi cosa. Come ti parlo lo scegli in Profilo › Il tuo coach.")}
-        ${item("Gesti", "Scorri dal bordo sinistro per tornare indietro. Trascina in basso una finestra per chiuderla.")}
-        ${item("I tuoi dati", "Restano solo su questo telefono. Fai ogni tanto un backup: Impostazioni › I tuoi dati.")}
+        ${item("Oggi", "La prossima cosa da fare e i numeri.", "In cima «Adesso» ti dice la prossima cosa da fare. Sotto i tuoi numeri e le sezioni: tieni premuto per spostarle o nasconderle, «+» per aggiungerle.")}
+        ${item("Palestra", "Un esercizio alla volta, dalla tua scheda.", "Scegli la seduta e segui un esercizio alla volta. «Cambia esercizio» se l'attrezzo è occupato. Giorno perso? Sposta le sedute della settimana.")}
+        ${item("Cibo", "Segna i pasti o scrivi cosa mangi.", "Segna i pasti del piano o scrivi cosa hai mangiato. Fotografa le etichette dei cibi che mangi spesso: poi li riconosco quando li scrivi.")}
+        ${item("Progressi", "Carichi, calorie, peso e foto nel tempo.", "In «Foto del corpo» ogni 4 settimane confronto le tue foto.")}
+        ${item("Impostazioni", "Scheda, piano alimentare e i tuoi dati.", "La scheda e il piano alimentare che segui: li guardi, li modifichi o ne carichi di nuovi.")}
+        ${item("Leo", "«Chiedi a Leo» in fondo a ogni pagina.", "Chiedimi qualsiasi cosa. Come ti parlo lo scegli in Impostazioni.")}
+        ${item("Gesti", "Indietro dal bordo, giù per chiudere.", "Scorri dal bordo sinistro per tornare indietro. Trascina in basso una finestra per chiuderla.")}
+        ${item("I tuoi dati", "Restano solo su questo telefono.", "Restano solo su questo telefono. Fai ogni tanto un backup: Impostazioni › I tuoi dati.")}
       </ul><button class="primary go" data-act="tour-again">Rivedi il tour</button></div></div>`;
   }
   document.addEventListener("click", e => { if (e.target.closest('[data-act="tour-again"]')) { e.stopPropagation(); start(); } }, true);
@@ -95,7 +95,7 @@
   .t-tip { position: fixed; left: 16px; right: 16px; top: calc(64px + env(safe-area-inset-top, 0px)); z-index: 40; display: flex; gap: 10px; align-items: center; background: var(--text); color: #000; border-radius: 18px; padding: 10px 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: tipin .25s ease-out; }
   .t-tip svg { flex: none; }
   @keyframes tipin { from { transform: translateY(12px); opacity: 0; } }
-  .how-list li { margin-bottom: 12px; }
+  .how-list li { margin-bottom: 12px; } .how-list summary { min-height: 44px; display: flex; align-items: center; color: var(--accent); font-weight: 700; cursor: pointer; }
   @media (prefers-reduced-motion: reduce) { .t-hole { transition: none; } .t-tip { animation: none; } }`;
   document.head.appendChild(st);
 })();

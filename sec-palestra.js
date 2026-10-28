@@ -23,22 +23,22 @@
     const st = document.createElement("style");
     st.id = "v3-sec-palestra";
     st.textContent = `
-    #view.v3 .v3-palestra-hero { background: var(--v3-s1); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: inset 0 0 0 2px var(--v3-lime); }
+    #view.v3 .v3-palestra-hero { background: var(--v3-s1); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: inset 0 0 0 2px var(--v3-lime); }
     #view.v3 .v3-palestra-ht { font-size: 22px; font-weight: 800; line-height: 1.2; }
     #view.v3 .v3-palestra-hs { font-size: 16px; color: var(--v3-t2); line-height: 1.35; margin-top: 4px; }
     #view.v3 .v3-palestra-hm { font-size: 16px; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
     #view.v3 .v3-palestra-note { font-size: 16px; color: var(--v3-t2); line-height: 1.35; }
     #view.v3 .v3-palestra-list { display: flex; flex-direction: column; gap: 12px; }
-    #view.v3 .v3-palestra-ex { background: var(--v3-s1); border-radius: 18px; min-height: 72px; padding: 10px 14px 10px 10px; display: flex; align-items: center; gap: 12px; box-sizing: border-box; }
+    #view.v3 .v3-palestra-ex { background: var(--v3-s1); border-radius: 18px; min-height: 72px; padding: 12px 12px 12px 16px; display: flex; align-items: center; gap: 12px; box-sizing: border-box; }
     #view.v3 .v3-palestra-im { width: 56px; height: 56px; flex: none; border-radius: 12px; overflow: hidden; background: var(--v3-s2); position: relative; }
     #view.v3 .v3-palestra-im img { width: 100%; height: 100%; object-fit: cover; display: block; }
     #view.v3 .v3-palestra-im span { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--v3-t3); }
     #view.v3 .v3-palestra-im.noimg img { display: none; } #view.v3 .v3-palestra-im.noimg span { display: flex; }
-    #view.v3 .v3-palestra-up { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--v3-ink); background: var(--v3-t1); border-radius: 10px; padding: 2px 8px; }
+    #view.v3 .v3-palestra-up { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--v3-lime); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 10px; padding: 2px 8px; }
     #view.v3 .v3-palestra-wtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     #view.v3 .v3-palestra-wc { font-size: 16px; color: var(--v3-t2); text-align: right; }
-    #view.v3 .v3-palestra-wn { font-size: 28px; font-weight: 800; line-height: 1.15; }
-    #view.v3 .v3-palestra-wh { font-size: 18px; font-weight: 700; margin-top: 6px !important; line-height: 1.35; }
+    #view.v3 .v3-palestra-wn { font-size: 28px; font-weight: 800; line-height: 1.15; padding-left: 16px; }
+    #view.v3 .v3-palestra-wh { font-size: 18px; font-weight: 700; margin-top: 6px !important; line-height: 1.35; padding-left: 16px; }
     #view.v3 .v3-palestra-clock { text-align: center; padding: 12px 0; }
     #view.v3 .v3-palestra-clock b { display: block; font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.05; }
     #view.v3 .v3-palestra-clock span { display: block; font-size: 16px; color: var(--v3-t2); margin-top: 6px; }
@@ -46,8 +46,8 @@
     #view.v3 .v3-palestra-wfull .v3-palestra-acts { margin-top: auto; }
     #view.v3 .v3-palestra-acts { display: flex; flex-direction: column; gap: 12px; }
     #view.v3 .v3-palestra-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    #view.v3 .v3-palestra-tool { min-height: 48px; border-radius: 24px; border: 0; background: var(--v3-s2); color: var(--v3-t1); font-size: 15px; font-weight: 600; padding: 8px 12px; line-height: 1.2; }
-    #view.v3.v3-o65 .v3-palestra-tool, #view.v3.v3-o65 .v3-palestra-up { font-size: 16px; }
+    #view.v3 .v3-palestra-tools .v3-b2 { padding: 8px 12px; line-height: 1.2; }
+    #view.v3.v3-o65 .v3-palestra-up { font-size: 16px; }
     #view.v3 .v3-palestra-fig { display: flex; justify-content: center; }
     #view.v3 .v3-palestra-fig .v3-fig { width: 160px; height: 160px; }
     `;
@@ -58,6 +58,10 @@
   const has = fn => typeof window[fn] === "function";
   const group = () => data.profile().group;
   const kid = () => group() === "bambino";
+  /* glossario 28/10: «Seduta» per adulto e ragazzo, «Allenamento» per bambino e over 65 */
+  const alt = () => kid() || group() === "over65";
+  const tv = (sed, all) => alt() ? all : sed;
+  const dname = k => (P[k] && P[k].nome) || tv("Seduta ", "Allenamento ") + k;
   const pl = (n, one, many) => n + " " + (n === 1 ? one : many);
   const minsOf = p => Math.max(10, Math.round(p.items.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5);
   const nameOf = it => { const n = has("exName") ? exName(it) : it.name; return typeof short === "function" ? short(n) : n; };
@@ -82,12 +86,12 @@
     over65: ["Respira sempre: non trattenere il fiato mentre spingi.", "Allenare la forza aiuta l'equilibrio e protegge dalle cadute.", "Un riscaldamento più lungo rende le articolazioni più morbide."]
   };
   const sapText = () => { const L = SAP[group()] || SAP.adulto, n = Math.floor(Date.now() / 864e5); return L[n % L.length]; };
-  const leoQ = () => kid() ? "Perché devo fare piano i movimenti?" : "Come capisco se oggi posso salire di peso?";
+  const leoQ = () => kid() ? "Perché devo fare piano i movimenti?" : "Come capisco se posso aumentare il carico?";
 
   function ageRow() {
     const g = group();
-    if (g === "bambino") return ui.row({ title: "Sempre con un adulto vicino", sub: "I chili li decide il tuo preparatore." });
-    if (g === "ragazzo") return ui.row({ title: "Meglio con chi ti segue", sub: "Prima di salire di peso, chiedi all'istruttore." });
+    if (g === "bambino") return ui.row({ title: "Sempre con un adulto vicino", sub: "I pesi li decide il tuo allenatore." });
+    if (g === "ragazzo") return ui.row({ title: "Meglio con chi ti segue", sub: "Prima di aumentare il carico, chiedi all'istruttore." });
     if (g === "over65") return ui.row({ title: "Respiro libero, mai trattenuto", sub: "Capogiro o dolore al petto: fermati subito." });
     return "";
   }
@@ -109,12 +113,12 @@
   function steps() {
     if (W.kind === "stretch") return STAT.map(r => ({ nome: r[0], how: r[1], secs: 30, tips: [r[1] + ".", "Allunga piano, senza dolore."] }));
     const g = group(), out = [];
-    if (warmOn()) out.push({ nome: kid() ? "Bici o camminata veloce" : "Cardio leggero", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", a ritmo tranquillo", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
+    if (warmOn()) out.push({ nome: "Bici o camminata veloce", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", a ritmo tranquillo", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
     if (strPre()) (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2] }));
     const p = P[W.day], it = p && p.items[0];
     if (warmOn() && it && !kid() && it.unit !== "none") {
       const kg = planOf(it).kg;
-      if (kg && kg >= 10) [[.4, 8], [.6, 5], [.8, 3]].forEach(([f, n]) => out.push({ nome: "Serie di avvicinamento", how: nameOf(it) + ": " + kgTxt(r05(kg * f)) + " kg × " + n, it, tips: ["Movimento identico alla serie vera.", "Serve a provare il gesto, non a stancarti."] }));
+      if (kg && kg >= 10) [[.4, 8], [.6, 5], [.8, 3]].forEach(([f, n]) => out.push({ nome: "Serie leggera di prova", how: nameOf(it) + ": " + kgTxt(r05(kg * f)) + " kg × " + n, it, tips: ["Movimento identico alla serie vera.", "Serve a provare il gesto, non a stancarti."] }));
     }
     return out;
   }
@@ -135,20 +139,20 @@
     const title = stretch ? "Stretching finale" : warmOn() ? "Riscaldamento" : "Stretching", last = i === tot - 1;
     if (st.secs && W.left == null) W.left = st.secs;
     const started = st.secs && (W.run || W.left === 0);
-    const clock = st.secs ? `<div class="v3-palestra-clock"><b id="v3-pal-clock" role="timer">${mmss(W.left)}</b><span>${W.left === 0 ? "Tempo finito ✓" : W.run ? "Il timer sta andando" : "Quando sei pronto, avvia il timer"}</span></div>` : "";
-    const doneLabel = !last ? "Fatto" : stretch ? "Fatto, ho finito" : "Fatto, inizia gli esercizi";
+    const clock = st.secs ? `<div class="v3-palestra-clock"><b id="v3-pal-clock" role="timer">${mmss(W.left)}</b><span>${W.left === 0 ? "Tempo finito" : W.run ? "Tempo in corso" : "Avvia quando sei pronto"}</span></div>` : "";
+    const doneLabel = !last ? "Passo fatto" : stretch ? "Stretching finito" : "Inizia gli esercizi";
     const main = st.secs && !started
-      ? primary("Avvia il timer", 'data-v3act="w-timer"') + ui.secondary("Salta questo passo", "w-next")
+      ? primary("Avvia il timer", 'data-v3act="w-timer"') + ui.secondary("Salta questo esercizio", "w-next")
       : primary(doneLabel, 'data-v3act="w-next"');
-    const skip = stretch || !warmOn() ? "Salta lo stretching" : kid() ? "Salta (chiedi all'adulto)" : "Salta il riscaldamento";
+    const skip = stretch || !warmOn() ? "Salta lo stretching" : kid() ? "Salta, con l'ok di un adulto" : "Salta tutto il riscaldamento";
     const fig = st.it && imgOf(st.it) ? `<div class="v3-palestra-fig">${ui.fig(imgOf(st.it), nameOf(st.it), nameOf(st.it))}</div>` : "";
-    return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back(stretch ? "Indietro" : "Esci")}<span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span></div>
+    return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back(stretch ? "Indietro" : "Esci dal riscaldamento")}<span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span></div>
       <div class="v3-bar" role="img" aria-label="${e(title)}: passo ${i + 1} di ${tot}"><i style="width:${Math.round((i + 1) / tot * 100)}%"></i></div>
       <div><h1 class="v3-palestra-wn">${e(st.nome)}</h1><p class="v3-palestra-wh">${e(st.how)}</p></div>
       ${fig}${W.come ? ui.card(st.tips.map(t => `<p class="v3-palestra-note">${e(t)}</p>`).join("") + ui.leo("Come si fa: " + st.nome + "?")) : ""}${clock}
       <div class="v3-palestra-acts">${main}
-        <div class="v3-palestra-tools"><button class="v3-palestra-tool" data-v3act="w-come" aria-expanded="${!!W.come}">${W.come ? "Nascondi" : "Come si fa"}</button><button class="v3-palestra-tool" data-v3act="w-skip">${e(skip)}</button></div>
-        ${!stretch && i === 0 && !kid() && strPre() ? `<button class="v3-palestra-tool" data-v3act="w-quick">${W.quick ? "Versione completa" : "Versione rapida: 3 movimenti"}</button>` : ""}</div></div>`;
+        <div class="v3-palestra-tools"><button class="v3-b2" data-v3act="w-come" aria-expanded="${!!W.come}">${W.come ? "Nascondi" : "Come si fa"}</button><button class="v3-b2" data-v3act="w-skip">${e(skip)}</button></div>
+        ${!stretch && i === 0 && !kid() && strPre() ? `<button class="v3-b2" data-v3act="w-quick">${W.quick ? "Versione completa" : "Versione rapida: 3 movimenti"}</button>` : ""}</div></div>`;
   }
 
   /* ---------- navigazione interna ---------- */
@@ -184,37 +188,37 @@
   function hero(k, label, extra) {
     const p = P[k], it = p.items[0], ups = upsOf(p);
     const meta = pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti";
-    return `<div class="v3-palestra-hero"><div class="v3-hf"><div><p class="v3-palestra-ht">${e(p.nome || "Seduta " + k)}</p>${p.focus ? `<p class="v3-palestra-hs">${e(p.focus)}</p>` : ""}<p class="v3-palestra-hm">${e(meta)}</p>${ups && !kid() ? `<span class="v3-palestra-up">${e(pl(ups, "pronto", "pronti"))} a salire</span>` : ""}</div>${it && imgOf(it) ? ui.fig(imgOf(it), nameOf(it), nameOf(it)) : ""}</div>
+    return `<div class="v3-palestra-hero"><div class="v3-hf"><div><p class="v3-palestra-ht">${e(dname(k))}</p>${p.focus ? `<p class="v3-palestra-hs">${e(p.focus)}</p>` : ""}<p class="v3-palestra-hm">${e(meta)}</p>${ups && !kid() ? `<span class="v3-palestra-up">${e(ups + " con carico in aumento")}</span>` : ""}</div>${it && imgOf(it) ? ui.fig(imgOf(it), nameOf(it), nameOf(it)) : ""}</div>
       ${extra ? `<p class="v3-palestra-note">${e(extra)}</p>` : ""}${primary(label, `data-v3act="inizia" data-v3arg="${e(k)}"`)}</div>`;
   }
   function home() {
     if (!DAYS.length) {
       const minor = data.profile().minor;
-      return ui.header("Palestra") + ui.section("Prima cosa da fare", `<div class="v3-palestra-hero"><div><p class="v3-palestra-ht">Crea la tua scheda</p><p class="v3-palestra-hs">${minor ? "Sotto i 18 anni la scheda la prepara il tuo preparatore: caricala qui." : "Caricala come testo o foto, oppure fattene creare una di base."}</p></div><button class="v3-apri wide" data-act="redo" data-v="2">${minor ? "Carica la scheda" : "Carica o crea la scheda"}</button></div>`) +
+      return ui.header("Palestra") + ui.section("Prima cosa da fare", `<div class="v3-palestra-hero"><div><p class="v3-palestra-ht">Crea la tua scheda</p><p class="v3-palestra-hs">${minor ? "Sotto i 18 anni la scheda la fa il tuo allenatore: caricala qui." : "Caricala come testo o foto, oppure fattene creare una di base."}</p></div><button class="v3-apri wide" data-act="redo" data-v="2">${minor ? "Carica la scheda" : "Carica o crea la scheda"}</button></div>`) +
         ui.end(sapText(), { leoQ: "Come si costruisce una buona scheda?" });
     }
     const ts = data.todaySession(), wk = data.week(), ws = weekSessions();
     let today;
     if (ts.state === "fatta") {
       const d0 = doneToday(), nd = ts.next && P[ts.next] ? ts.next : null;
-      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? (P[d0.day].nome || "Seduta " + d0.day) : "Seduta") + " fatta ✓", sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica " + d0.fatica + "/10" : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
+      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica " + d0.fatica + " su 10" : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
         (strPost() ? ui.row({ title: "Stretching finale", sub: "Circa 3 minuti, se ti va", act: "stretch", apri: "Inizia" }) : "") +
-        (nd ? ui.row({ title: "Prossima: " + (P[nd].nome || "Seduta " + nd), sub: "Riposa e torna domani", act: "apri-seduta", arg: nd }) : "") + ageRow());
+        (nd ? ui.row({ title: tv("Prossima seduta: ", "Prossimo allenamento: ") + (P[nd].nome || nd), sub: "Domani, dopo il riposo", act: "apri-seduta", arg: nd }) : "") + ageRow());
     } else {
       const k = ts.day;
-      today = ui.section(ts.state === "riposo" ? "Prossima seduta" : "La seduta di oggi", hero(k, activeDay() === k ? "Riprendi la seduta" : "Inizia la seduta", ts.state === "riposo" ? "Oggi è giorno di riposo: puoi iniziarla lo stesso." : null) + ageRow());
+      today = ui.section(ts.state === "riposo" ? tv("Prossima seduta", "Prossimo allenamento") : tv("La seduta di oggi", "L'allenamento di oggi"), hero(k, activeDay() === k ? tv("Riprendi la seduta", "Riprendi l'allenamento") : tv("Inizia la seduta", "Inizia l'allenamento"), ts.state === "riposo" ? "Oggi è giorno di riposo: puoi iniziarla lo stesso." : null) + ageRow());
     }
     const nd = ts.state === "fatta" ? null : ts.day;
     const rows = DAYS.map(k => { const p = P[k], dn = doneWeek(k);
-      return ui.row({ title: p.nome || "Seduta " + k, sub: dn ? "Fatta questa settimana ✓" : pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti", act: "apri-seduta", arg: k, on: k === nd }); }).join("");
-    const scheda = ui.section("La mia scheda", rows + ui.secondary(data.profile().minor ? "Vedi o modifica la scheda" : "Modifica la scheda", "modifica") +
+      return ui.row({ title: dname(k), sub: dn ? tv("Fatta", "Fatto") + " questa settimana ✓" : pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti", act: "apri-seduta", arg: k, on: k === nd }); }).join("");
+    const scheda = ui.section("La mia scheda", rows + ui.secondary("Apri la scheda", "modifica") +
       ui.row({ title: "Riscaldamento e stretching", sub: "La tua routine prima e dopo", act: "routine" }));
     const sets = ws.reduce((s, x) => s + (x.items || []).reduce((a, it) => a + ((it.sets || []).length), 0), 0);
     const mins = ws.filter(x => x.durata).reduce((s, x) => s + (+x.durata || 0), 0);
     const p4 = P[nd || ts.next || DAYS[0]];
-    const t4 = kid() ? { label: "Esercizi della prossima", value: String(p4 ? p4.items.length : 0) } : { label: "Pronti a salire", value: String(p4 ? upsOf(p4) : 0), of: p4 ? p4.items.length : null };
+    const t4 = kid() ? { label: "Esercizi della prossima", value: String(p4 ? p4.items.length : 0) } : { label: "Carico in aumento", value: String(p4 ? upsOf(p4) : 0), of: p4 ? p4.items.length : null };
     const box = ui.limeBox({ title: "La mia settimana", action: { label: "Apri", act: "settimana" }, tiles: [
-      { label: "Sedute", value: String(wk.sessions.done), of: wk.sessions.planned, pct: ui.pct(wk.sessions.done, wk.sessions.planned), act: "settimana" },
+      { label: tv("Sedute", "Allenamenti"), value: String(wk.sessions.done), of: wk.sessions.planned, pct: ui.pct(wk.sessions.done, wk.sessions.planned), act: "settimana" },
       { label: "Serie fatte", value: String(sets) },
       { label: "Minuti in palestra", value: mins ? ui.nf(mins, 0) : "–", unit: mins ? "min" : null },
       t4] });
@@ -225,11 +229,11 @@
     const g = group(), dn = doneWeek(k);
     const list = p.items.map((it, j) => { const x = planOf(it), kg = it.unit === "none" ? null : x.kg;
       const det = it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
-      const up = x.up && g !== "bambino" ? `<span class="v3-palestra-up">${g === "adulto" ? "+" + kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2)) + " kg oggi" : "Pronto a salire"}</span>` : "";
+      const up = x.up && g !== "bambino" ? `<span class="v3-palestra-up">${g === "adulto" ? "+" + kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2)) + " kg oggi" : "Carico in aumento"}</span>` : "";
       return `<div class="v3-palestra-ex">${thumb(it, String(j + 1))}<span class="v3-rx"><span class="v3-rt" style="display:block">${e(nameOf(it))}</span><span class="v3-rs" style="display:block">${e(det)}</span>${up}</span></div>`; }).join("");
-    const label = activeDay() === k ? "Riprendi la seduta" : "Inizia la seduta";
+    const label = activeDay() === k ? tv("Riprendi la seduta", "Riprendi l'allenamento") : tv("Inizia la seduta", "Inizia l'allenamento");
     const meta = pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti";
-    return ui.back() + `<div><h1 class="v3-t1">${e(p.nome || "Seduta " + k)}</h1><p class="v3-sub">${e(dn ? "Fatta questa settimana ✓" : p.focus || meta)}</p></div>` +
+    return ui.back() + `<div><h1 class="v3-t1">${e(dname(k))}</h1><p class="v3-sub">${e(dn ? tv("Fatta", "Fatto") + " questa settimana ✓" : p.focus || meta)}</p></div>` +
       ui.card(ui.big(`${p.items.reduce((s, it) => s + it.sets, 0)} <span class="v3-of">serie</span>`, meta)) +
       ui.section("Esercizi", `<div class="v3-palestra-list">${list}</div>`) + primary(label, `data-v3act="inizia" data-v3arg="${e(k)}"`) +
       ui.end(sapText(), { leoQ: leoQ() });
@@ -238,21 +242,21 @@
     const wk = data.week(), h = data.history("week"), map = has("weekDone") ? weekDone() : {};
     const G = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
     const rows = wk.days.map((d, i) => { const k = map[i];
-      if (k) return ui.row({ title: G[i], sub: (P[k] ? P[k].nome || "Seduta " + k : "Seduta") + " ✓", on: d.today });
+      if (k) return ui.row({ title: G[i], sub: (P[k] ? dname(k) : tv("Seduta", "Allenamento")) + " ✓", on: d.today });
       if (d.today) return ui.row({ title: G[i] + " · oggi", sub: d.train ? "Giorno di palestra" : "Riposo", on: true });
-      if (d.future && d.train) return ui.row({ title: G[i], sub: "Seduta prevista" });
+      if (d.future && d.train) return ui.row({ title: G[i], sub: tv("Seduta prevista", "Allenamento previsto") });
       return ""; }).join("");
     const max = Math.max(4, ...h.map(w => w.sessions));
-    return ui.back() + `<div><h1 class="v3-t1">La mia settimana</h1><p class="v3-sub">${e(wk.sessions.done + " su " + wk.sessions.planned + " sedute fatte")}</p></div>` +
-      ui.card(ui.big(`${wk.sessions.done} <span class="v3-of">/${wk.sessions.planned}</span>`, "Sedute di questa settimana") +
-        ui.chart.bars({ vals: h.map(w => w.sessions), max, ticks: [[wk.sessions.planned, String(wk.sessions.planned), true], [0, "0"]], xl: [[0, h[0].label], [h.length - 1, "ora"]], tip: i => `${h[i].label}: ${pl(h[i].sessions, "seduta", "sedute")}`, aria: "Sedute delle ultime 13 settimane" })) +
+    return ui.back() + `<div><h1 class="v3-t1">La mia settimana</h1><p class="v3-sub">${e(wk.sessions.done + " su " + wk.sessions.planned + tv(" sedute fatte", " allenamenti fatti"))}</p></div>` +
+      ui.card(ui.big(`${wk.sessions.done} <span class="v3-of">/${wk.sessions.planned}</span>`, tv("Sedute di questa settimana", "Allenamenti di questa settimana")) +
+        ui.chart.bars({ vals: h.map(w => w.sessions), max, ticks: [[wk.sessions.planned, String(wk.sessions.planned), true], [0, "0"]], xl: [[0, h[0].label], [h.length - 1, "ora"]], tip: i => `${h[i].label}: ${pl(h[i].sessions, tv("seduta", "allenamento"), tv("sedute", "allenamenti"))}`, aria: tv("Sedute", "Allenamenti") + " delle ultime 13 settimane" })) +
       (rows ? ui.section("Questa settimana", rows) : "") +
-      ui.end("Conta le sedute della settimana, non i giorni di fila: anche il riposo fa parte del piano.", { leoQ: "Quanti giorni di riposo mi servono?" });
+      ui.end("Conta " + tv("le sedute", "gli allenamenti") + " della settimana, non i giorni di fila: anche il riposo fa parte del piano.", { leoQ: "Quanti giorni di riposo mi servono?" });
   }
   function routine() {
     const r = L => L.map(x => ui.row({ title: x[0], sub: x[1] })).join("");
     return ui.back() + `<div><h1 class="v3-t1">Riscaldamento e stretching</h1><p class="v3-sub">Prima movimenti, dopo allungamenti</p></div>` +
-      ui.section("Prima: stretching dinamico", r(DIN)) + ui.section("Dopo: stretching statico", r(STAT) + primary("Fai lo stretching adesso", 'data-v3act="stretch"')) +
+      ui.section("Prima: movimenti per scaldarti", r(DIN)) + ui.section("Dopo: allungamenti da fermo", r(STAT) + primary("Fai lo stretching adesso", 'data-v3act="stretch"')) +
       ui.end("Gli allungamenti tenuti fermi a lungo tolgono un po' di forza: meglio farli dopo i pesi.", { leoQ: "Che differenza c'è tra stretching dinamico e statico?" });
   }
 
@@ -274,8 +278,8 @@
       inizia(k) {
         if (!P[k]) return;
         if (activeDay() || !(has("doneToday") && doneToday())) return begin(k);
-        const s = V3.sheet(`<h2 class="v3-sh1">Hai già fatto una seduta oggi</h2><p class="v3-shp">I muscoli crescono mentre recuperi: questa seduta rende di più domani.</p>
-          <button class="v3-apri wide" data-v3act="later">Va bene, domani</button><button class="v3-b2" data-v3act="anyway">Inizio lo stesso</button>`,
+        const s = V3.sheet(`<h2 class="v3-sh1">${tv("Seduta già fatta oggi", "Allenamento già fatto oggi")}</h2><p class="v3-shp">Domani rende di più: i muscoli crescono a riposo.</p>
+          <button class="v3-apri wide" data-v3act="later">Rimando a domani</button><button class="v3-b2" data-v3act="anyway">Inizia lo stesso</button>`,
           { on: { later() { s.close(); }, anyway() { s.close(); setTimeout(() => begin(k), 250); } } });
       },
       "w-timer"() { if (!W) return; startTick(); V3.refresh(); },

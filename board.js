@@ -4,8 +4,8 @@
 (function () {
   const BOX = [
     ["nums", "I numeri di oggi", "4 riquadri a tua scelta"],
-    ["train", "Allenamento", "Sedute, settimana, record"],
-    ["food", "Alimentazione", "Pasti, acqua, integratori, menù"],
+    ["train", "Palestra", "Sedute, settimana, record"],
+    ["food", "Cibo", "Pasti, acqua, integratori, menù"],
     ["body", "Peso e corpo", "Peso, andamento, foto"],
     ["prog", "Progressi", "Carichi, volume, calorie, storico"]
   ];
@@ -135,7 +135,7 @@
     return `<svg class="spark" style="height:${h}px" viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`; }
   function recordsCard() {
     const list = recentRecords().slice(0, 5);
-    return `<div class="card"><h2>Record del <span class="hl">mese</span></h2>${list.length ? `<ul class="plain">${list.map(([n, r]) => `<li><b>${esc(short(n))}</b> ${fmt(r.kg)} kg <span class="hl">+${fmt(r.gain)}</span> <span class="small muted">· ${ago(r.d)}</span></li>`).join("")}</ul>` : `<p class="muted">Ancora nessun record questo mese. Quando chiudi il range in tutte le serie il carico sale, e il record arriva.</p>`}</div>`;
+    return `<div class="card"><h2>Record del <span class="hl">mese</span></h2>${list.length ? `<ul class="plain">${list.map(([n, r]) => `<li><b>${esc(short(n))}</b> ${fmt(r.kg)} kg <span class="hl">+${fmt(r.gain)}</span> <span class="small muted">· ${ago(r.d)}</span></li>`).join("")}</ul>` : `<p class="muted">Ancora nessun record questo mese. Arriva al massimo di ripetizioni in tutte le serie: il carico sale.</p>`}</div>`;
   }
   function photoCard() {
     const d = lastPhotoDays(), msg = d == null ? "Nessuna foto ancora: scattane una oggi come punto di partenza." : d >= 14 ? `Ultima foto ${d} giorni fa: è un buon momento per la prossima.` : `Ultima foto ${d ? d + " giorni fa" : "oggi"}. La prossima tra ${14 - d} giorni, stessa luce e stessa posa.`;
@@ -233,7 +233,7 @@
     if (S.sheet === "tiles") {
       const t = tileCfg();
       $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet full" role="dialog" aria-modal="true" aria-label="Modifica i riquadri"><div class="grab"></div>
-        <h2>I tuoi <span class="hl">4 riquadri</span></h2><p class="muted">Scegli cosa mostrare in ogni riquadro. Valgono in Oggi e in Alimentazione.</p>
+        <h2>I tuoi <span class="hl">4 riquadri</span></h2><p class="muted">Scegli cosa mostrare in ogni riquadro. Valgono in Oggi e in Cibo.</p>
         ${t.map((cur, i) => `<div class="block" style="margin-top:14px"><p class="small muted" style="margin:0 0 8px">Riquadro ${i + 1} · ${i % 2 ? "a destra" : "a sinistra"}, ${i < 2 ? "in alto" : "in basso"}</p><div class="seg wrap" role="group">${TILES.map(([k, l]) => `<button data-act="tile-set" data-i="${i}" data-v="${k}" aria-pressed="${cur === k}">${l}</button>`).join("")}</div></div>`).join("")}
         <button class="primary" data-act="close" style="margin-top:16px">Fatto</button><button class="link small" data-act="tiles-reset" style="align-self:center">Ripristina: calorie, proteine, grassi, acqua</button></div></div>`;
       return;
@@ -254,7 +254,7 @@
     else if (act === "wk-set") { const m = { ...planMap() }, dw = S.wkday, prev = m[dw]; const other = v ? Object.keys(m).map(Number).find(x => x !== dw && m[x] === v) : null;
       if (other != null) { if (prev) m[other] = prev; else delete m[other]; } if (v) m[dw] = v; else delete m[dw];
       lsSet("shift", { week: monKey(), map: m }); S.sheet = null; renderSheet(); render(); toast("Settimana aggiornata"); }
-    else if (act === "wk-auto") { const lost = autoShift(); render(); toast(lost ? `Spostate. ${lost === 1 ? "Una seduta non ci sta" : lost + " sedute non ci stanno"} più questa settimana: riparti lunedì.` : "Settimana spostata: guarda i nuovi giorni in Allenamento."); }
+    else if (act === "wk-auto") { const lost = autoShift(); render(); toast(lost ? "Sedute spostate" : "Settimana spostata", { sub: lost ? `${lost === 1 ? "Una non ci sta" : lost + " non ci stanno"}: riparti lunedì` : "Nuovi giorni in Palestra" }); }
     else if (act === "wk-no") { lsSet("shift_no", monKey()); render(); }
     else if (act === "wk-reset") { lsSet("shift", null); render(); toast("Tornata la settimana della scheda"); }
     else if (act === "tiles-edit") { S.sheet = "tiles"; renderSheet(); }
@@ -291,7 +291,7 @@
     const b = e.target.closest('[data-act="meal"]'); if (!b) return; const k = b.dataset.v, v0 = dayLog(localISO()), was = mealState(v0, k);
     if (was !== "open") return;
     setTimeout(() => { const v = dayLog(localISO()); if (mealState(v, k) !== "plan") return; const l = (MEALS.find(m => m[0] === k) || [])[1] || "Pasto";
-      undoToast(`${l} segnato.`, () => { const d = dayLog(localISO()); d.meals[k] = false; saveDay(localISO()); render(); }); }, 60);
+      undoToast(`${l} ${k === "col" || k === "mer" || k === "cen" ? "segnata" : "segnato"}`, () => { const d = dayLog(localISO()); d.meals[k] = false; saveDay(localISO()); render(); }); }, 60);
   }, true);
 
   /* ---------- second session in the same day: advice, then the user decides ---------- */
@@ -313,12 +313,8 @@
   /* ---------- edit Oggi like the iPhone Home Screen ---------- */
   const nameOf = k => BOX.find(b => b[0] === k)[1];
   const setEdit = on => { S.boardEdit = on; render(); };
-  function undoToast(msg, undo) {
-    document.querySelectorAll(".utoast").forEach(x => x.remove());
-    const t = document.createElement("div"); t.className = "toast utoast"; t.setAttribute("role", "status");
-    t.innerHTML = `<span>${esc(msg)}</span><button>Annulla</button>`; document.body.appendChild(t);
-    t.querySelector("button").onclick = () => { undo(); t.remove(); }; setTimeout(() => t.remove(), 5000);
-  }
+  /* 28/10 (DS 1): toast standard con «Annulla» (il vecchio .utoast aveva il pulsante nero invisibile) */
+  const undoToast = (msg, undo, sub) => toast(msg, { undo, sub });
   let press = null, swallow = false, fired = false;
   document.addEventListener("touchstart", e => {
     const bx = e.target.closest(".bx"); if (!bx || S.boardEdit || S.tab !== "oggi" || S.macro || e.touches.length !== 1) return;
@@ -344,7 +340,7 @@
     else if (act === "bx-put") { const c = cfg(); c.off = c.off.filter(x => x !== v); save(c); S.sheet = null; renderSheet(); render(); toast(`Sezione ${nameOf(v)} aggiunta a Oggi`); }
     else if (act === "bx-del") {
       const el = b.closest(".bx"), c = cfg(); el.classList.add("gone");
-      setTimeout(() => { c.off = [...c.off, v]; save(c); render(); undoToast(`Sezione ${nameOf(v)} nascosta. I dati restano.`, () => { const c2 = cfg(); c2.off = c2.off.filter(x => x !== v); save(c2); render(); }); }, 200);
+      setTimeout(() => { c.off = [...c.off, v]; save(c); render(); undoToast(`Sezione ${nameOf(v)} nascosta`, () => { const c2 = cfg(); c2.off = c2.off.filter(x => x !== v); save(c2); render(); }, "I dati restano"); }, 200);
     }
   });
   // reorder: drag the ≡ handle (keyboard: arrows)
@@ -378,7 +374,7 @@
   let picking = 0;
   document.addEventListener("click", e => { if (e.target.matches && e.target.matches("input[type=file]")) picking = Date.now(); }, true);
   ["change", "cancel"].forEach(t => document.addEventListener(t, e => { if (e.target.type === "file") picking = 0; }, true));
-  const refresh = () => { const d = localISO(); if (d !== lastDay) { lastDay = d; toast("Nuovo giorno, contatori azzerati."); } if (!S.sheet && Date.now() - picking > 300000) render(); };
+  const refresh = () => { const d = localISO(); if (d !== lastDay) { lastDay = d; toast("Nuovo giorno: pasti e acqua da segnare"); } if (!S.sheet && Date.now() - picking > 300000) render(); };
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
   window.addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 
@@ -449,12 +445,12 @@
   .bx-fine { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: 16px; z-index: 20; min-height: 40px; padding: 0 20px; border-radius: 999px; border: 0; background: var(--accent); color: var(--lime-ink); font-weight: 800; font-size: 16px; }
   .brow.add { width: 100%; border: 0; color: inherit; text-align: left; font: inherit; }
   .bx-plus { width: 32px; height: 32px; border-radius: 999px; background: var(--accent); color: var(--lime-ink); display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
-  .utoast { display: flex; align-items: center; gap: 14px; }
-  .utoast button { border: 0; background: none; color: #000; font-weight: 800; text-decoration: underline; padding: 6px 0; font-size: 15px; }
   @media (prefers-reduced-motion: reduce) { .bx.jig { animation: none; outline: 2px dashed var(--accent); outline-offset: 4px; border-radius: 24px; } }
-  .bsw { flex: none; width: 50px; height: 30px; border-radius: 999px; border: 0; background: var(--control); position: relative; padding: 0; }
-  .bsw span { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: #fff; transition: transform .18s; }
-  .bsw[aria-checked="true"] { background: var(--accent); }
-  .bsw[aria-checked="true"] span { transform: translateX(20px); background: var(--lime-ink); }`;
+  /* 28/10 (DS 6): un solo interruttore, area 52×48, binario 52×32, spento s3 (come Progressi) */
+  .bsw { flex: none; width: 52px; height: 48px; border: 0; background: transparent; position: relative; padding: 0; }
+  .bsw::before { content: ""; position: absolute; left: 0; top: 8px; width: 52px; height: 32px; border-radius: 16px; background: var(--v3-s3, #2a2a2a); }
+  .bsw span { position: absolute; top: 11px; left: 3px; width: 26px; height: 26px; border-radius: 13px; background: var(--v3-t1, #fff); transition: transform .18s; }
+  .bsw[aria-checked="true"]::before { background: var(--accent); }
+  .bsw[aria-checked="true"] span { transform: translateX(20px); background: var(--v3-ink, #0a0a0a); }`;
   document.head.appendChild(st);
 })();

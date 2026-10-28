@@ -5,7 +5,7 @@
 (function () {
   if (typeof S === "undefined" || typeof getAIKey !== "function") return;
   const need = () => S.site && !getAIKey();
-  const page = (skipAct) => `<div class="ob aistep"><h1>${skipAct === "ai-later-ob" ? `Prima di scheda e <span class="hl">dieta</span>` : `Ultimo <span class="hl">passo</span>`}</h1>${aiKeyBox()}<button class="link small" data-act="${skipAct}" style="align-self:center;min-height:44px">Lo faccio dopo</button></div>`;
+  const page = (skipAct) => `<div class="ob aistep"><h1>${skipAct === "ai-later-ob" ? `Prima di scheda e <span class="hl">piano alimentare</span>` : `Ultimo <span class="hl">passo</span>`}</h1>${aiKeyBox()}<button class="link small" data-act="${skipAct}" style="align-self:center;min-height:44px">Attiva Leo più tardi</button></div>`;
 
   // generic app: step 2 (after the profile) shows the key first
   const vOb = window.viewOnboarding;

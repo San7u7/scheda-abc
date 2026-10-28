@@ -67,7 +67,7 @@
     [/affettato|bresaola/i, "affettato magro", "m"], [/fagiol|ceci|lenticch|legum/i, "legumi", "m"], [/olio/i, "olio d'oliva", "g"], [/burro di frutta secca/i, "burro di frutta secca", "g"],
     [/(^|[^i] )frutta secca|mandorle|nocciole/i, "frutta secca", "g"], [/avocado/i, "avocado", "g"], [/pesto/i, "pesto", "g"], [/verdur|vegetal|insalat/i, "verdura", "f"], [/frutta fresca|porzione di frutta/i, "frutta", "f"]
   ];
-  const ROLE = [["e", "Energia"], ["m", "Mattoni dei muscoli"], ["g", "Grassi buoni"], ["f", "Fibre e vitamine"]];
+  const ROLE = [["e", "Carboidrati (energia)"], ["m", "Proteine (muscoli)"], ["g", "Grassi buoni"], ["f", "Fibre e vitamine"]];
   const EMPTY = { e: "qui puoi aggiungere un po' di pane", m: "qui puoi aggiungere yogurt, uova o legumi", g: "qui basta un filo d'olio", f: "qui puoi aggiungere verdura o frutta" };
   function roles(text) { const by = { e: [], m: [], g: [], f: [] }; for (const [re, name, r] of KW) if (re.test(text)) for (const c of r) if (!by[c].includes(name)) by[c].push(name); return by; }
   const mealText = (dw, k) => { const m = mealOf(dw, k); return m ? m.t + ". " + m.i.join(". ") : ""; };
@@ -112,7 +112,7 @@
     st.textContent = `
     #view.v3 .v3-cibo-caro { display: flex; gap: 12px; overflow-x: auto; contain: inline-size; width: calc(100% + 32px); min-width: 0; box-sizing: border-box; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 2px 16px; scroll-padding-inline: 16px; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
     #view.v3 .v3-cibo-caro::-webkit-scrollbar { display: none; }
-    #view.v3 .v3-cibo-mc { flex: 0 0 calc(100% - 52px); scroll-snap-align: start; background: var(--v3-s1); border-radius: 18px; padding: 16px; box-sizing: border-box; display: flex; transition: opacity .2s; }
+    #view.v3 .v3-cibo-mc { flex: 0 0 calc(100% - 52px); scroll-snap-align: start; background: var(--v3-s1); border-radius: 24px; padding: 16px; box-sizing: border-box; display: flex; transition: opacity .2s; }
     #view.v3 .v3-cibo-mc.cur { box-shadow: inset 0 0 0 2px var(--v3-lime); }
     #view.v3 .v3-cibo-mc:not(.cur) { opacity: .5; cursor: pointer; }
     #view.v3 .v3-cibo-in { display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 0; }
@@ -122,7 +122,7 @@
     #view.v3 .v3-cibo-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     #view.v3 .v3-cibo-two .v3-b2 { padding: 0 8px; }
     #view.v3 .v3-cibo-dots { display: flex; justify-content: center; margin: -8px 0 -4px; }
-    #view.v3 .v3-cibo-dots button { width: 40px; height: 48px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; }
+    #view.v3 .v3-cibo-dots button { width: 44px; height: 48px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; }
     #view.v3 .v3-cibo-dots i { width: 7px; height: 7px; border-radius: 4px; background: var(--v3-s3); transition: background .2s; }
     #view.v3 .v3-cibo-dots button[aria-current="true"] i { background: var(--v3-t1); }
     #view.v3 .v3-cibo-hd p.v3-sub { margin-top: 6px; }
@@ -136,7 +136,7 @@
     #view.v3 .v3-cibo-acts2 { display: flex; flex-direction: column; gap: 12px; }
     #view.v3 .v3-cibo-x { display: flex; align-items: center; gap: 12px; }
     #view.v3 .v3-cibo-seg .v3-sg { min-height: 48px; }
-    #view.v3 .v3-cibo-tg { width: auto; flex: none; }
+    #view.v3 .v3-cibo-tg { width: 96px; flex: none; }
     @media (prefers-reduced-motion: reduce) { #view.v3 .v3-cibo-mc, #view.v3 .v3-cibo-dots i { transition: none; } }`;
     document.head.appendChild(st);
   }
@@ -173,7 +173,7 @@
     const t = s.st === "custom" ? v.custom[k].text : m ? m.t : "Non previsto";
     let body;
     if (s.st === "plan" || s.st === "custom") body = `<p class="v3-rs">${e(numLine(mealNums(dw, k)))}${s.st === "custom" ? " · al posto del piano" : ""}</p><div class="v3-cibo-acts">${ui.secondary("Vedi o cambia", "pasto", k)}</div>`;
-    else if (s.st === "skip") body = `<p class="v3-rs">Hai segnato che l'hai saltato.</p><div class="v3-cibo-acts">${ui.secondary("Vedi o cambia", "pasto", k)}</div>`;
+    else if (s.st === "skip") body = `<p class="v3-rs">Segnato come non mangiato.</p><div class="v3-cibo-acts">${ui.secondary("Vedi o cambia", "pasto", k)}</div>`;
     else body = `<p class="v3-rs">${e(numLine(mealNums(dw, k)))}</p><div class="v3-cibo-acts">${lime("Ho mangiato questo", "eat", k)}${s.past
       ? `<div class="v3-cibo-two">${leg("Un'altra cosa", "mealalt", k)}${leg("Non mangiato", "mealskip", k)}</div>` : leg("Ho mangiato un'altra cosa", "mealalt", k)}</div>`;
     return `<div class="v3-cibo-mc${cur ? " cur" : ""}" data-i="${i}"${cur ? "" : ` data-v3act="dot" data-v3arg="${i}" aria-hidden="true"`}><div class="v3-cibo-in"${cur ? "" : " inert"}>
@@ -199,7 +199,7 @@
         <div class="v3-cibo-dots" role="group" aria-label="Pasti di oggi">${list.map((k, i) => `<button data-v3act="dot" data-v3arg="${i}" aria-label="${e(LAB(k))}${stOf(iso, k) === "plan" || stOf(iso, k) === "custom" ? ", mangiato" : ""}" aria-current="${i === ci}"><i></i></button>`).join("")}</div>
         ${ui.secondary("Vedi tutta la giornata", "giornata")}</section>` +
       numsBox("numeri") +
-      ui.row({ title: "Scopri di più", sub: "La settimana, le curiosità, il piano", act: "scopri", apri: "Mostra tutto" }) +
+      ui.row({ title: "Scopri di più", sub: "La settimana, le curiosità, il piano", act: "scopri", apri: "Apri" }) +
       endCur(c);
   }
   function mainNoPlan() {
@@ -208,10 +208,10 @@
       return ui.row({ title: l, sub: st === "custom" ? v.custom[k].text : st === "skip" ? "Non mangiato" : st === "plan" ? "Mangiato ✓" : "Non ancora segnato", act: "alt", arg: k, apri: st === "open" ? "Segna" : "Cambia" })
         .replace(/data-v3act="alt" data-v3arg="/, 'data-act="mealalt" data-v="'); }).join("");
     return ui.header("Cibo") +
-      ui.section("Prima cosa da fare", ui.card(`<p class="v3-cibo-t">Crea il tuo piano alimentare</p><p class="v3-rs">Saprai cosa mettere nel piatto, e perché.</p>${lime("Crea il tuo piano", "crea")}${leg("Ho già un piano: caricalo", "redo", 3)}`)) +
+      ui.section("Prima cosa da fare", ui.card(`<p class="v3-cibo-t">Crea il tuo piano alimentare</p><p class="v3-rs">Saprai cosa mettere nel piatto, e perché.</p>${lime("Crea il tuo piano", "crea")}${leg("Carica il piano che hai già", "redo", 3)}`)) +
       ui.section(`Oggi hai segnato ${done} ${done === 1 ? "pasto" : "pasti"} su 5`, rows + leg("Aggiungi cibo fuori programma", "mealalt", "extra")) +
       numsBox("numeri") +
-      ui.row({ title: "Scopri di più", sub: "La settimana e le curiosità", act: "scopri", apri: "Mostra tutto" }) +
+      ui.row({ title: "Scopri di più", sub: "La settimana e le curiosità", act: "scopri", apri: "Apri" }) +
       endCur(CUR[doy(iso) % CUR.length]);
   }
 
@@ -265,18 +265,18 @@
   function pagePasto(k) {
     const iso = today(), dw = dowOf(iso), m = mealOf(dw, k), v = dayV(iso), st = stOf(iso, k), list = planMeals(dw), i = list.indexOf(k), s = stateOf(k, i, list);
     const c = curFor(st === "custom" ? v.custom[k].text : mealText(dw, k), iso), dayT = data.today();
-    let h = ui.back() + title(LAB(k), s.lab + (st === "custom" ? ": un'altra cosa" : ""));
+    let h = ui.back() + title(LAB(k), st === "custom" ? "Mangiato un'altra cosa" : s.lab);
     if (st === "custom") {
       h += ui.card(`<p class="v3-cibo-t">${e(v.custom[k].text)}</p>${m ? `<p class="v3-rs">Il piano prevedeva: ${e(m.t.toLowerCase())}</p>` : ""}`) + plateBox(mealNums(dw, k), dayT) +
         acts(leg("Modifica cosa ho mangiato", "mealalt", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
     } else if (st === "plan") {
       h += ui.section("Nel piatto", ui.card(`<ul class="v3-cibo-ing">${m.i.map(x => `<li>${e(casa(x))}</li>`).join("")}</ul>`)) + plateBox(mealNums(dw, k), dayT) + rolesCard(mealText(dw, k)) +
-        acts(ui.secondary("Cambia le quantità", "qty", k) + ui.secondary("Non l'ho mangiato: rimetti da fare", "unmark", k));
+        acts(ui.secondary("Cambia le quantità", "qty", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
     } else if (st === "skip") {
-      h += (m ? ui.card(`<p class="v3-cibo-t">${e(m.t)}</p>`) : "") + acts((m ? lime("L'ho mangiato", "eat", k) : "") + leg("Ho mangiato un'altra cosa", "mealalt", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
+      h += (m ? ui.card(`<p class="v3-cibo-t">${e(m.t)}</p>`) : "") + acts((m ? lime("Ho mangiato questo", "eat", k) : "") + leg("Ho mangiato un'altra cosa", "mealalt", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
     } else {
       h += (m ? ui.section("Nel piatto", ui.card(`<ul class="v3-cibo-ing">${m.i.map(x => `<li>${e(casa(x))}</li>`).join("")}</ul>`)) : "") +
-        acts((m ? lime("Ho mangiato questo", "eat", k) + ui.secondary("Questo, ma in quantità diverse", "qty", k) : "") + leg(m ? "Un'altra cosa" : "Segna cosa ho mangiato", "mealalt", k) + (s.past ? leg("Non mangiato", "mealskip", k) : ""));
+        acts((m ? lime("Ho mangiato questo", "eat", k) + ui.secondary("Cambia le quantità", "qty", k) : "") + leg(m ? "Un'altra cosa" : "Segna cosa ho mangiato", "mealalt", k) + (s.past ? leg("Non mangiato", "mealskip", k) : ""));
     }
     return h + endCur(c);
   }
@@ -288,7 +288,7 @@
     if (!qa) quiz = ui.card(`<p class="v3-cibo-q">Secondo te?</p><p class="v3-cibo-qq">${e(z.q)}</p><div class="v3-cibo-two">${z.o.map((o, j) => ui.secondary(o, "quiz", j)).join("")}</div>${ui.secondary("Salta la domanda", "quiz", -1)}`);
     else if (qa.k === k) quiz = ui.card(`<p class="v3-cibo-q">${qa.ok ? "Esatto!" : qa.skip ? "Domanda saltata" : "Quasi"}</p><p class="v3-rs">${e(z.x)}</p>`);
     return ui.back() + title(`${LAB(k)} ${segn(k)} ✓`, "Ecco cosa ti ha dato") + quiz + plateBox(mealNums(dw, k), data.today()) + rolesCard(text) +
-      acts(ui.secondary("Torna ai pasti di oggi", "home") + ui.secondary("Ho sbagliato: rimetti da fare", "unmark", k)) + endCur(c);
+      acts(ui.secondary("Torna ai pasti di oggi", "home") + ui.secondary("Rimetti tra i pasti da fare", "unmark", k)) + endCur(c);
   }
 
   /* calorie e proteine giorno per giorno */
@@ -309,12 +309,12 @@
     const xl = [[0, s[0].lab], [last, numPer === 0 ? "oggi" : "ora"]];
     const unitTip = numPer === 0 ? "" : " in media";
     const panel = (big, line, vals, max, tick, fmt, aria) => ui.big(big, line) + ui.chart.bars({ vals, max, ticks: [[tick, fmt(tick), true], [0, "0"]], xl, tip: i => `${s[i].lab}: ${s[i].days.some(d => d.logged) ? fmt(vals[i]) + unitTip : "non segnato"}`, aria });
-    const empty = ui.big("–", closed.length ? "" : "Servono più dati: segna i pasti");
+    const empty = ui.big("–", closed.length ? "" : "Ancora pochi dati: segna i pasti");
     let chart;
     const proP = pr == null ? empty : panel(`${pr} <span class="v3-of">/${pT} g</span>`, "Proteine al giorno, in media", s.map(x => x.pro), Math.max(pT || 1, ...s.map(x => x.pro)) * 1.05, pT, v => nf(v, 0) + " g", "Proteine al giorno");
     if (kid()) chart = ui.card(proP);
     else chart = ui.card((kc == null ? empty : panel(`${nf(kc, 0)} <span class="v3-of">/${nf(kT, 0)}</span>`, "Calorie al giorno, in media", s.map(x => x.kcal), Math.max(kT || 1, ...s.map(x => x.kcal)) * 1.05, kT, v => nf(v, 0), "Calorie al giorno")) + (pr == null ? "" : proP));
-    let verdict = "Servono più dati";
+    let verdict = "Ancora pochi dati";
     if (kc != null && !kid()) { const diff = kc - kT; verdict = Math.abs(diff) < 100 ? "In linea con il piano" : minor() ? (diff < 0 ? "Un po' sotto il piano" : "Un po' sopra il piano") : `${diff < 0 ? "Sotto" : "Sopra"} di circa ${nf(Math.round(Math.abs(diff) / 10) * 10, 0)} calorie`; }
     else if (pr != null) verdict = pr >= pT * .9 ? "Proteine in linea col piano" : "Proteine un po' basse";
     const rows = (kid() ? "" : ui.row({ title: "Calorie di oggi", value: `${nf(d0.kcal, 0)} <span class="v3-of">/${nf(d0.kcalT, 0)}</span>` })) + ui.row({ title: "Proteine di oggi", value: `${d0.pro} <span class="v3-of">/${d0.proT} g</span>` });
@@ -415,10 +415,10 @@
       dot(i) { const c = document.querySelector("#view .v3-cibo-caro"); ci = +i; if (c && c._mark) { c._mark(ci); c._center(ci, true); } },
       eat(k) { markEaten(k); ci = null; toast(`${LAB(k)} segnato`, { sub: numLine(mealNums(dowOf(today()), k)), undo: () => { unmark(k); V3.go("cibo"); } }); const t = top(); if (t && t.p === "learned") { V3.refresh(); return; } if (t && t.p === "pasto") replace({ p: "learned", k }); else open({ p: "learned", k }); },
       unmark(k) { // 28/10: conferma prima di rimettere il pasto tra quelli da fare (tavola 24)
-        let done = false; const p = top(), st = stOf(today(), k), v = dayV(today()), what = st === "custom" ? `«${v.custom[k].text}» e i suoi numeri di oggi` : st === "skip" ? "il segno «non mangiato»" : "il segno e i numeri di oggi";
-        const sh = V3.sheet(`<h2 class="v3-sh1">Rimettere ${LAB(k).toLowerCase()} da fare?</h2><p class="v3-shp">Cancello ${e(what)}.</p><button class="v3-apri wide" data-v3act="ok">Sì, rimetti da fare</button><button class="v3-b2" data-v3act="close">No, lascialo segnato</button>`,
+        let done = false; const p = top(), st = stOf(today(), k), v = dayV(today()), what = st === "custom" ? `Si cancellano «${v.custom[k].text}» e i suoi numeri di oggi.` : st === "skip" ? "Si cancella il segno «non mangiato»." : "Si cancellano il segno e i numeri di oggi.", art = { col: "la", spu: "lo", pra: "il", mer: "la", cen: "la" }[k] || "il", fem = art === "la";
+        const sh = V3.sheet(`<h2 class="v3-sh1">Rimetti ${art} ${LAB(k).toLowerCase()} tra i pasti da fare?</h2><p class="v3-shp">${e(what)}</p><button class="v3-apri wide" data-v3act="ok">Sì, rimetti tra i pasti da fare</button><button class="v3-b2" data-v3act="close">No, ${fem ? "lasciala segnata" : "lascialo segnato"}</button>`,
           { label: "Rimetti tra i pasti da fare", on: { ok() { done = true; unmark(k); sh.close(); } },
-            onClose: () => { if (!done) return; setTimeout(() => { if (p && p.p === "learned") V3.go("cibo"); else V3.refresh(); toast(`${LAB(k)} rimesso da fare`); }, 60); } });
+            onClose: () => { if (!done) return; setTimeout(() => { if (p && p.p === "learned") V3.go("cibo"); else V3.refresh(); toast(`${LAB(k)} di nuovo da fare`, { sub: `Puoi ${fem ? "segnarla" : "segnarlo"} quando vuoi` }); }, 60); } });
       },
       qty(k) { editQty(k); },
       quiz(j) { const p = top(), iso = today(), z = quizFor(mealText(dowOf(iso), p.k), iso); quizSet(iso, { k: p.k, j: +j, ok: +j === z.a, skip: +j < 0 }); V3.refresh(); },

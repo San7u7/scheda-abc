@@ -67,12 +67,15 @@
   };
 
   /* ---------- ALLENAMENTO ---------- */
+  /* glossario 28/10: «Seduta» per adulto e ragazzo, «Allenamento» per bambino e over 65 */
+  const altG = () => { try { const g = window.V3 && V3.data.profile().group; return g === "bambino" || g === "over65"; } catch (_) { return false; } };
+  const tv = (sed, all) => altG() ? all : sed;
   function dayCard(k, isNext, i, n) {
     const p = P[k], ups = p.items.filter(x => plan(x).up).length, doneW = Object.values(weekDone()).includes(k), a = activeDay();
     return `<div class="dslide ${isNext ? "next" : ""}" data-i="${i}"><button class="dcard ${isNext ? "next" : ""} ${doneW ? "done" : ""}" data-act="open-day" data-v="${k}" style="--img:url(${photoFor(k)})" aria-label="Seduta ${k}, ${i + 1} di ${n}">
       <span class="dc-img"></span><span class="dc-tag">${doneW ? "Fatta" : isNext ? "Prossima" : p.day || "Seduta"}</span>
       <span class="dc-body"><span class="dc-title">Seduta ${k}</span><span class="dc-sub">${esc(p.focus || p.nome || "")}</span>
-      <span class="dc-meta num">${plural(p.items.length, "esercizio", "esercizi")} · ~${estMin(p)} min${ups ? ` · <b>${ups} pronti a salire</b>` : ""}</span></span>${isNext ? "" : `<span class="dc-go">${ARROW}</span>`}</button>${isNext ? `<button class="primary dc-start" data-act="start" data-v="${k}">${a === k ? "Riprendi" : "Inizia"} seduta ${k}</button>` : ""}</div>`;
+      <span class="dc-meta num">${plural(p.items.length, "esercizio", "esercizi")} · ~${estMin(p)} min${ups ? ` · <b>${ups} con carico in aumento</b>` : ""}</span></span>${isNext ? "" : `<span class="dc-go">${ARROW}</span>`}</button>${isNext ? `<button class="primary dc-start" data-act="start" data-v="${k}">${a === k ? "Riprendi" : "Inizia"} seduta ${k}</button>` : ""}</div>`;
   }
   function viewDayDetail(k) {
     const p = P[k], ups = p.items.filter(x => plan(x).up).length;
@@ -80,9 +83,9 @@
       return `<li><span class="dl-n">${esc(short(exName(it)))}${pl.up ? ` <span class="pill up">+${fmt(pl.kg - b.kg)} kg</span>` : ""}</span><span class="dl-m num">${it.sets}×${it.min}–${it.max}${it.unit === "zavorra" ? (pl.kg ? ` · +${fmt(pl.kg)} kg` : " · corpo libero") : b.kg != null && it.unit !== "none" ? ` · ${fmt(pl.kg)} kg` : ""}</span></li>`; }).join("");
     return `<button class="back" data-act="detail-back">${BACK}Sedute</button>
       <div class="dhero" style="background-image:url(${photoFor(k)})"><span class="ph-tag">${p.day || "Seduta"}</span><div class="dh-title">Seduta <span class="hl">${k}</span></div><p class="dh-sub">${esc(p.focus || "")}</p></div>
-      <div class="srow boxed"><span><b>${p.items.length}</b>esercizi</span><span><b>${p.items.reduce((s, x) => s + x.sets, 0)}</b>serie</span><span><b>~${estMin(p)}</b>minuti</span><span><b class="${ups ? "hl" : ""}">${ups}</b>da alzare</span></div>
+      <div class="srow boxed"><span><b>${p.items.length}</b>esercizi</span><span><b>${p.items.reduce((s, x) => s + x.sets, 0)}</b>serie</span><span><b>~${estMin(p)}</b>minuti</span><span><b class="${ups ? "hl" : ""}">${ups}</b>carico in aumento</span></div>
       <div class="block"><h2>Esercizi</h2><ul class="dlist">${rows}</ul></div>
-      <p class="small muted">Prima del primo esercizio di ogni gruppo muscolare: 1 serie di avvicinamento al 50–60%.</p>
+      <p class="small muted">Primo esercizio per ogni muscolo: prima fai 1 serie leggera.</p>
       <div class="sticky-cta"><button class="primary go" data-act="start" data-v="${k}">${activeDay() === k ? "Riprendi seduta" : "Inizia seduta " + k}</button></div>`;
   }
   const baseAllen = window.viewAllenamento;
@@ -101,15 +104,15 @@
     const idx = items.findIndex(x => x.id === d.cur.id), it = items[idx];
     const all = items.flatMap(x => d.sets[x.id]), doneN = all.filter(s => s.done).length, allDone = doneN === all.length;
     const exDone = items.filter(x => d.sets[x.id].every(s => s.done)).length;
-    return `<div class="fhead"><button class="back" data-act="exlist">${'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>'}Elenco</button>
+    return `<div class="fhead"><button class="back" data-act="exlist">${'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>'}Tutti gli esercizi</button>
         <div class="fring">${ring(doneN, all.length, 54)}<span class="num">${exDone}/${items.length}</span></div></div>
-      <p class="small muted" style="margin:6px 0 10px">Esercizio ${idx + 1} di ${items.length} · Seduta ${a}</p>
-      ${allDone ? `<div class="card lime" style="margin-bottom:12px"><p class="coach-line">Tutte le serie fatte. Ottimo lavoro!</p><button class="primary go" style="background:#000;color:var(--accent)" data-act="finish">Concludi seduta</button></div>` : ""}
+      <p class="small muted" style="margin:6px 0 10px">Esercizio ${idx + 1} di ${items.length} · ${tv("Seduta", "Allenamento")} ${a}</p>
+      ${allDone ? `<div class="card lime" style="margin-bottom:12px"><p class="coach-line">Tutte le serie fatte</p><p class="small">${all.length} serie${d.startedAt ? " in " + Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)) + " minuti" : ""}</p><button class="primary go" data-act="finish">${tv("Concludi la seduta", "Concludi l'allenamento")}</button></div>` : ""}
       ${demoBox(it)}
-      ${(S.sample || (window.LIB && it.lib && window.LIB[it.lib])) ? `<button class="swapbar" data-act="alts"><span>Attrezzo occupato o vuoi cambiare?</span><b>Sostituisci ${'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>'}</b></button>` : ""}
+      ${(S.sample || (window.LIB && it.lib && window.LIB[it.lib])) ? `<button class="swapbar" data-act="alts"><span>Attrezzo occupato?</span><b>Cambia esercizio ${'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>'}</b></button>` : ""}
       ${activeCard(it, d)}
-      <div class="fnav"><button class="ghost" data-act="ex-step" data-v="-1" ${idx === 0 ? "disabled" : ""}>‹ Precedente</button><button class="ghost" data-act="ex-step" data-v="1" ${idx === items.length - 1 ? "disabled" : ""}>Successivo ›</button></div>
-      <div class="block"><button class="link small" data-act="finish" style="align-self:center">Concludi seduta</button></div>`;
+      <div class="fnav"><button class="ghost" data-act="ex-step" data-v="-1" ${idx === 0 ? "disabled" : ""}>‹ Esercizio precedente</button><button class="ghost" data-act="ex-step" data-v="1" ${idx === items.length - 1 ? "disabled" : ""}>Esercizio successivo ›</button></div>
+      <div class="block"><button class="link small" data-act="finish" style="align-self:center">${tv("Concludi la seduta", "Concludi l'allenamento")}</button></div>`;
   }
 
   /* ---------- PROGRESSI ---------- */
@@ -338,12 +341,14 @@
     const sub = curSub(it), list = [];
     const split = t => String(t || "").split(/(?<=[.!?])\s+/).map(x => x.trim().replace(/\.$/, "")).filter(x => x.length > 6).map(x => x.charAt(0).toUpperCase() + x.slice(1));
     if (sub && sub.cue) list.push(...split(sub.cue)); list.push(...split(it.tech)); if (it.note) list.push(...split(it.note));
-    return list.concat(GENERAL).slice(0, 8);
+    const g = (() => { try { return window.V3 && V3.data.profile().group; } catch (_) { return null; } })();
+    const gen = g === "bambino" || g === "over65" ? GENERAL.map(t => /cedimento/.test(t) ? "Fermati quando il movimento non è più pulito." : t) : GENERAL;
+    return list.concat(gen).slice(0, 8);
   };
   window.demoBox = function (it) {
     const id = demoFor(it), tips = tipsFor(it);
     S.tips = tips; S.tipI = 0;
-    return `<div class="demo">${id ? `<div class="demo-img" aria-label="Animazione: ${esc(short(exName(it)))}" role="img"><img src="${IMG}${encodeURIComponent(id)}/0.jpg" alt="" loading="eager" onerror="this.closest('.demo').classList.add('noimg')"><img src="${IMG}${encodeURIComponent(id)}/1.jpg" alt="" class="b" loading="eager"></div>` : ""}
+    return `<div class="demo">${id ? `<div class="demo-img" aria-label="Come si fa: ${esc(short(exName(it)))}" role="img"><img src="${IMG}${encodeURIComponent(id)}/0.jpg" alt="" loading="eager" onerror="this.closest('.demo').classList.add('noimg')"><img src="${IMG}${encodeURIComponent(id)}/1.jpg" alt="" class="b" loading="eager"></div>` : ""}
       <div class="tip" aria-live="polite"><span class="tip-k">Consiglio</span><span id="tip-t">${esc(tips[0] || "")}</span></div></div>`;
   };
   const st = document.createElement("style");

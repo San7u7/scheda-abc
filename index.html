@@ -11,7 +11,7 @@
   --ground: #000000; --surface: #111111; --surface-2: #1a1a1a; --raised: #2a2a2a; --border: #1a1a1a; --rule: #1f1f1f; --control: #6b6b6b;
   --text: #ffffff; --muted: #b4b4b4; --faint: #949494;
   --accent: #c6f24e; --accent-ink: #000000; --accent-soft: #222a10;
-  --warn-bg: #2b2414; --warn-ink: #e5a93b;
+  --warn: #ffb340; --warn-bg: #2b2414; --warn-ink: var(--warn);
   --radius-card: 20px; --radius-inner: 12px;
   --gap: 12px; --pad: 18px; --tap: 44px;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -20,7 +20,6 @@
 * { box-sizing: border-box; }
 html, body { background: var(--ground); color: var(--text); }
 body { font-family: var(--font); font-size: var(--fs-body); line-height: 21px; -webkit-font-smoothing: antialiased; }
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ground); }
 button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
@@ -120,7 +119,7 @@ p { margin: 0; }
 .a-name { font-size: 20px; line-height: 26px; font-weight: 600; }
 .up { color: var(--accent); }
 .setlab { color: var(--muted); }
-.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .hero .box { background: var(--surface); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .hero .lab { font-size: var(--fs-small); color: var(--faint); }
 .hero input { width: 100%; min-width: 0; border: 0; background: transparent; font-size: var(--fs-hero); line-height: 50px; font-weight: 600; letter-spacing: -0.02em; padding: 0; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
@@ -156,7 +155,7 @@ p { margin: 0; }
 .sbar .rest .g .track { margin-top: 4px; background: #3a3a3a; }
 .sbar .rest button { height: 44px; min-width: 44px; padding: 0 10px; border-radius: 999px; border: 0; background: var(--control); font-size: 13px; flex: none; }
 .sbar .spacer { flex: 1; }
-.sbar .fine { height: var(--tap); padding: 0 18px; border-radius: 999px; border: 0; background: var(--text); color: #000; font-weight: 600; flex: none; }
+.sbar .fine { height: 48px; padding: 0 18px; border-radius: 999px; border: 0; background: var(--text); color: #000; font-weight: 600; flex: none; }
 
 /* tab bar */
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--ground); border-top: 1px solid var(--border); padding: 0 max(8px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(8px, env(safe-area-inset-left, 0px)); }
@@ -224,9 +223,9 @@ ul.plain { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column
 
 /* sheets */
 .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
-.sheet { width: 100%; max-width: 560px; max-height: 90vh; max-height: 90dvh; overflow-y: auto; background: var(--surface); border-radius: 22px 22px 0 0; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 14px; box-shadow: 0 -12px 40px rgba(0,0,0,.6); }
+.sheet { width: 100%; max-width: 560px; max-height: 90vh; max-height: 90dvh; overflow-y: auto; background: var(--surface); border-radius: 24px 24px 0 0; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; box-shadow: 0 -12px 40px rgba(0,0,0,.6); }
 .sheet.full { height: 92vh; height: 92dvh; }
-.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--control); margin: 0 auto 4px; flex: none; }
+.grab { width: 40px; height: 4px; border-radius: 2px; background: var(--raised); margin: 0 auto 4px; flex: none; }
 .alt { background: var(--raised); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
 .lvl { display: inline-flex; gap: 3px; vertical-align: middle; }
 .lvl i { width: 10px; height: 4px; border-radius: 2px; background: var(--control); }
@@ -253,12 +252,13 @@ textarea::placeholder { color: var(--faint); }
 .ask { display: flex; gap: 8px; align-items: flex-end; position: sticky; bottom: 0; background: var(--surface); padding-top: 8px; }
 .ask textarea { flex: 1; }
 .ask .primary { width: auto; flex: none; }
-.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); z-index: 60; max-width: 528px; margin: 0 auto; min-height: 60px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 14px; border-radius: 20px; background: rgba(22,22,22,.88); -webkit-backdrop-filter: blur(16px) saturate(120%); backdrop-filter: blur(16px) saturate(120%); color: var(--text); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 12px 32px rgba(0,0,0,.6); animation: ok-in .35s cubic-bezier(.2,1,.3,1) both; }
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); top: calc(12px + env(safe-area-inset-top, 0px)); z-index: 60; max-width: 528px; margin: 0 auto; min-height: 60px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 20px; background: rgba(22,22,22,.88); -webkit-backdrop-filter: blur(16px) saturate(120%); backdrop-filter: blur(16px) saturate(120%); color: var(--text); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 12px 32px rgba(0,0,0,.6); animation: ok-in .35s cubic-bezier(.2,1,.3,1) both; }
 @keyframes ok-in { from { opacity: 0; transform: translateY(-12px) scale(.96); } }
 .toast .ok-i { width: 36px; height: 36px; flex: none; border-radius: 18px; display: grid; place-items: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); }
-.toast .ok-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .toast .ok-t b { font-size: 16px; font-weight: 700; } .toast .ok-t span { font-size: 14px; color: var(--muted); }
+.toast .ok-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .toast .ok-t b { font-size: 16px; font-weight: 700; } .toast .ok-t span { font-size: 14px; color: var(--v3-t2, rgba(255,255,255,.8)); }
 .toast .ok-u { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3); color: var(--text); font-weight: 600; font-size: 15px; flex: none; }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+body.no-glass .toast { -webkit-backdrop-filter: none; backdrop-filter: none; background: #161616; }
 /* energy */
 .kcal { font-size: 34px; line-height: 40px; font-weight: 600; letter-spacing: -0.02em; }
 .kcal span { font-size: 16px; font-weight: 400; letter-spacing: 0; }
@@ -409,10 +409,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610282130"></script>
-<script src="lib.js?v=202610282130"></script>
-<script src="ai.js?v=202610282130"></script>
-<script src="coach.js?v=202610282130"></script>
+<script src="seed-abc.js?v=202610281300"></script>
+<script src="lib.js?v=202610281300"></script>
+<script src="ai.js?v=202610281300"></script>
+<script src="coach.js?v=202610281300"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -444,12 +444,16 @@ const fmt = n => n == null || isNaN(n) ? "–" : Number(n).toLocaleString("it-IT
 const dt = iso => new Date(iso.length === 10 ? iso + "T12:00:00" : iso).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 const splitName = n => { const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(n); return m ? [m[1], m[2]] : [n, ""]; };
 const short = n => splitName(n)[0];
+// glossario 28/10: bambino (≤13) e over 65 dicono «allenamento», gli altri «seduta»
+const allenW = () => { const e = +((S.profile || {}).eta) || 0; return e > 0 && (e <= 13 || e >= 65); };
+const sedN = a => (allenW() ? "Allenamento " : "Seduta ") + a;
+const laSed = () => allenW() ? "l'allenamento" : "la seduta";
 const NS = (window.APP && APP.ns) || "coach:";
 // each app keeps its own storage: both sites live on the same origin (san7u7.github.io)
 const lsGet = (k, d) => { try { const v = localStorage.getItem(NS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(NS + k, JSON.stringify(v)); } catch (e) {} };
 const stepFor = it => it.unit === "kg/manubrio" ? 2 : 2.5;
-const unitLab = it => it.unit === "zavorra" ? "Zavorra kg" : it.unit === "kg/manubrio" ? "Kg per manubrio" : it.unit === "kg/lato" ? "Kg per lato" : "Kg";
+const unitLab = it => it.unit === "zavorra" ? "Zavorra (kg)" : it.unit === "kg/manubrio" ? "Kg per manubrio" : it.unit === "kg/lato" ? "Kg per lato" : "Carico (kg)";
 const mmss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 const mondayOf = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
 const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -524,7 +528,7 @@ async function persistState() {
 }
 async function persistSession(sess) {
   S.sessions.push(sess); lsSet("sessions", S.sessions);
-  if (S.db) try { await S.db.doc(S.base + "/" + sess.id).set({ kind: "session", ...sess }); } catch (e) { syncMsg("Seduta salvata solo su questo dispositivo"); }
+  if (S.db) try { await S.db.doc(S.base + "/" + sess.id).set({ kind: "session", ...sess }); } catch (e) { syncMsg("Seduta salvata solo sul telefono, non online"); }
 }
 function weekDone() {
   const mon = mondayOf(new Date()), sun = new Date(mon); sun.setDate(mon.getDate() + 7); const map = {};
@@ -539,7 +543,7 @@ const ICON = {
   progressi: '<svg viewBox="0 0 24 24"><path d="M4 19h16M5 15l4-4 3 3 7-7"/></svg>',
   piano: '<svg viewBox="0 0 24 24"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>'
 };
-const TABS = [["oggi","Oggi"],["allenamento","Allenamento"],["progressi","Progressi"],["piano","Piano"]];
+const TABS = [["oggi","Oggi"],["allenamento","Palestra"],["progressi","Progressi"],["piano","Impostazioni"]];
 const inSession = () => S.tab === "allenamento" && !!activeDay();
 
 function render() {
@@ -561,10 +565,10 @@ function renderBar() {
     const d = S.drafts[activeDay()], el2 = Math.max(0, Math.round((Date.now() - (d.startedAt || Date.now())) / 1000));
     const t = S.timer, left = t ? Math.max(0, Math.round((t.end - Date.now()) / 1000)) : 0;
     S.barSig = "s" + (t ? 1 : 0) + (left ? 1 : 0);
-    el.innerHTML = `<div class="sbar" role="region" aria-label="Seduta in corso"><div>
-      <span class="clock"><span class="small faint">Seduta ${activeDay()}</span><b id="sb-clock">${mmss(el2)}</b></span>
+    el.innerHTML = `<div class="sbar" role="region" aria-label="${allenW() ? "Allenamento" : "Seduta"} in corso"><div>
+      <span class="clock"><span class="small faint">${sedN(activeDay())}</span><b id="sb-clock">${mmss(el2)}</b></span>
       ${t ? `<span class="rest"><span class="t" id="sb-t">${left ? mmss(left) : "Via"}</span><span class="g"><span class="small muted">${left ? "Recupero" : "Recupero finito"}</span><span class="track" style="display:block"><i id="sb-bar" style="width:${(1 - left / t.total) * 100}%"></i></span></span><button data-act="t15">+15″</button><button data-act="tstop">Salta</button></span>` : `<span class="spacer"></span>`}
-      <button class="fine" data-act="finish">Concludi</button></div></div>`;
+      <button class="fine" data-act="finish">Concludi ${laSed()}</button></div></div>`;
   } else {
     const live = activeDay(); S.barSig = "t" + S.tab + (live ? 1 : 0);
     el.innerHTML = `<nav class="tabs" aria-label="Sezioni"><div>${TABS.map(([k, l]) => `<button data-act="tab" data-v="${k}" ${S.tab === k ? 'aria-current="page"' : ""}>${ICON[k]}<span>${l}</span>${k === "allenamento" && live ? '<span class="live" aria-label="seduta in corso"></span>' : ""}</button>`).join("")}</div></nav>`;
@@ -587,7 +591,7 @@ function coachLine() {
   const dw = new Date().getDay(), meal = MEALS.find(([k]) => mealState(dayLog(localISO()), k) === "open");
   const fa = fatigueAlert(), dt0 = doneToday(), a = activeDay(), nd = nextDay();
   let s1;
-  if (fa) s1 = `Fatica alta nelle ultime sedute: <b>questa settimana fai uno scarico</b>, metà delle serie con gli stessi carichi.`;
+  if (fa) s1 = `Fatica alta nelle ultime sedute: <b>questa settimana fai metà delle serie</b>, con gli stessi carichi.`;
   else if (dt0) s1 = `<b>Seduta ${dt0.day} fatta.</b> Prossima: seduta ${nextDay()}.`;
   else if (a) s1 = `Hai una <b>seduta ${a} in corso</b>: riprendila da dove eri rimasto.`;
   else if (!nd) s1 = `Carica la tua scheda di allenamento dalle impostazioni per avere le sedute qui.`;
@@ -612,7 +616,7 @@ function energyCard() {
     tail = `<div class="recov"><b>Mancano circa ${r10(it.gap)} kcal${it.pGap > 10 ? ` e ${Math.round(it.pGap)} g di proteine` : ""}.</b><span class="small muted">Il modo più semplice per recuperarle${it.restKeys.length ? " nei pasti che restano" : ""}, con alimenti del tuo piano:</span>
       <ul>${r.items.map(b => `<li>${esc(b.t)} ${AT[b.at]} <span class="faint num">+${b.kcal} kcal</span></li>`).join("")}</ul>
       ${r.covered < it.gap - 150 ? `<p class="small muted">Gli altri ${r10(it.gap - r.covered)} kcal distribuiscili sui prossimi 2–3 giorni: conta la media della settimana, non il singolo giorno.</p>` : ""}
-      ${S.sample ? `<button class="ghost" data-act="ask" data-v="Oggi mi mancano circa ${Math.round(it.gap)} kcal${it.pGap > 10 ? ` e ${Math.round(it.pGap)} g di proteine` : ""}: come le recupero restando nel piano?">Chiedi al coach un piano su misura</button>` : ""}</div>`;
+      ${S.sample ? `<button class="ghost" data-act="ask" data-v="Oggi mi mancano circa ${Math.round(it.gap)} kcal${it.pGap > 10 ? ` e ${Math.round(it.pGap)} g di proteine` : ""}: come le recupero restando nel piano?">Chiedi a Leo come recuperarle</button>` : ""}</div>`;
   } else if (it.gap < -300) tail = `<p class="muted">Oggi sei sopra il piano di circa ${r10(-it.gap)} kcal. Nessun compenso: dal prossimo pasto torni al piano.</p>`;
   else tail = `<p class="muted">${it.restKeys.length ? "Seguendo il piano per il resto della giornata arrivi in linea." : "Giornata in linea con il piano."}</p>`;
   return `<div class="card"><div class="block-h"><h2>Calorie di oggi</h2><span class="small faint">stime</span></div>
@@ -654,13 +658,13 @@ function viewOggi() {
   return `<h1>Ciao <span class="hl">${esc(S.profile.nome)}</span></h1><p class="greet-date">${DOW[dw]} ${now.getDate()} ${now.toLocaleDateString("it-IT", { month: "long" })}</p>
     <div class="block"><div class="card lime">
       <p class="coach-line">${coachLine()}</p>
-      <div class="chips"><button class="ghost" data-act="chat">Chiedi al coach</button>${S.sample ? `<button class="ghost" data-act="ask" data-v="${QUICK[0]}">${QUICK[0]}</button>` : ""}</div>
+      <div class="chips"><button class="ghost" data-act="chat">Chiedi a Leo</button>${S.sample ? `<button class="ghost" data-act="ask" data-v="${QUICK[0]}">${QUICK[0]}</button>` : ""}</div>
     </div>${warns.map(w => `<div class="alert">${esc(w.k)}: ${esc(w.v)}</div>`).join("")}</div>
     <div class="block">${energyCard()}</div>
     <div class="block">${sessCard}</div>
     <div class="block"><div class="block-h"><h2>Pasti di <span class="hl">oggi</span></h2><span class="small muted num" style="display:flex;gap:10px;align-items:center"><span class="dots" aria-hidden="true">${MEALS.map(([k]) => `<i class="${mealState(v, k) !== "open" ? "on" : ""}"></i>`).join("")}</span>${done} di 5</span></div>
       <div class="meals">${meals}${extras}</div>
-      <button class="ghost" data-act="mealalt" data-v="extra" style="align-self:flex-start">Aggiungi cibo fuori pasto</button></div>
+      <button class="ghost" data-act="mealalt" data-v="extra" style="align-self:flex-start">Aggiungi cibo fuori programma</button></div>
     <div class="block"><h2>Abitudini</h2><div class="habits">
       <div class="hrow"><div><div>Acqua</div><div class="small muted num">${fmt(v.water * 0.25)} di ${fmt(PLAN.waterL)} L</div><div class="wbar"><i style="width:${Math.min(100, v.water * 10)}%"></i></div></div>
         <div class="hctl"><button class="icon-btn" data-act="water" data-v="-1" aria-label="Togli un bicchiere"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button><button class="icon-btn" data-act="water" data-v="1" aria-label="Aggiungi un bicchiere da 250 ml"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button></div></div>
@@ -692,31 +696,31 @@ function viewAllenamento() {
     const right = full ? `${n}/${sets.length}${best ? ` · ${fmt(best)} kg` : ""}` : n ? `${n}/${sets.length} serie` : `${it.sets} × ${it.min}–${it.max}`;
     return `<button class="xrow ${full ? "done" : ""}" data-act="focus" data-id="${it.id}"><span class="st ${full ? "full" : n ? "part" : ""}">${CHECK}</span><span class="nm">${esc(short(exName(it)))}</span><span class="rt num">${right}</span></button>`;
   }).join("");
-  return `<div class="sess-top"><h1 style="margin:0">Seduta ${a}</h1><span class="muted num">${doneEx} di ${items.length} esercizi</span></div>
+  return `<div class="sess-top"><h1 style="margin:0">${sedN(a)}</h1><span class="muted num">${doneEx} di ${items.length} esercizi</span></div>
     <div class="track"><i style="width:${all.filter(s => s.done).length / all.length * 100}%"></i></div>
-    ${all.every(s => s.done) ? `<div class="block"><div class="card"><div class="done-line">Tutte le serie fatte</div><button class="primary" data-act="finish">Concludi seduta</button></div></div>` : ""}
+    ${all.every(s => s.done) ? `<div class="block"><div class="card"><div class="done-line">Tutte le serie fatte</div><button class="primary" data-act="finish">Concludi ${laSed()}</button></div></div>` : ""}
     <div class="xlist">${rows}</div>
-    <div class="block"><button class="ghost" data-act="finish">Concludi seduta</button></div>`;
+    <div class="block"><button class="ghost" data-act="finish">Concludi ${laSed()}</button></div>`;
 }
 function activeCard(it, d) {
   const sets = d.sets[it.id], i = d.cur.i, s = sets[i], pl = plan(it), b = pl.b, sub = curSub(it);
-  const lastTxt = b.lastSets ? `Ultima ${b.kg != null && it.unit !== "none" ? fmt(b.kg) + " × " : ""}${b.lastSets.slice(0, it.sets).join(" · ")}${b.from === "scheda" ? " (scheda)" : ""}` : "Prima volta";
+  const lastTxt = b.lastSets ? `${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"}: ${b.kg != null && it.unit !== "none" ? fmt(b.kg) + " kg × " : ""}${b.lastSets.slice(0, it.sets).join(", ")}` : "Prima volta";
 
   const kgBox = it.unit === "none"
     ? `<div class="box"><span class="lab">Carico</span><span class="bw">Corpo libero</span></div>`
     : `<div class="box"><label class="lab" for="kg">${unitLab(it)}</label><input id="kg" inputmode="decimal" type="text" autocomplete="off" value="${s.kg ?? ""}" placeholder="0" data-act="kgin"><div class="pm"><button data-act="kg" data-v="-1" aria-label="Meno 0,5 kg">−</button><button data-act="kg" data-v="1" aria-label="Più 0,5 kg">+</button></div></div>`;
-  const label = `${it.unit === "none" ? "" : fmt(s.kg) + " × "}${s.reps ?? "–"}`;
+  const label = `${it.unit === "none" ? "" : fmt(s.kg) + " kg × "}${s.reps ?? "–"}`;
   return `<section class="active" aria-label="Esercizio in corso">
     <div class="a-head"><div><div class="a-name">${esc(short(exName(it)))}</div>
       <div class="small muted num">${it.sets} × ${it.min}–${it.max} · ${lastTxt}</div>
-      ${pl.up ? `<div class="small up">Range chiuso: oggi ${fmt(pl.kg)} kg da ${it.min} ripetizioni</div>` : ""}
+      ${pl.up ? `<div class="small up">Oggi aumenta il carico: ${fmt(pl.kg)} kg</div><div class="small muted">Riparti da ${it.min} ripetizioni</div>` : ""}
       ${sub ? `<div class="small faint">Al posto di ${esc(short(it.name))}</div>` : ""}</div>
       <button class="icon-btn" data-act="sheet" data-v="ex" aria-label="Tecnica, note e sostituzione"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button></div>
-    ${it.warm && i === 0 && !s.done ? `<p class="small muted">Prima: 1 serie di avvicinamento al 50–60%, 6–8 ripetizioni.</p>` : ""}
+    ${it.warm && i === 0 && !s.done ? `<p class="small muted">Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.</p>` : ""}
     <div class="setlab">Serie ${i + 1} di ${sets.length}${s.done ? " · fatta" : ""}</div>
     <div class="hero">${kgBox}<div class="box"><span class="lab">Ripetizioni</span><span class="big">${s.reps ?? "–"}</span><div class="pm"><button data-act="repsd" data-v="-1" aria-label="Una ripetizione in meno">−</button><button data-act="repsd" data-v="1" aria-label="Una ripetizione in più">+</button></div></div></div>
-    ${s.done ? `<div class="row2"><button class="primary" data-act="done">Aggiorna serie · ${label}</button></div><button class="link small" data-act="undo">Annulla serie</button>` : `<button class="primary" data-act="done">Fatta · ${label}</button>`}
-    <div class="sets" role="group" aria-label="Serie" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}">${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}S${k + 1} ${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
+    ${s.done ? `<div class="row2"><button class="primary" data-act="done">Correggi la serie: ${label}</button></div><button class="link small" data-act="undo">Segna come non fatta</button>` : `<button class="primary" data-act="done">Serie fatta: ${label}</button>`}
+    <div class="sets" role="group" aria-label="Serie" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}" aria-label="Serie ${k + 1}: ${it.unit === "none" ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"} ripetizioni${x.done ? ", fatta" : ""}">${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
     <div class="setx">${!s.done && sets.length > 1 ? `<button data-act="delset">Togli la serie ${i + 1}</button>` : ""}<button data-act="addset">Aggiungi serie</button></div>
   </section>`;
 }
@@ -850,7 +854,7 @@ function viewPhotos() {
       ${grid}
       ${ph.length ? `<p class="small faint">Tocca una foto per sceglierla, due per confrontarle nella stessa posa.</p>` : ""}
       ${chosen.length === 2 ? `<div class="cmp">${chosen.map((p, i) => `<figure><img src="${esc(p.url)}" alt="Foto ${i ? "dopo" : "prima"}"><figcaption>${i ? "Dopo" : "Prima"} · ${dt(p.date)}</figcaption></figure>`).join("")}</div>` : ""}
-      ${chosen.length && !S.sample ? `<p class="small muted">Per la valutazione delle foto attiva l'AI gratuita nelle impostazioni.</p>` : ""}${chosen.length ? `<button class="primary" data-act="analyze" ${S.busy || !S.sample ? "disabled" : ""}>${S.busy ? "Valutazione in corso…" : chosen.length === 2 ? "Valuta i progressi" : "Valuta questa foto"}</button>` : ""}
+      ${chosen.length && !S.sample ? `<p class="small muted">Per la valutazione delle foto attiva Leo nelle Impostazioni.</p>` : ""}${chosen.length ? `<button class="primary" data-act="analyze" ${S.busy || !S.sample ? "disabled" : ""}>${S.busy ? "Valutazione in corso…" : chosen.length === 2 ? "Valuta i progressi" : "Valuta questa foto"}</button>` : ""}
       ${res}</div>
     <div class="block"><div class="card"><h2>Come scattare foto confrontabili</h2><ul class="plain muted"><li>Al mattino, a digiuno, prima della seduta.</li><li>Stesso posto e stessa luce frontale, mai dall'alto.</li><li>Telefono all'altezza dell'ombelico, a 2–3 m, timer, niente zoom.</li><li>Tre pose rilassate, stessi pantaloncini.</li><li>Ogni 4 settimane.</li></ul></div></div>`;
 }
@@ -881,7 +885,7 @@ async function analyze() {
     S.analysis = out; const tg = chosen[chosen.length - 1]; tg.analysis = out;
     if (S.db) S.db.doc(S.base + "/" + tg.id).update({ analysis: out }).catch(() => {}); else saveLocalPhotos();
   } catch (e) {
-    S.analysis = { error: e && e.code === "not_granted" ? "Per valutare le foto serve l'AI attiva: controlla la chiave in Impostazioni." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : e && e.code === "refused" ? "Google ha bloccato la foto con i suoi filtri. Riprova con pantaloncini o costume e il viso fuori inquadratura, oppure con una foto più distante." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova tra un minuto." : e && e.code === "bad_key" ? "La chiave Gemini non è valida: controllala in Impostazioni." : e && e.code === "network" ? "La connessione con Google si è interrotta. Resta sull'app finché la valutazione non finisce (se passi a un'altra app l'iPhone la ferma) e riprova." : `La valutazione non è riuscita. Dettaglio di Google: ${esc(String((e && (e.message || e.code)) || "errore").slice(0, 200))}` };
+    S.analysis = { error: e && e.code === "not_granted" ? "Per valutare le foto attiva Leo: controlla la chiave in Impostazioni." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : e && e.code === "refused" ? "Google ha bloccato la foto con i suoi filtri. Riprova con pantaloncini o costume e il viso fuori inquadratura, oppure con una foto più distante." : e && e.code === "timeout" ? "Leo non ha risposto in tempo. Riprova tra un minuto." : e && e.code === "bad_key" ? "La chiave di Leo non è valida: controllala in Impostazioni." : e && e.code === "network" ? "La connessione con Google si è interrotta. Resta sull'app finché la valutazione non finisce (se passi a un'altra app l'iPhone la ferma) e riprova." : `La valutazione non è riuscita. Dettaglio di Google: ${esc(String((e && (e.message || e.code)) || "errore").slice(0, 200))}` };
   }
   S.busy = false; render();
 }
@@ -901,8 +905,8 @@ function viewPiano() {
       <div class="block"><div class="card"><h2>Serie a settimana per muscolo</h2><p class="small muted">La fascia tratteggiata è il riferimento di 10–20 serie.</p>
         <div class="bars">${Object.entries(vol).sort((a, b) => b[1] - a[1]).map(([m, v]) => `<div class="bar"><span class="lab">${esc(m)}</span><span class="tr"><span class="band" style="left:${10 / max * 100}%;width:${10 / max * 100}%"></span><i style="width:${Math.min(v, max) / max * 100}%"></i></span><span class="v">${v}</span></div>`).join("")}</div></div></div>`;
   } else if (S.pianosub === "menu" && !hasMealPlan()) {
-    body = `<div class="block"><div class="kv kv4"><div><div class="k">Kcal</div><div class="v">${fmt(PLAN.kcal)}</div></div><div><div class="k">Proteine</div><div class="v">${PLAN.pro} g</div></div><div><div class="k">Carboidrati</div><div class="v">${PLAN.cho} g</div></div><div><div class="k">Grassi</div><div class="v">${PLAN.fat} g</div></div></div>
-      <p class="small muted">Obiettivo calcolato dall'app con la formula Mifflin-St Jeor sul tuo profilo: è una stima. Per un piano su misura rivolgiti a un dietista o a un nutrizionista.</p>${(S.diet.notes || []).map(n => `<div class="alert">${esc(n)}</div>`).join("")}</div>
+    body = `<div class="block"><div class="kv kv4"><div><div class="k">Calorie</div><div class="v">${fmt(PLAN.kcal)}</div></div><div><div class="k">Proteine</div><div class="v">${PLAN.pro} g</div></div><div><div class="k">Carboidrati</div><div class="v">${PLAN.cho} g</div></div><div><div class="k">Grassi</div><div class="v">${PLAN.fat} g</div></div></div>
+      <p class="small muted">Stima di partenza calcolata su età, peso e movimento. Per un piano su misura rivolgiti a un dietista o a un nutrizionista.</p>${(S.diet.notes || []).map(n => `<div class="alert">${esc(n)}</div>`).join("")}</div>
       ${S.diet && S.diet.testo ? `<div class="block"><div class="card"><h2>Il tuo piano</h2><p class="muted" style="white-space:pre-wrap">${esc(S.diet.testo)}</p></div></div>` : ""}
       <div class="block"><div class="empty"><h2>${S.diet && S.diet.testo ? "Vuoi i pasti da spuntare?" : "Hai un piano alimentare?"}</h2><p class="muted">Caricalo come testo o foto: vedrai i pasti di ogni giorno e potrai segnarli con un tocco.</p><button class="primary" data-act="redo" data-v="3">Carica il piano</button></div></div>`;
   } else if (S.pianosub === "menu") {
@@ -912,10 +916,10 @@ function viewPiano() {
       <div class="block"><div class="kv kv4"><div><div class="k">Carboidrati</div><div class="v">${PLAN.cho} g</div></div><div><div class="k">Proteine</div><div class="v">${PLAN.pro} g</div></div><div><div class="k">Grassi</div><div class="v">${PLAN.fat} g</div></div><div><div class="k">Fibra</div><div class="v">${PLAN.fiber} g</div></div></div>
         <p class="small muted">Dal ${esc(PLAN.rev)}, circa ${fmt(PLAN.kcal)} kcal al giorno. Le calorie dei pasti sono stime.</p><button class="link small" data-act="redo" data-v="3">Carica un piano aggiornato</button></div>`;
   } else if (S.pianosub === "alimenti") {
-    body = S.foods.length ? `<div class="block"><p class="small muted">Valori per 100 g, usati quando aggiungi un alimento a un pasto. La porzione è l'ultima che hai usato.</p><div class="list">${S.foods.slice().sort((x, y) => x.nome.localeCompare(y.nome)).map(x => `<div class="lrow"><span>${esc(x.nome)}<br><span class="small faint num">${fmt(x.per100.kcal)} kcal · P ${fmt(x.per100.p)} · C ${fmt(x.per100.c)} · G ${fmt(x.per100.f)} · porzione ${fmt(x.porzione)} g${x.tipo === "etichetta" ? " · da etichetta" : ""}</span></span><button class="link small" data-act="libdel" data-v="${x.id}">${S.confirmDel === x.id ? "Conferma" : "Elimina"}</button></div>`).join("")}</div></div>`
+    body = S.foods.length ? `<div class="block"><p class="small muted">Valori per 100 g, usati quando aggiungi un alimento a un pasto. La porzione è l'ultima che hai usato.</p><div class="list">${S.foods.slice().sort((x, y) => x.nome.localeCompare(y.nome)).map(x => `<div class="lrow"><span>${esc(x.nome)}<br><span class="small faint num">${fmt(x.per100.kcal)} kcal · Proteine ${fmt(x.per100.p)} g · Carboidrati ${fmt(x.per100.c)} g · Grassi ${fmt(x.per100.f)} g · porzione ${fmt(x.porzione)} g${x.tipo === "etichetta" ? " · da etichetta" : ""}</span></span><button class="link small" data-act="libdel" data-v="${x.id}">${S.confirmDel === x.id ? "Sì, elimina " + esc(short(x.nome || "")) : "Elimina"}</button></div>`).join("")}</div></div>`
       : `<div class="block"><div class="empty"><h2>Nessun alimento salvato</h2><p class="muted">Quando registri un pasto diverso dal piano, fotografa l'etichetta di un prodotto che mangi spesso: i valori per 100 g restano qui e la volta dopo lo aggiungi con un tocco.</p></div></div>`;
   } else {
-    body = `<div class="block"><div class="card"><h2>Allenamento</h2><ul class="plain muted"><li>Prima le ripetizioni, poi il carico: quando chiudi il range in tutte le serie, il carico sale.</li><li>RIR 1–2 sui multiarticolari, 0–1 nell'ultima serie degli isolamenti.</li><li>Riscaldamento: 5–8 minuti di cardio, stretching sotto i 60″ per posizione, 1 serie di avvicinamento sul primo esercizio di ogni gruppo muscolare.</li><li>Scarico: con fatica ≥ 8/10 per due settimane, una settimana a metà serie.</li><li>Dopo una pausa o una malattia: RIR 2–3 e niente cedimento nella prima seduta.</li></ul></div></div>
+    body = `<div class="block"><div class="card"><h2>Allenamento</h2><ul class="plain muted"><li>Prima le ripetizioni, poi il carico: quando arrivi al massimo di ripetizioni in tutte le serie, il carico sale.</li><li>Fermati a 1 o 2 ripetizioni dal limite negli esercizi con più muscoli; nell'ultima serie degli altri puoi arrivare al limite.</li><li>Riscaldamento: 5–8 minuti di bici o camminata, allungamenti di meno di un minuto per posizione, 1 serie leggera sul primo esercizio di ogni muscolo.</li><li>Fatica 8 o più per 2 settimane? Una settimana con metà delle serie.</li><li>Dopo una pausa o una malattia: prima seduta leggera.</li></ul></div></div>
       <div class="block"><div class="card"><h2>Alimentazione</h2><ul class="plain muted">${PLAN.rules.map(r => `<li>${esc(r)}</li>`).join("")}<li>Obiettivo: circa ${fmt(PLAN.kcal)} kcal e ${PLAN.pro} g di proteine al giorno, conta la media della settimana.</li><li>Acqua: circa ${fmt(PLAN.waterL)} L al giorno, anche prima, durante e dopo la seduta.</li></ul></div></div>
       ${supplements().length ? `<div class="block"><div class="card"><h2>Integratori del piano</h2><ul class="plain muted">${supplements().map(x => `<li>${esc(x.name)}${x.plan ? ": " + esc(x.plan) : ""}.</li>`).join("")}</ul></div></div>` : ""}`;
   }
@@ -933,9 +937,9 @@ function viewOnboarding() {
   const dots = o.redo ? "" : `<div class="steps" aria-hidden="true">${[1, 2, 3, 4].map(i => `<i class="${i <= o.step ? "on" : ""}"></i>`).join("")}</div>`;
   const back = o.redo ? `<button class="link small" data-act="ob-cancel">Annulla</button>` : o.step > 0 ? `<button class="link small" data-act="ob-back">Indietro</button>` : "";
   const err = o.err ? `<div class="alert">${esc(o.err)}</div>` : "";
-  const noAI = !S.sample ? `<p class="small muted">Per leggere foto e PDF serve l'AI: puoi attivarla dopo in Impostazioni, oppure incollare il testo. Puoi saltare questo passaggio e farlo dopo dalle impostazioni.</p>` : "";
+  const noAI = !S.sample ? `<p class="small muted">Foto e PDF li legge Leo: attivalo ora o dopo. Puoi anche incollare il testo.</p>` : "";
   const fileBtn = (act, label) => `<label class="ghost file-btn" style="display:flex;align-items:center;justify-content:center;text-align:center">${o.busy ? "Sto leggendo il file…" : label}<input type="file" accept="image/*,application/pdf,.pdf,.txt,.md,.csv,text/plain" data-act="${act}" aria-label="${label}" ${o.busy ? "disabled" : ""}></label>`;
-  const siteNote = kind => `<p class="small muted">Senza AI ${kind === "train" ? "leggo le schede scritte un esercizio per riga, per esempio «Panca piana 3x8-10 60 kg», con il nome della seduta sopra" : "salvo il testo del piano da consultare e calcolo calorie e proteine dal tuo profilo"}. Con l'AI gratuita leggo anche foto e documenti in qualsiasi formato.</p>${aiKeyBox()}`;
+  const siteNote = kind => `<p class="small muted">Senza Leo ${kind === "train" ? "leggo le schede scritte un esercizio per riga, per esempio «Panca piana 3x8-10 60 kg», con il nome della seduta sopra" : "salvo il testo del piano da consultare e calcolo calorie e proteine dal tuo profilo"}. Con Leo (gratis) leggo anche foto e documenti in qualsiasi formato.</p>${aiKeyBox()}`;
   if (o.step === 0) return `<div class="welcome"><div class="wphoto" style="background-image:url(img/hero.jpg)" role="img" aria-label="Atleta di schiena in posa di doppio bicipite"></div><div class="wtop"><div class="wbar"></div><div class="wbig">Ciao</div><div class="wsub">${esc((window.APP && APP.welcomeSub) || "Il tuo coach")}</div></div>
     <div class="wlist"><div><b>Allenamento</b><span>Seduta guidata, carichi già pronti e progressione automatica.</span></div><div><b>Alimentazione</b><span>Pasti del giorno, calorie e come recuperare quelle mancanti.</span></div><div><b>Progressi</b><span>Carichi, peso e foto su settimana, mese e anno.</span></div></div>
     <div class="wbot"><p class="lead">${esc((window.APP && APP.welcomeLead) || "Ti faccio qualche domanda, poi carichi la tua scheda e il tuo piano alimentare.")}</p><button class="primary go" data-act="ob-next">Inizia</button><p class="small faint">${S.site ? "I tuoi dati restano solo su questo telefono." : "I tuoi dati restano nel tuo account e li vedi solo tu."}</p></div></div>`;
@@ -954,11 +958,11 @@ function viewOnboarding() {
     const t = o.train;
     return `<div class="ob">${dots}<h1>La tua scheda di allenamento</h1>${o.redo && activeDay() ? `<div class="alert">Hai una seduta in corso: caricando una nuova scheda verrà chiusa senza salvare.</div>` : ""}
       ${t ? `<div class="card"><h2>${t.sedute.length} ${t.sedute.length === 1 ? "seduta" : "sedute"}</h2>${t.sedute.map((sd, i) => `<div><b>${String.fromCharCode(65 + i)} · ${esc(sd.nome || sd.focus || "Seduta")}</b>${sd.dow != null ? ` <span class="small faint">${DOW[sd.dow]}</span>` : ""}<p class="small muted">${sd.esercizi.map(e => `${esc(e.nome)} ${e.serie}×${e.min}${e.max !== e.min ? "–" + e.max : ""}`).join(" · ")}</p></div>`).join("")}</div>
-        <button class="primary" data-act="ob-use" data-v="train">Usa questa scheda</button><button class="ghost" data-act="ob-reset" data-v="train">Rifai</button>`
+        <button class="primary" data-act="ob-use" data-v="train">Usa questa scheda</button><button class="ghost" data-act="ob-reset" data-v="train">Carica un'altra scheda</button>`
       : `<p class="lead">Incolla il testo della scheda, oppure carica una foto o un PDF: diventa una lista di sedute con serie, ripetizioni e carichi.</p>
         <textarea id="ob-text" rows="5" data-ob="text" placeholder="Es. Seduta A: panca piana 3×6-8 60 kg, lat machine 3×10-12…">${esc(o.text)}</textarea>
         <button class="primary" data-act="ob-train-text" ${o.busy ? "disabled" : ""}>${o.busy === "train" ? "Sto leggendo la scheda…" : "Leggi la scheda"}</button>${fileBtn("ob-train-photo", S.sample ? "Carica foto o PDF della scheda" : "Carica PDF o file di testo")}
-        ${S.sample ? `<div class="card"><h2>Non hai una scheda?</h2><p class="small muted">Gemini ne crea una di base sul tuo profilo. Quante sedute a settimana?</p><div class="seg" role="group">${[2, 3, 4, 5].map(n => `<button data-act="ob-days" data-v="${n}" aria-pressed="${o.days === n}">${n}</button>`).join("")}</div><button class="ghost" data-act="ob-train-gen" ${o.busy ? "disabled" : ""}>Crea una scheda di base</button></div>` : siteNote("train")}
+        ${S.sample ? `<div class="card"><h2>Non hai una scheda?</h2><p class="small muted">Leo ne crea una di base sul tuo profilo. Quante sedute a settimana?</p><div class="seg" role="group">${[2, 3, 4, 5].map(n => `<button data-act="ob-days" data-v="${n}" aria-pressed="${o.days === n}">${n}</button>`).join("")}</div><button class="ghost" data-act="ob-train-gen" ${o.busy ? "disabled" : ""}>Crea una scheda di base</button></div>` : siteNote("train")}
         ${err}<button class="link small" data-act="ob-skip">${o.redo ? "Annulla" : "Salta per ora"}</button>`}
       ${o.redo || !t ? (o.redo ? "" : back) : back}</div>`;
   }
@@ -966,10 +970,10 @@ function viewOnboarding() {
     const d = o.diet;
     const prev = !d ? "" : d.fonte === "piano"
       ? `<div class="card"><h2>Piano letto</h2><p class="muted">${Object.keys(d.giorni).length} giorni con pasti, circa ${fmt(d.kcal)} kcal e ${fmt(d.p)} g di proteine al giorno.</p>${d.integratori.length ? `<p class="small muted">Integratori: ${esc(d.integratori.map(x => x.nome).join(", "))}</p>` : ""}${(() => { const g = d.giorni[1] || Object.values(d.giorni)[0]; return g ? `<ul class="plain muted small">${MEALS.filter(([k]) => g[k]).map(([k, l]) => `<li>${l}: ${esc(g[k].t)} · ${fmt(g[k].kcal)} kcal</li>`).join("")}</ul>` : ""; })()}</div>`
-      : `<div class="card"><h2>Il tuo obiettivo stimato</h2><div class="kv kv4"><div><div class="k">Kcal</div><div class="v">${fmt(d.kcal)}</div></div><div><div class="k">Proteine</div><div class="v">${d.p} g</div></div><div><div class="k">Carbo</div><div class="v">${d.c} g</div></div><div><div class="k">Grassi</div><div class="v">${d.f} g</div></div></div>
-        <p class="small muted">Formula Mifflin-St Jeor sul tuo profilo e sul livello di attività: è una stima di partenza. Per un piano su misura rivolgiti a un dietista o a un nutrizionista.</p>${d.testo ? `<p class="small">Il testo del tuo piano è salvato: lo trovi in Piano → Menù.</p>` : ""}${(d.notes || []).map(n => `<div class="alert">${esc(n)}</div>`).join("")}</div>`;
+      : `<div class="card"><h2>Il tuo obiettivo stimato</h2><div class="kv kv4"><div><div class="k">Calorie</div><div class="v">${fmt(d.kcal)}</div></div><div><div class="k">Proteine</div><div class="v">${d.p} g</div></div><div><div class="k">Carboidrati</div><div class="v">${d.c} g</div></div><div><div class="k">Grassi</div><div class="v">${d.f} g</div></div></div>
+        <p class="small muted">Stima di partenza calcolata su età, peso e movimento. Per un piano su misura rivolgiti a un dietista o a un nutrizionista.</p>${d.testo ? `<p class="small">Il testo del tuo piano è salvato: lo trovi in Cibo › Il mio piano alimentare.</p>` : ""}${(d.notes || []).map(n => `<div class="alert">${esc(n)}</div>`).join("")}</div>`;
     return `<div class="ob">${dots}<h1>Il tuo piano alimentare</h1>
-      ${d ? prev + `<button class="primary" data-act="ob-use" data-v="diet">${d.fonte === "piano" ? "Usa questo piano" : "Va bene, usa questo obiettivo"}</button><button class="ghost" data-act="ob-reset" data-v="diet">Rifai</button>`
+      ${d ? prev + `<button class="primary" data-act="ob-use" data-v="diet">${d.fonte === "piano" ? "Usa questo piano" : "Va bene, usa questo obiettivo"}</button><button class="ghost" data-act="ob-reset" data-v="diet">Carica un altro piano</button>`
       : `<p class="lead">Se segui un piano di un dietista o di un nutrizionista, incollalo oppure carica una foto o un PDF.</p>
         <textarea id="ob-text" rows="5" data-ob="text" placeholder="Es. Colazione: 60 g fiocchi d'avena, 200 g yogurt greco…">${esc(o.text)}</textarea>
         <button class="primary" data-act="ob-diet-text" ${o.busy ? "disabled" : ""}>${o.busy === "diet" ? "Sto leggendo il piano…" : S.sample ? "Leggi il piano" : "Salva il piano"}</button>${fileBtn("ob-diet-photo", S.sample ? "Carica foto o PDF del piano" : "Carica PDF o file di testo")}${S.sample ? "" : siteNote("diet")}
@@ -980,7 +984,7 @@ function viewOnboarding() {
     <div class="list"><div class="lrow"><span class="muted">Obiettivo</span><span class="r">${esc((GOALS.find(g => g[0] === pr.obiettivo) || GOALS[1])[1])}</span></div>
       <div class="lrow"><span class="muted">Scheda</span><span class="r">${o.train ? o.train.sedute.length + " sedute" : "da caricare"}</span></div>
       <div class="lrow"><span class="muted">Alimentazione</span><span class="r">${o.diet ? (o.diet.fonte === "piano" ? "piano caricato" : fmt(o.diet.kcal) + " kcal stimate") : "obiettivo calcolato"}</span></div></div>
-    <p class="muted">Ogni giorno in Oggi trovi la seduta, i pasti e le calorie. Il coach risponde alle tue domande con i tuoi dati.</p>
+    <p class="muted">Ogni giorno in Oggi trovi la seduta, i pasti e le calorie. Leo risponde alle tue domande sui tuoi dati.</p>
     <button class="primary go" data-act="ob-finish">Entra</button>${back}</div>`;
 }
 function readProfile() {
@@ -1005,10 +1009,10 @@ async function obClaude(kind, src) {
     if (!S.sample && !src.gen) {
       if (kind === "train") {
         const t = parseTrainingText(text);
-        if (!t.sedute.length) throw { local: images.length ? "Sul sito non posso leggere foto o PDF scansionati: incolla il testo della scheda, oppure attiva l'AI gratuita qui sotto." : "Non ho trovato esercizi. Scrivi un esercizio per riga, per esempio «Panca piana 3x8-10 60 kg», con il nome della seduta sopra." };
+        if (!t.sedute.length) throw { local: images.length ? "Sul sito non posso leggere foto o PDF scansionati: incolla il testo della scheda, oppure attiva Leo qui sotto." : "Non ho trovato esercizi. Scrivi un esercizio per riga, per esempio «Panca piana 3x8-10 60 kg», con il nome della seduta sopra." };
         o.train = t;
       } else {
-        if (!text.trim()) throw { local: "Sul sito non posso leggere foto o PDF scansionati: incolla il testo del piano, oppure attiva l'AI gratuita qui sotto." };
+        if (!text.trim()) throw { local: "Sul sito non posso leggere foto o PDF scansionati: incolla il testo del piano, oppure attiva Leo qui sotto." };
         o.diet = { ...calcDiet(o.pr), testo: text.slice(0, 20000) };
       }
     } else {
@@ -1020,7 +1024,7 @@ async function obClaude(kind, src) {
       else { const d = mapDiet(out); if (!Object.keys(d.giorni).length) throw new Error("vuoto"); if (!d.kcal) { const c = computeTargets(o.pr); d.kcal = c.kcal; d.p = d.p || c.p; } o.diet = d; }
     }
   } catch (e) {
-    o.err = e && e.local ? e.local : e && e.message === "formato" ? "Formato non supportato: usa una foto, un PDF o un file di testo. Un documento Word salvalo prima in PDF." : e && e.message === "script" ? "Non riesco a caricare il lettore dei PDF: controlla la connessione e riprova." : e && e.code === "not_granted" ? "Serve il permesso per far leggere i documenti a Claude: riapri l'app e consenti l'accesso." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : kind === "train" ? "Non sono riuscito a leggere la scheda. Prova con il testo incollato o con una foto dritta e ben illuminata." : "Non sono riuscito a leggere il piano. Prova con il testo incollato o con una foto dritta e ben illuminata.";
+    o.err = e && e.local ? e.local : e && e.message === "formato" ? "Formato non supportato: usa una foto, un PDF o un file di testo. Un documento Word salvalo prima in PDF." : e && e.message === "script" ? "Non riesco a caricare il lettore dei PDF: controlla la connessione e riprova." : e && e.code === "not_granted" ? "Leo non ha il permesso di leggere il file. Riapri l'app e tocca Consenti." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra qualche minuto." : kind === "train" ? "Non sono riuscito a leggere la scheda. Prova con il testo incollato o con una foto dritta e ben illuminata." : "Non sono riuscito a leggere il piano. Prova con il testo incollato o con una foto dritta e ben illuminata.";
   }
   o.busy = false; render();
 }
@@ -1059,8 +1063,8 @@ function renderSheet() {
     if (!L || L.busy || L.err) { html = `<h2>Sostituisci ${esc(short(it.name))}</h2>${L && L.err ? `<div class="alert">${esc(L.err)}</div><button class="ghost" data-act="alts">Riprova</button>` : `<p class="muted">Cerco alternative più facili e più difficili…</p>`}<button class="ghost" data-act="close">Chiudi</button>`; }
     else {
     const lv = n => `<span class="lvl" aria-hidden="true">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span>`;
-    const grp = (t, arr) => arr.length ? `<p class="muted" style="margin-top:4px">${t}</p>` + arr.map(x => { const k = L.alternative.indexOf(x); return `<div class="alt"><b>${esc(short(x.nome))}</b><span class="small muted">${esc(x.attrezzo)} · ${lv(x.livello)} livello ${x.livello} su 5</span><span>${esc(x.motivo)}</span><span class="small faint">${esc(x.cue)}</span><div class="acts"><button data-act="sub" data-k="${k}" data-v="oggi">Solo oggi</button><button class="fill" data-act="sub" data-k="${k}" data-v="sempre">Da ora in poi</button></div></div>`; }).join("") : "";
-    html = `<h2>Sostituisci ${esc(short(it.name))}</h2><p class="small muted">Livello attuale ${L.livello} su 5. Ogni variante ha il suo storico.</p>
+    const grp = (t, arr) => arr.length ? `<p class="muted" style="margin-top:4px">${t}</p>` + arr.map(x => { const k = L.alternative.indexOf(x); return `<div class="alt"><b>${esc(short(x.nome))}</b><span class="small muted">${esc(x.attrezzo)} · ${lv(x.livello)} livello ${x.livello} su 5</span><span>${esc(x.motivo)}</span><span class="small faint">${esc(x.cue)}</span><div class="acts"><button data-act="sub" data-k="${k}" data-v="oggi">Solo per oggi</button><button class="fill" data-act="sub" data-k="${k}" data-v="sempre">Metti nella scheda</button></div></div>`; }).join("") : "";
+    html = `<h2>Sostituisci ${esc(short(it.name))}</h2><p class="small muted">Difficoltà attuale: ${L.livello} su 5. Ogni esercizio tiene i suoi progressi.</p>
       ${cur ? `<button class="ghost" data-act="sub" data-v="reset">Torna a ${esc(short(it.name))}</button>` : ""}
       ${grp("Più facile o più stabile", L.alternative.filter(x => x.livello < L.livello))}${grp("Stesso livello", L.alternative.filter(x => x.livello === L.livello))}${grp("Più difficile", L.alternative.filter(x => x.livello > L.livello))}
       <button class="ghost" data-act="close">Chiudi</button>`; }
@@ -1068,34 +1072,34 @@ function renderSheet() {
     const v = dayLog(localISO()), last = weights().slice(-1)[0];
     html = `<h2>Peso del mattino</h2><p class="small muted">A digiuno, dopo il bagno. Conta la media della settimana, non la singola pesata.</p>
       <div class="stepper"><button data-act="pstep" data-v="-0.1" aria-label="Meno 100 g">−</button><input id="peso" inputmode="decimal" type="text" autocomplete="off" value="${v.peso ?? (last ? last.kg : PLAN.lastCheck.kg)}" aria-label="Peso in kg"><button data-act="pstep" data-v="0.1" aria-label="Più 100 g">+</button></div>
-      <button class="primary" data-act="peso">Salva peso</button><button class="ghost" data-act="close">Annulla</button>`;
+      <button class="primary" data-act="peso">Registra il peso</button><button class="ghost" data-act="close">Annulla</button>`;
   } else if (sh === "finish") {
     const a = activeDay(), d = S.drafts[a], mins = d && d.startedAt ? Math.round((Date.now() - d.startedAt) / 60000) : 70;
     const nDone = P[a].items.reduce((s, it) => s + d.sets[it.id].filter(x => x.done).length, 0);
-    html = `<h2>Concludi seduta ${a}</h2><p class="small muted">${nDone} serie fatte. Si salvano solo quelle segnate come fatte.</p>
+    html = `<h2>Concludi ${laSed()} ${a}</h2><p class="small muted">${nDone} serie fatte. Si salvano solo quelle segnate come fatte.</p>
       <label class="small muted" for="durata">Durata in minuti</label><div class="stepper"><button data-act="dstep" data-v="-5" aria-label="Meno 5 minuti">−</button><input id="durata" inputmode="numeric" type="text" autocomplete="off" value="${mins < 240 ? Math.max(1, mins) : 70}"><button data-act="dstep" data-v="5" aria-label="Più 5 minuti">+</button></div>
-      <span class="small muted">Fatica percepita, da 1 a 10</span><div class="fat" role="group" aria-label="Fatica">${Array.from({ length: 10 }, (_, i) => `<button data-act="fat" data-v="${i + 1}" aria-pressed="${S.fat === i + 1}">${i + 1}</button>`).join("")}</div>
+      <span class="small muted">Quanto è stata dura? 1 = facile, 10 = non ne facevo un'altra</span><div class="fat" role="group" aria-label="Fatica da 1 a 10">${Array.from({ length: 10 }, (_, i) => `<button data-act="fat" data-v="${i + 1}" aria-label="Fatica ${i + 1} su 10" aria-pressed="${S.fat === i + 1}">${i + 1}</button>`).join("")}</div>
       <label class="small muted" for="snote">Note</label><textarea id="snote" rows="3" placeholder="Dolori, macchine occupate, sensazioni"></textarea>
-      <button class="primary" data-act="savefinish" ${nDone ? "" : "disabled"}>Salva seduta</button><button class="ghost" data-act="close">Torna alla seduta</button>
-      <button class="link small" data-act="discard" style="align-self:center">${S.confirmDiscard ? "Conferma: scarta tutte le serie di questa seduta" : "Scarta seduta senza salvare"}</button>`;
+      <button class="primary" data-act="savefinish" ${nDone ? "" : "disabled"}>Salva ${laSed()} nei progressi</button><button class="ghost" data-act="close">Torna ${allenW() ? "all'allenamento" : "alla seduta"}</button>
+      <button class="link small" data-act="discard" style="align-self:center">${S.confirmDiscard ? `Sì, cancella ${laSed()} di oggi` : `Cancella ${laSed()} senza salvare`}</button>`;
   } else if (sh === "food") {
-    const f = S.food, lab = f.key === "extra" ? "Cibo fuori pasto" : MEALS.find(m => m[0] === f.key)[1];
+    const f = S.food, lab = f.key === "extra" ? "Cibo fuori programma" : MEALS.find(m => m[0] === f.key)[1];
     const items = f.items.map(scaleItem), tot = items.reduce(addN, ZERO());
     const lib = S.foods.slice().sort((x, y) => (y.used || 0) - (x.used || 0));
     html = `<div class="block-h"><h2>${lab}</h2><button class="link small" data-act="close" style="padding:0">Annulla</button></div>
       ${lib.length ? `<div><p class="small muted" style="margin-bottom:8px">I miei alimenti: tocca per aggiungere</p><div class="chips">${lib.map(x => `<button class="ghost" data-act="fadd" data-v="${x.id}">${esc(x.nome)}</button>`).join("")}</div></div>` : ""}
       ${S.sample ? `<label class="ghost file-btn" style="text-align:center">${f.busy === "label" ? "Leggo la foto…" : "Foto dell'etichetta o dell'alimento"}<input type="file" accept="image/*" data-act="flabel" aria-label="Foto dell'etichetta"></label>` : ""}
       <textarea id="ftext" rows="2" placeholder="Oppure scrivilo: 3 fette di pane di grano duro da 25 g, 60 g di tacchino">${esc(f.text || "")}</textarea>
-      ${S.sample ? (f.busy ? `<button class="ghost" disabled><span id="f-busy">${f.busy === "text" ? "Sto stimando…" : "Sto leggendo la foto…"}</span></button><button class="link small" data-act="estimate-cancel" style="align-self:center">Annulla stima</button>` : `<button class="ghost" data-act="estimate">Stima le calorie</button>`) : `<p class="small muted">Per stimare dal testo o dalle foto attiva l'AI gratuita nelle impostazioni. Intanto puoi scrivere tu i valori.</p>`}
+      ${S.sample ? (f.busy ? `<button class="ghost" disabled><span id="f-busy">${f.busy === "text" ? "Sto stimando…" : "Sto leggendo la foto…"}</span></button><button class="link small" data-act="estimate-cancel" style="align-self:center">Annulla stima</button>` : `<button class="ghost" data-act="estimate">Stima le calorie</button>`) : `<p class="small muted">Per la stima attiva Leo nelle Impostazioni. Intanto scrivi tu le calorie.</p>`}
       ${f.err ? `<div class="alert">${esc(f.err)}</div>` : ""}
       ${items.length ? `<table class="ftab"><tbody>${items.map((x, i) => `<tr><td>${esc(x.nome)}<br><span class="small faint">${x.per100 ? `${fmt(x.per100.kcal)} kcal per 100 g` : esc(x.quantita || "")}</span>
           ${x.per100 ? `<div class="fq"><button data-act="fg" data-i="${i}" data-v="-10" aria-label="Meno 10 g">−</button><span class="num">${fmt(x.g)} g</span><button data-act="fg" data-i="${i}" data-v="10" aria-label="Più 10 g">+</button></div>` : ""}</td>
-          <td class="r">${fmt(Math.round(x.kcal))} kcal<br><span class="small faint">${fmt(Math.round(x.p * 10) / 10)} g prot.</span><div class="fact">${!x.per100 && x.g ? `<button class="link small" data-act="fstar" data-i="${i}">Salva tra i miei</button>` : ""}<button class="link small" data-act="fdel" data-i="${i}">Togli</button></div></td></tr>`).join("")}
-        <tr class="tot"><td>Totale stimato</td><td class="r">${fmt(Math.round(tot.kcal))} kcal<br><span class="small faint">P ${Math.round(tot.p)} · C ${Math.round(tot.c)} · G ${Math.round(tot.f)} g</span></td></tr></tbody></table>
+          <td class="r">${fmt(Math.round(x.kcal))} kcal<br><span class="small faint">${fmt(Math.round(x.p * 10) / 10)} g di proteine</span><div class="fact">${!x.per100 && x.g ? `<button class="link small" data-act="fstar" data-i="${i}">Salva nei miei alimenti</button>` : ""}<button class="link small" data-act="fdel" data-i="${i}">Togli dal pasto</button></div></td></tr>`).join("")}
+        <tr class="tot"><td>Totale stimato</td><td class="r">${fmt(Math.round(tot.kcal))} kcal<br><span class="small faint">Proteine ${Math.round(tot.p)} g · Carboidrati ${Math.round(tot.c)} g · Grassi ${Math.round(tot.f)} g</span></td></tr></tbody></table>
         ${f.note ? `<p class="small faint">${esc(f.note)}</p>` : ""}
-        <button class="primary" data-act="savefood">Salva ${fmt(Math.round(tot.kcal))} kcal</button>`
-      : `<div class="hero"><div class="box"><label class="lab" for="fk">Kcal</label><input id="fk" inputmode="numeric" type="number" placeholder="0"></div><div class="box"><label class="lab" for="fp">Proteine g</label><input id="fp" inputmode="decimal" type="number" placeholder="0"></div></div>
-        <button class="${S.sample ? "ghost" : "primary"}" data-act="savefood">Salva con questi valori</button>`}`;
+        <button class="primary" data-act="savefood">Segna il pasto (${fmt(Math.round(tot.kcal))} calorie)</button>`
+      : `<div class="hero"><div class="box"><label class="lab" for="fk">Calorie</label><input id="fk" inputmode="numeric" type="number" placeholder="0"></div><div class="box"><label class="lab" for="fp">Proteine (g)</label><input id="fp" inputmode="decimal" type="number" placeholder="0"></div></div>
+        <button class="${S.sample ? "ghost" : "primary"}" data-act="savefood">Segna il pasto con questi valori</button>`}`;
   } else if (sh === "settings") {
     const pr = S.profile;
     html = `<div class="block-h"><h2>Impostazioni</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
@@ -1105,8 +1109,8 @@ function renderSheet() {
       <button class="menu-btn" data-act="redo" data-v="2">Carica una nuova scheda</button>
       <button class="menu-btn" data-act="redo" data-v="3">Carica un nuovo piano alimentare</button>
       ${S.downloads ? `<button class="menu-btn" data-act="export" data-v="sedute">Esporta storico allenamenti (CSV)</button><button class="menu-btn" data-act="export" data-v="diario">Esporta peso e pasti (CSV)</button>` : ""}
-      <button class="link small" data-act="wipe" style="color:var(--warn-ink)">${S.confirmWipe ? "Conferma: cancella tutti i miei dati" : "Cancella tutti i miei dati"}</button>
-      <p class="small faint">${S.site ? "I dati restano solo su questo telefono: se cancelli i dati del browser li perdi." : "I dati sono salvati nel tuo account e li vedi solo tu."} Le calorie sono stime; il coach non sostituisce medico, dietista o allenatore.</p>
+      <button class="link small" data-act="wipe" style="color:var(--warn-ink)">${S.confirmWipe ? "Sì, cancella tutti i miei dati" : "Cancella tutti i miei dati"}</button>
+      <p class="small faint">${S.site ? "I dati restano solo su questo telefono: se cancelli i dati del browser li perdi." : "I dati sono salvati nel tuo account e li vedi solo tu."} Le calorie sono stime; Leo non sostituisce medico, dietista o allenatore.</p>
       <p class="credits">Foto: «Fitness Photography – Male Black Fitness Model Strength» di vanitystudiosphotography (CC BY 2.0, Flickr); «10TH MDSB Command Mentorship PT», U.S. Army (CC0, rawpixel); «Dumbbells rack gym» (CC0, rawpixel); «Reach» di Matt Hecht (pubblico dominio, Flickr). Elaborate in bianco e nero.</p>`;
   } else if (sh === "saved") {
     html = S.savedHtml + `<button class="primary" data-act="close">Fatto</button>`;
@@ -1117,7 +1121,7 @@ function renderSheet() {
       ${S.sample ? `<div class="chips">${QUICK.map(q => `<button class="ghost" data-act="ask" data-v="${esc(q)}" ${S.coachBusy ? "disabled" : ""}>${esc(q)}</button>`).join("")}</div>` : aiKeyBox()}
       <div class="thread" id="thread">${msgs.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.content) : fmtChat(m.content)}</div>`).join("")}${S.coachBusy ? `<div class="msg assistant" id="live">${S.coachLive ? fmtChat(S.coachLive) : '<p class="faint">Sto leggendo i tuoi dati…</p>'}</div>` : ""}</div>
       ${msgs.length && !S.coachBusy ? `<button class="link small" data-act="chatclear">Nuova conversazione</button>` : ""}
-      ${S.sample ? `<form class="ask" data-act="askform"><textarea id="q" rows="1" placeholder="Scrivi una domanda" aria-label="Domanda per il coach"></textarea><button class="primary" type="submit" ${S.coachBusy ? "disabled" : ""}>Invia</button></form>` : ""}`;
+      ${S.sample ? `<form class="ask" data-act="askform"><textarea id="q" rows="1" placeholder="Scrivi una domanda" aria-label="Domanda per Leo"></textarea><button class="primary" type="submit" ${S.coachBusy ? "disabled" : ""}>Invia</button></form>` : ""}`;
   }
   const keep = o.querySelector(".sheet"), st = keep ? keep.scrollTop : 0;
   o.innerHTML = `<div class="scrim" data-act="close"><div class="sheet ${sh === "chat" ? "full" : ""}" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
@@ -1133,7 +1137,7 @@ function doSub(k, mode) {
   else { const x = S.alts[it.name].alternative[+k], v = { nome: x.nome, livello: x.livello, cue: x.cue };
     if (mode === "oggi") d.subs[it.id] = v; else { S.state.subs[it.id] = v; delete d.subs[it.id]; persistState(); } }
   delete d.sets[it.id]; draft(a); saveDrafts(); S.sheet = null; render();
-  toast(mode === "reset" ? "Esercizio originale ripristinato" : mode === "oggi" ? "Sostituito per oggi" : "Sostituito nella scheda");
+  if (mode === "reset") toast("Esercizio originale ripristinato"); else toast("Esercizio cambiato", { sub: `${mode === "oggi" ? "Solo per oggi" : "Nella scheda"}: ${short(S.alts[it.name].alternative[+k].nome)}` });
 }
 function markDone() {
   const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id), sets = d.sets[it.id], s = sets[d.cur.i];
@@ -1147,12 +1151,20 @@ function markDone() {
   }
   saveDrafts(); render();
 }
+/* 28/10 cancella la seduta: conferma in un foglio, «Sì, …» / «No, …» */
+function discardSession() { const a = activeDay(); delete S.drafts[a]; saveDrafts(); S.confirmDiscard = false; S.timer = null; S.sheet = null; S.tab = "oggi"; render(); toast(allenW() ? "Allenamento cancellato" : "Seduta cancellata", { sub: "Nessuna serie salvata" }); }
+function askDiscard() {
+  const d = S.drafts[activeDay()], n = d ? Object.values(d.sets).flat().filter(x => x.done).length : 0;
+  const yes = n === 0 ? `Sì, cancella ${laSed()}` : n === 1 ? "Sì, cancella la serie di oggi" : `Sì, cancella le ${n} serie di oggi`;
+  const sh = V3.sheet(`<h2 class="v3-sh1">Cancellare ${laSed()}?</h2><p class="v3-shp">Le serie di oggi non restano nei progressi.</p><button class="v3-apri wide" data-v3act="ok">${yes}</button><button class="v3-b2" data-v3act="close">No, continuo</button>`,
+    { label: "Cancella " + laSed(), on: { ok() { sh.close(); discardSession(); } } });
+}
 /* 28/10 serie libere: a fine esercizio, se il numero di serie è cambiato, chiede se tenerlo nella scheda */
 function askKeepSets(it, n, sets) {
   if (!window.V3) return;
   const sd = S.training && S.training.sedute && S.training.sedute[it.id.charCodeAt(0) - 65], ex = sd && sd.esercizi[+it.id.slice(1) - 1]; if (!ex) return;
   const sh = V3.sheet(`<h2 class="v3-sh1">${n} serie invece di ${it.sets}</h2><p class="v3-shp">${esc(short(exName(it)))}. Le tieni anche le prossime volte?</p>${sets ? `<p class="v3-shp" style="color:var(--v3-t1)">${sets.map(x => (x.kg != null && it.unit !== "none" ? fmt(x.kg) + "×" : "") + x.reps).join(" · ")}</p>` : ""}
-    <button class="v3-apri wide" data-v3act="keep">Sì, nella scheda</button><button class="v3-b2" data-v3act="close">Solo oggi</button>`,
+    <button class="v3-apri wide" data-v3act="keep">Sì, tieni ${n} serie</button><button class="v3-b2" data-v3act="close">No, solo per oggi</button>`,
     { label: "Tieni le serie", on: { keep() { ex.serie = n; persistDoc("training", S.training); setTraining(S.training); sh.close(); toast(`${short(exName(it))}: ${n} serie nella scheda`); } } });
 }
 async function finish(meta) {
@@ -1168,9 +1180,9 @@ async function finish(meta) {
   await persistSession({ id: "s" + Date.now(), date: new Date().toISOString(), day, items, ...meta });
   await persistState();
   delete S.drafts[day]; saveDrafts(); S.timer = null; S.day = null; S.tab = "oggi"; lsSet("tab2", S.tab);
-  S.savedHtml = `<h2>Seduta ${day} salvata</h2><p class="muted">${items.length === 1 ? "1 esercizio" : items.length + " esercizi"}, ${items.reduce((a, e) => a + e.sets.length, 0)} serie.</p>` +
-    (ups.length ? `<div class="card" style="background:var(--raised)"><b>La prossima volta sale il carico:</b><ul class="plain muted">${ups.map(u => `<li>${esc(u)}</li>`).join("")}</ul></div>` : `<p>Nessun range chiuso: la prossima volta punta a una ripetizione in più.</p>`) +
-    `<p class="small muted">Prossima: seduta ${nextDay()}.</p>`;
+  S.savedHtml = `<h2>${allenW() ? `Allenamento ${day} salvato` : `Seduta ${day} salvata`}</h2><p class="muted">${items.length === 1 ? "1 esercizio" : items.length + " esercizi"}, ${items.reduce((a, e) => a + e.sets.length, 0)} serie.</p>` +
+    (ups.length ? `<div class="card" style="background:var(--raised)"><b>La prossima volta aumenta il carico:</b><ul class="plain muted">${ups.map(u => `<li>${esc(u)}</li>`).join("")}</ul></div>` : `<p>Carichi invariati: punta a 1 ripetizione in più.</p>`) +
+    `<p class="small muted">Prossima: ${allenW() ? "allenamento" : "seduta"} ${nextDay()}.</p>`;
   S.sheet = "saved"; window.scrollTo(0, 0); render();
 }
 
@@ -1186,7 +1198,7 @@ async function estimateFood() {
     if (!items.length || !items.some(x => x.kcal > 0)) throw new Error("vuoto");
     f.items = f.items.filter(x => x.src !== "stima").concat(items); f.note = out.note || "";
   } catch (e) {
-    f.err = e && e.code === "cancelled" ? "Hai annullato la stima: scrivi tu i valori." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova, oppure scrivi tu i valori." : e && e.code === "not_granted" ? "Serve il permesso per far stimare le calorie a Claude: riapri la scheda e consenti l'accesso." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra poco o scrivi tu i valori." : "Non sono riuscito a stimare questo pasto. Aggiungi le quantità e riprova, oppure scrivi tu i valori.";
+    f.err = e && e.code === "cancelled" ? "Hai annullato la stima: scrivi tu i valori." : e && e.code === "timeout" ? "Leo non ha risposto in tempo. Riprova o scrivi tu le calorie." : e && e.code === "not_granted" ? "Leo non ha il permesso di stimare. Riapri il foglio e tocca Consenti." : e && e.code === "rate_limited" ? "Troppe richieste ravvicinate: riprova tra poco o scrivi tu i valori." : "Non sono riuscito a stimare questo pasto. Aggiungi le quantità e riprova, oppure scrivi tu i valori.";
   }
   clearInterval(f.tick); f.busy = false; renderSheet();
 }
@@ -1202,7 +1214,7 @@ async function readLabel(file) {
     f.items.push({ nome: food.nome, per100, g: food.porzione, src: "lib", fid: food.id });
     f.note = (food.tipo === "etichetta" ? "Valori letti dall'etichetta" : "Valori stimati dalla foto") + ` e salvati in «I miei alimenti». ${out.note || ""}`;
   } catch (e) {
-    f.err = e && e.code === "not_granted" ? "Per leggere la foto serve l'AI attiva: controlla la chiave in Impostazioni." : "Non riesco a leggere i valori da questa foto. Riprova con l'etichetta dritta e ben illuminata.";
+    f.err = e && e.code === "not_granted" ? "Per leggere la foto attiva Leo: controlla la chiave in Impostazioni." : "Non riesco a leggere i valori da questa foto. Riprova con l'etichetta dritta e ben illuminata.";
   }
   f.busy = false; renderSheet();
 }
@@ -1212,15 +1224,15 @@ function saveFood() {
     const items = f.items.map(scaleItem); let e;
     if (items.length) { const tot = items.reduce(addN, ZERO()); e = { text: items.map(x => x.per100 ? `${x.nome} ${fmt(x.g)} g` : x.nome).join(", ") || text, ...tot }; }
     else { const k = num(($("#fk") || {}).value), p = num(($("#fp") || {}).value);
-      if (!k) { f.err = "Scrivi almeno le kcal, oppure usa la stima o i tuoi alimenti."; renderSheet(); return; }
+      if (!k) { f.err = "Scrivi almeno le calorie, oppure fai stimare a Leo."; renderSheet(); return; }
       e = { text: text || "Pasto variato", kcal: k, p, c: 0, f: 0 }; }
     e.kcal = Math.round(e.kcal); e.p = Math.round(e.p * 10) / 10; e.c = Math.round(e.c * 10) / 10; e.f = Math.round(e.f * 10) / 10;
     for (const x of f.items) if (x.fid) { const fo = S.foods.find(y => y.id === x.fid); if (fo) { fo.used = (fo.used || 0) + 1; fo.porzione = x.g; } }
     if (f.items.some(x => x.fid)) persistFoods();
     if (f.key === "extra") d.extra.push({ id: Date.now(), ...e });
     else { d.custom[f.key] = e; d.meals[f.key] = false; delete d.skip[f.key]; }
-    saveDay(localISO()); S.sheet = null; S.food = null; render(); toast(`Salvato: ${fmt(e.kcal)} kcal`);
-  } catch (err) { toast("Non sono riuscito a salvare: riprova"); console.error(err); }
+    saveDay(localISO()); S.sheet = null; S.food = null; render(); toast(`${f.key === "extra" ? "Cibo fuori programma" : MEALS.find(m => m[0] === f.key)[1]} segnato`, { sub: `${fmt(e.kcal)} calorie · ${fmt(e.p)} g di proteine` });
+  } catch (err) { toast("Pasto non segnato", { sub: "Memoria del telefono piena o bloccata. Riprova." }); console.error(err); }
 }
 /* ---------- events ---------- */
 document.addEventListener("click", e => {
@@ -1250,7 +1262,7 @@ document.addEventListener("click", e => {
       S.alts[key] = { busy: true }; renderSheet();
       S.sample.json(ALT_PROMPT(key), { modelTier: "default" }).then(out => {
         const al = (out && Array.isArray(out.alternative) ? out.alternative : []).filter(x => x && x.nome).map(x => ({ nome: String(x.nome), attrezzo: String(x.attrezzo || ""), livello: Math.min(5, Math.max(1, Math.round(num(x.livello) || 3))), motivo: String(x.motivo || ""), cue: String(x.cue || "") }));
-        S.alts[key] = al.length ? { livello: Math.min(5, Math.max(1, Math.round(num(out.livello) || 3))), alternative: al } : { err: "Non ho trovato alternative: riprova." }; renderSheet();
+        S.alts[key] = al.length ? { livello: Math.min(5, Math.max(1, Math.round(num(out.livello) || 3))), alternative: al } : { err: "Nessun esercizio simile trovato. Riprova o chiedi a Leo." }; renderSheet();
       }).catch(() => { S.alts[key] = { err: "Non sono riuscito a cercare alternative: riprova tra poco." }; renderSheet(); });
     }
     return;
@@ -1284,7 +1296,7 @@ document.addEventListener("click", e => {
   else if (act === "fdel") { S.food.items.splice(+b.dataset.i, 1); renderSheet(); }
   else if (act === "fstar") { const x = S.food.items[+b.dataset.i], k = 100 / x.g; const fo = { id: "f" + Date.now(), nome: x.nome, per100: { kcal: Math.round(x.kcal * k), p: +(x.p * k).toFixed(1), c: +(x.c * k).toFixed(1), f: +(x.f * k).toFixed(1) }, porzione: x.g, tipo: "stima", used: 1, pending: true }; S.foods.push(fo); persistFoods(); Object.assign(x, { per100: fo.per100, src: "lib", fid: fo.id }); renderSheet(); toast("Aggiunto ai tuoi alimenti"); }
   else if (act === "libdel") { if (S.confirmDel !== v) { S.confirmDel = v; render(); } else { S.foods = S.foods.filter(x => x.id !== v); S.confirmDel = null; persistFoods(); render(); } }
-  else if (act === "discard") { if (!S.confirmDiscard) { S.confirmDiscard = true; renderSheet(); } else { const a = activeDay(); delete S.drafts[a]; saveDrafts(); S.confirmDiscard = false; S.timer = null; S.sheet = null; S.tab = "oggi"; render(); toast("Seduta scartata"); } }
+  else if (act === "discard") { if (window.V3) askDiscard(); else if (!S.confirmDiscard) { S.confirmDiscard = true; renderSheet(); } else discardSession(); }
   else if (act === "estimate") estimateFood();
   else if (act === "estimate-cancel") { if (S.food && S.food.ac) S.food.ac.abort(); }
   else if (act === "savefood") saveFood();
@@ -1292,7 +1304,7 @@ document.addEventListener("click", e => {
   else if (act === "water") { const d = dayLog(localISO()); d.water = Math.max(0, Math.min(20, d.water + (+v))); saveDay(localISO()); render(); }
   else if (act === "sup") { const d = dayLog(localISO()); d.sup[v] = !d.sup[v]; saveDay(localISO()); render(); }
   else if (act === "pstep") { const el = $("#peso"); el.value = String(Math.max(30, +(num(el.value) + (+v)).toFixed(1))).replace(".", ","); }
-  else if (act === "peso") { const kg = +String(($("#peso") || {}).value).replace(",", "."); if (kg > 30 && kg < 250) { dayLog(localISO()).peso = kg; saveDay(localISO()); S.sheet = null; render(); toast("Peso salvato"); } else toast("Scrivi un peso tra 30 e 250 kg"); }
+  else if (act === "peso") { const kg = +String(($("#peso") || {}).value).replace(",", "."); if (kg >= 35 && kg <= 250) { dayLog(localISO()).peso = kg; saveDay(localISO()); S.sheet = null; render(); toast("Peso registrato", { sub: `${fmt(kg)} kg oggi` }); } else toast("Scrivi un peso tra 35 e 250 kg"); }
   else if (act === "chat") { S.chatOpen = true; openSheet("chat"); }
   else if (act === "ask") { S.chatOpen = true; S.sheet = "chat"; renderSheet(); askCoach(v); }
   else if (act === "chatclear") { S.chat = { msgs: [] }; lsSet("chat", S.chat); if (S.db) S.db.doc(S.base + "/chat").set({ kind: "chat", msgs: [] }).catch(() => {}); renderSheet(); }
@@ -1372,8 +1384,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610282130"></script>
-<script src="ux.js?v=202610282130"></script>
-<script src="hub.js?v=202610282130"></script><script src="board.js?v=202610282130"></script><script src="timer.js?v=202610282130"></script><script src="nutri.js?v=202610282130"></script><script src="photos.js?v=202610282130"></script><script src="coachui.js?v=202610282130"></script><script src="settings.js?v=202610282130"></script><script src="aikey.js?v=202610282130"></script><script src="tour.js?v=202610282130"></script><script src="gesture.js?v=202610282130"></script><script src="ds.js?v=202610282130"></script><script src="v3.js?v=202610282130"></script><script src="sec-oggi.js?v=202610282130"></script><script src="sec-palestra.js?v=202610282130"></script><script src="sec-cibo.js?v=202610282130"></script><script src="sec-progressi.js?v=202610282130"></script>
+<script src="exdb.js?v=202610281300"></script>
+<script src="ux.js?v=202610281300"></script>
+<script src="hub.js?v=202610281300"></script><script src="board.js?v=202610281300"></script><script src="timer.js?v=202610281300"></script><script src="nutri.js?v=202610281300"></script><script src="photos.js?v=202610281300"></script><script src="coachui.js?v=202610281300"></script><script src="settings.js?v=202610281300"></script><script src="aikey.js?v=202610281300"></script><script src="tour.js?v=202610281300"></script><script src="gesture.js?v=202610281300"></script><script src="ds.js?v=202610281300"></script><script src="v3.js?v=202610281300"></script><script src="sec-oggi.js?v=202610281300"></script><script src="sec-palestra.js?v=202610281300"></script><script src="sec-cibo.js?v=202610281300"></script><script src="sec-progressi.js?v=202610281300"></script>
 
 </body></html>

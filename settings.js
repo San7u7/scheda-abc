@@ -41,7 +41,7 @@
     const pr = S.profile || {}, goal = ((typeof GOALS !== "undefined" && GOALS.find(g => g[0] === pr.obiettivo)) || [0, ""])[1];
     const head = `<button class="phead" data-act="redo" data-v="1" aria-label="Modifica il profilo">${userAvatar(72)}<span><span class="ph-n">${esc(pr.nome || "Il tuo profilo")}</span><span class="small muted">${goal ? esc(goal) + " · " : ""}${pr.eta ? pr.eta + " anni · " : ""}${(() => { const w = weights(), kg = w.length ? w[w.length - 1].kg : pr.peso; return kg ? fmt(Math.round(kg * 10) / 10) + " kg" : ""; })()}</span><span class="small hl">Modifica profilo ›</span></span></button>`;
     const plan = h.replace(/^<h1>[\s\S]*?<\/h1><p[^>]*>[\s\S]*?<\/p>/, `<h2 class="set-h">Il tuo piano</h2><p class="small muted" style="margin:4px 0 0">Cosa ti alleni e cosa mangi questa settimana.</p>`);
-    return (head + `<h2 class="set-h">Il tuo coach</h2>` + (window.coachCard ? coachCard() : "") + plan).replace(/class="primary go"/g, 'class="ghost go"').replace(/<label class="primary file-btn">/g, '<label class="ghost file-btn">');
+    return (head + `<h2 class="set-h">Leo, il tuo coach</h2>` + (window.coachCard ? coachCard() : "") + plan).replace(/class="primary go"/g, 'class="ghost go"').replace(/<label class="primary file-btn">/g, '<label class="ghost file-btn">');
   };
   // the avatar also greets you on Oggi
   const vO = window.viewOggi;
@@ -56,23 +56,23 @@
     const rest = settingsBlocks().replace(/<div class="block"><div class="hcard"><div class="hc-h">[\s\S]*?Modifica profilo e colore<\/button><\/div><\/div><\/div>/, "");
     return `<button class="back" data-act="set-close">${BACK}Indietro</button><h1><span class="hl">Impostazioni</span></h1>
       <p class="muted" style="margin-top:4px">Come si comporta l'app su questo telefono.</p>
-      <nav class="set-idx" aria-label="Sezioni">${[["s-asp", "Aspetto"], ["s-all", "Allenamento"], ["s-pro", "Promemoria"], ["s-dati", "IA"], ["s-dati2", "Dati"]].map(([i, l]) => `<button data-jump="${i}">${l}</button>`).join("")}<button data-act="set-sub" data-v="help">Aiuto</button></nav>
+      <nav class="set-idx" aria-label="Sezioni">${[["s-asp", "Aspetto"], ["s-all", "Palestra"], ["s-pro", "Promemoria"], ["s-dati", "Leo"], ["s-dati2", "Dati"]].map(([i, l]) => `<button data-jump="${i}">${l}</button>`).join("")}<button data-act="set-sub" data-v="help">Aiuto</button></nav>
       <h2 class="set-h" id="s-asp">Aspetto</h2>
       <div class="block"><div class="hcard"><button class="setrow link-row" data-act="set-sub" data-v="avatar">${userAvatar(48)}<span><b>La tua immagine</b><small>Foto, simbolo o iniziali</small></span><span class="hl">›</span></button>
         <div><p class="small muted" style="margin:6px 0 8px">Colore dell'app</p><div class="swatches">${ACCENTS.map(([v, c, l]) => `<button class="sw" style="background:${c}" data-act="accent" data-v="${v}" aria-pressed="${(pr.colore || "lime") === v}" aria-label="${l}"></button>`).join("")}</div></div>${tog("glass", p.glass, "Effetto vetro", "Barre trasparenti sopra i contenuti. Se il telefono scatta scorrendo, spegnilo.")}${tog("anim", p.anim, "Animazioni", "Movimenti di entrata e uscita")}</div></div>
-      <h2 class="set-h" id="s-all">Allenamento</h2>
+      <h2 class="set-h" id="s-all">Palestra</h2>
       <div class="block"><div class="hcard"><div><b>Quando ti alleni?</b><div class="seg wrap" role="group" style="margin-top:8px"><button data-act="days" data-v="flex" aria-pressed="${p.days === "flex"}">Quando vuoi</button><button data-act="days" data-v="fixed" aria-pressed="${p.days === "fixed"}">Giorni fissi</button></div>
         <p class="small muted" style="margin:6px 0 0">${p.days === "flex" ? "Fai le sedute in ordine, nei giorni che preferisci: ti suggerisco quando riposare." : "Segui i giorni della scheda: se ne salti uno, ti propongo di spostare la settimana."}</p></div>${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>
-      <h2 class="set-h" id="s-rout">Impostazioni allenamento</h2>
+      <h2 class="set-h" id="s-rout">Riscaldamento e allungamento</h2>
       <div class="block"><div class="hcard"><div class="setrow"><span><b>Riscaldamento prima</b><small>Cardio leggero e serie di avvicinamento prima degli esercizi.</small></span><button class="bsw" data-act="rout-warm" role="switch" aria-checked="${rout().warm !== false}" aria-label="Riscaldamento prima"><span></span></button></div>
-        <div><b>Stretching</b><div class="seg wrap" role="group" aria-label="Stretching" style="margin-top:8px">${STR.map(([v, l]) => `<button data-act="rout-str" data-v="${v}" aria-pressed="${rout().stretch === v}">${l}</button>`).join("")}</div>
+        <div><b>Allungamento (stretching)</b><div class="seg wrap" role="group" aria-label="Allungamento" style="margin-top:8px">${STR.map(([v, l]) => `<button data-act="rout-str" data-v="${v}" aria-pressed="${rout().stretch === v}">${l}</button>`).join("")}</div>
         <p class="small muted" style="margin:6px 0 0">${rout().warm === false && !["prima", "both"].includes(rout().stretch) ? "«Inizia la seduta» ti porta subito al primo esercizio." : "Prima: movimenti dinamici. Dopo: allungamenti tenuti fermi."}</p></div></div></div>
       <h2 class="set-h" id="s-pro">Promemoria</h2>
-      <div class="block"><div class="hcard"><p class="small muted" style="margin:0">Askesis non ha un server, quindi non può scriverti ad app chiusa. Per i promemoria usa il Calendario dell'iPhone: li crea lui, anche ad app chiusa.</p>
-        <ul class="plain small muted" style="margin:0"><li>Ogni mattina alle 8: il tuo obiettivo del giorno.</li><li>Ogni sera alle 21: chiudi la giornata, pasti e acqua.</li><li>Lunedì e giovedì alle 7:15: la pesata. Ogni 4 settimane: le foto progressi.</li>${p.days === "fixed" && plan.length ? `<li>Nei giorni di allenamento, all'orario che scegli qui sotto.</li>` : `<li>All'orario che scegli: oggi seduta o riposo?</li>`}</ul>
-        ${tog("meals", p.meals !== false, "Pasti nel Calendario", "Ogni pasto all'orario solito, con il menù di quel giorno (colazione 7:30, spuntino 10:30, pranzo 13, merenda 16:30, cena 20).")}<div class="setrow"><span><b>Orario dell'allenamento</b><small>Il promemoria arriva 30 minuti prima</small></span><input type="time" class="tinput" data-pref="remind" value="${p.remind}" aria-label="Orario dell'allenamento"></div><button class="primary go" data-act="ics">Aggiungi al Calendario</button>
+      <div class="block"><div class="hcard"><p class="small muted" style="margin:0">I promemoria arrivano dal Calendario del telefono, anche ad app chiusa.</p>
+        <ul class="plain small muted" style="margin:0"><li>Ogni mattina alle 8: il tuo obiettivo del giorno.</li><li>Ogni sera alle 21: chiudi la giornata, pasti e acqua.</li><li>Lunedì e giovedì alle 7:15: la pesata. Ogni 4 settimane: le foto del corpo.</li>${p.days === "fixed" && plan.length ? `<li>Nei giorni di allenamento, all'orario che scegli qui sotto.</li>` : `<li>All'orario che scegli: oggi seduta o riposo?</li>`}</ul>
+        ${tog("meals", p.meals !== false, "Pasti nel Calendario", "Un avviso per ogni pasto, col menù del giorno")}<div class="setrow"><span><b>Orario dell'allenamento</b><small>Il promemoria arriva 30 minuti prima</small></span><input type="time" class="tinput" data-pref="remind" value="${p.remind}" aria-label="Orario dell'allenamento"></div><button class="primary go" data-act="ics">Aggiungi al Calendario</button>
         ${"setAppBadge" in navigator ? `<p class="small muted" style="margin:0">Sull'icona della Home compare un «1» nei giorni in cui c'è una seduta da fare.</p>` : ""}</div></div>
-      <h2 class="set-h" id="s-dati">Intelligenza artificiale</h2>${rest.replace('<div class="block"><div class="hcard"><h2>I tuoi dati</h2>', '<h2 class="set-h" id="s-dati2">I tuoi dati</h2><div class="block"><div class="hcard"><h2 class="sr-only">I tuoi dati</h2>')}
+      <h2 class="set-h" id="s-dati">Leo, il tuo coach</h2>${rest.replace('<div class="block"><div class="hcard"><h2>I tuoi dati</h2>', '<h2 class="set-h" id="s-dati2">I tuoi dati</h2><div class="block"><div class="hcard"><h2 class="sr-only">I tuoi dati</h2>')}
       <h2 class="set-h">Aiuto</h2><div class="block"><div class="hcard"><button class="setrow link-row" data-act="set-sub" data-v="help"><span><b>Come funziona</b><small>Sezioni, gesti, regole di allenamento e il tour</small></span><span class="hl">›</span></button></div></div>`;
   }
   function avatarView() {
@@ -116,7 +116,7 @@
   document.addEventListener("pointerup", () => { drag = null; });
   document.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.crop === "z" && S.crop) { S.crop.z = +e.target.value; const im = document.querySelector("#crop img"); if (im) im.style.transform = `translate(${S.crop.x}px,${S.crop.y}px) scale(${S.crop.z})`; } });
   document.addEventListener("change", e => {
-    const t = e.target; if (t.dataset && t.dataset.act === "av-photo" && t.files && t.files[0]) loadPhoto(t.files[0]).catch(() => toast("Non riesco ad aprire questa foto"));
+    const t = e.target; if (t.dataset && t.dataset.act === "av-photo" && t.files && t.files[0]) loadPhoto(t.files[0]).catch(() => toast("Foto non aperta: formato non letto. Prova con un'altra foto."));
     if (t.dataset && t.dataset.pref === "remind") setPref("remind", t.value || "18:00");
   });
 
@@ -140,12 +140,12 @@
     const next = dw => { const d = new Date(now); d.setDate(d.getDate() + ((dw - d.getDay() + 7) % 7 || 7)); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`; };
     const ev2 = (id, ds, h, m, rule, title, desc) => ["BEGIN:VEVENT", `UID:askesis-${id}@askesis`, `DTSTAMP:${stamp}`, `DTSTART:${ds}T${pad(h)}${pad(m)}00`, `DTEND:${ds}T${pad(h)}${pad(m + 10)}00`, `RRULE:${rule}`, `SUMMARY:${title}`, `DESCRIPTION:${desc}`, "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", `DESCRIPTION:${title}`, "END:VALARM", "END:VEVENT"].join("\r\n");
     base.push(ev2("pesata", next(1), 7, 15, "FREQ=WEEKLY;BYDAY=MO,TH", "Askesis · Pesata", "Al mattino a digiuno dopo il bagno: registra il peso in Askesis."));
-    base.push(ev2("foto", next(1), 7, 20, "FREQ=WEEKLY;INTERVAL=4;BYDAY=MO", "Askesis · Foto progressi", "Frontale, laterale, posteriore: stessa luce e stessa posa. Poi apri Il tuo percorso."));
+    base.push(ev2("foto", next(1), 7, 20, "FREQ=WEEKLY;INTERVAL=4;BYDAY=MO", "Askesis · Foto del corpo", "Frontale, laterale, posteriore: stessa luce e stessa posa. Poi aprile in Progressi › Foto del corpo."));
     const ev = p.days !== "fixed" ? base : base.concat(((S.training && S.training.sedute) || []).map((s, i) => { if (s.dow == null) return "";
       const d = new Date(now); d.setDate(d.getDate() + ((s.dow - d.getDay() + 7) % 7)); const ds = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
       const end = new Date(d); end.setHours(hh + 1, mm); const de = `${ds}T${pad(end.getHours())}${pad(end.getMinutes())}00`;
       return ["BEGIN:VEVENT", `UID:askesis-${DAYS[i] || i}-${ds}@askesis`, `DTSTAMP:${stamp}`, `DTSTART:${ds}T${pad(hh)}${pad(mm)}00`, `DTEND:${de}`, `RRULE:FREQ=WEEKLY;BYDAY=${BY[s.dow]}`,
-        `SUMMARY:Askesis · Seduta ${DAYS[i] || ""}`, `DESCRIPTION:${(s.focus || s.nome || "").replace(/[,;\n]/g, " ")}. Apri Askesis per iniziare.`, "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Tra 30 minuti alleni", "END:VALARM", "END:VEVENT"].join("\r\n"); }).filter(Boolean));
+        `SUMMARY:Askesis · Seduta ${DAYS[i] || ""}`, `DESCRIPTION:${(s.focus || s.nome || "").replace(/[,;\n]/g, " ")}. Apri Askesis per iniziare.`, "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Tra 30 minuti ti alleni", "END:VALARM", "END:VEVENT"].join("\r\n"); }).filter(Boolean));
     const fold = l => { const out = []; while (l.length > 60) { out.push(l.slice(0, 60)); l = " " + l.slice(60); } out.push(l); return out.join("\r\n"); };
     const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Askesis//IT", "CALSCALE:GREGORIAN", "X-WR-CALNAME:Askesis", ...ev, "END:VCALENDAR"].join("\r\n").split("\r\n").map(fold).join("\r\n");
     siteDownloads.save({ filename: "askesis-allenamenti.ics", data: new Blob([body], { type: "text/calendar" }) });
@@ -203,7 +203,7 @@
     const first = lsGet("first_use", 0) || (lsSet("first_use", Date.now()), Date.now()), last = lsGet("backup_at", 0), asked = lsGet("backup_nudge", 0), DAY = 864e5;
     if (Date.now() - first < 7 * DAY || Date.now() - last < 30 * DAY || Date.now() - asked < 30 * DAY) return;
     lsSet("backup_nudge", Date.now());
-    coachNudge("I tuoi dati sono solo su questo telefono. Ogni tanto salvane una copia: Impostazioni › I tuoi dati › Fai un backup. Ci vogliono 10 secondi.");
+    coachNudge("I tuoi dati sono solo su questo telefono. Salva una copia dei dati: Impostazioni › I tuoi dati.");
   }, 1500);
 
   const st = document.createElement("style");

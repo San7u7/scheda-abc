@@ -70,19 +70,21 @@
     const done = weekDone(), today = (dw + 6) % 7, DN = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
     const missed = Object.keys(plan).map(Number).filter(d => { const i = (d + 6) % 7; return i < today && !done[i]; });
     if (window.trainFlex && trainFlex() && gap >= 4 && gap < 7 && nd) return nudge(`Sono ${gap} giorni senza allenamento. Oggi è un buon giorno per la seduta ${nd}.`);
-    if (gap >= 7) return nudge(`Bentornato${nm}. Ripartiamo con calma: nella prossima seduta usa circa il 90% dei carichi, poi si torna al ritmo di prima.`);
+    if (gap >= 7) return nudge(`${S.profile.sesso === "f" ? "Bentornata" : "Bentornato"}${nm}. Ripartiamo con calma: nella prossima seduta usa circa il 90% dei carichi, poi si torna al ritmo di prima.`);
     if (dw === 0) { const n = Object.keys(done).length, tot = Object.keys(plan).length || DAYS.length; return nudge(`Settimana chiusa: ${n} ${n === 1 ? "seduta" : "sedute"} su ${tot}. Su cosa vuoi concentrarti la prossima: proteine, sonno o carichi? Scrivimelo e ti preparo un piccolo obiettivo.`); }
-    if (missed.length && nd && !done[today]) return nudge(`${DN[missed[missed.length - 1]].charAt(0).toUpperCase() + DN[missed[missed.length - 1]].slice(1)} è saltato, capita. Oggi puoi fare la seduta ${nd}, oppure tocca «Sposta la settimana» in Oggi e le sistemo io.`);
+    if (missed.length && nd && !done[today]) return nudge(`${DN[missed[missed.length - 1]].charAt(0).toUpperCase() + DN[missed[missed.length - 1]].slice(1)} è saltato, capita. Oggi puoi fare la seduta ${nd}.`);
     if (p.proattivo === "spesso") nudge(`Ciao${nm}! ${coachLine().replace(/<[^>]+>/g, "")}`);
   }
 
   /* ---------- floating coach button ---------- */
   const fab = document.createElement("button");
-  fab.className = "coach-fab"; fab.setAttribute("data-act", "coach-open"); fab.setAttribute("aria-label", "Parla con il coach");
+  fab.className = "coach-fab"; fab.setAttribute("data-act", "coach-open"); fab.setAttribute("aria-label", "Parla con Leo");
   document.body.appendChild(fab);
+  /* 28/10 (DS 17): con la v3 attiva Leo vive in fondo alle pagine e nel foglio della seduta, mai flottante */
+  const fabHidden = () => !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit || document.body.classList.contains("v3-on") || (typeof inSession === "function" && inSession() && !!S.timer);
   function paintFab() {
-    const hidden = !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit || (typeof inSession === "function" && inSession() && !!S.timer);
-    fab.hidden = hidden;
+    const hidden = fabHidden();
+    fab.hidden = hidden; fab.setAttribute("aria-label", "Parla con " + persona().nome);
     fab.innerHTML = AVATAR(56) + (S.nudge && !S.nudge.seen ? '<span class="fab-dot" aria-hidden="true"></span>' : "");
     fab.classList.toggle("insession", typeof inSession === "function" && inSession());
   }
@@ -91,9 +93,9 @@
   function contextPrompts() {
     const t = S.tab, a = typeof activeDay === "function" && activeDay();
     if (a) return ["Questo esercizio mi fa male: cosa faccio?", "La macchina è occupata: con cosa lo sostituisco?", "Che carico uso oggi?", "Sono stanco: posso accorciare la seduta?"];
-    if (t === "allenamento") return ["Quale seduta faccio oggi?", "Come mi scaldo prima di iniziare?", "Spiegami la doppia progressione", "Ho saltato una seduta: come recupero?"];
+    if (t === "allenamento") return ["Quale seduta faccio oggi?", "Come mi scaldo prima di iniziare?", "Come salgono ripetizioni e carichi?", "Ho saltato una seduta: come recupero?"];
     if (t === "progressi") return ["Sto progredendo bene?", "Perché il peso non sale?", "Cosa miglioro questa settimana?", "Fai il punto della settimana"];
-    if (t === "piano") return ["Come modifico la scheda?", "Il mio piano alimentare va bene per il mio obiettivo?", "Cosa significa RIR?", "Come carico una nuova scheda?"];
+    if (t === "piano") return ["Come modifico la scheda?", "Il mio piano alimentare va bene per il mio obiettivo?", "Cosa sono le ripetizioni di riserva?", "Come carico una nuova scheda?"];
     return ["Fai il punto della settimana", "Cosa mangio prima e dopo la seduta?", "Mi mancano calorie: come le recupero?", "Pranzo fuori casa: come resto in linea?"];
   }
   const prevSheet = window.renderSheet;
@@ -111,12 +113,12 @@
     if (n) { n.seen = true; lsSet("nudge", n); }
     const bubble = n && Date.now() - n.at < 36 * 3600e3 ? `<div class="msg assistant"><p>${esc(n.text)}</p></div>` : "";
     const hello = !msgs.length && !bubble ? `<div class="msg assistant"><p>Ciao${S.profile && S.profile.nome ? " " + esc(S.profile.nome) : ""}, sono ${esc(p.nome)}. Conosco la tua scheda, il tuo piano e i tuoi dati: chiedimi qualsiasi cosa su allenamento, alimentazione o recupero.</p></div>` : "";
-    o.innerHTML = `<div class="scrim" data-act="close"><div class="sheet full chat" role="dialog" aria-modal="true" aria-label="Chat con il coach"><div class="grab"></div>
-      <div class="coach-head">${AVATAR(48)}<div><b>${esc(p.nome)}</b><small>Il tuo coach · ${S.sample ? "in linea" : "attiva l'AI per parlarmi"}</small></div><button class="link small" data-act="close" style="padding:0;margin-left:auto">Chiudi</button></div>
+    o.innerHTML = `<div class="scrim" data-act="close"><div class="sheet full chat" role="dialog" aria-modal="true" aria-label="Parla con ${esc(p.nome)}"><div class="grab"></div>
+      <div class="coach-head">${AVATAR(48)}<div><b>${esc(p.nome)}</b><small>Il tuo coach · ${S.sample ? "Pronto a rispondere" : "Attivami nelle Impostazioni"}</small></div><button class="link small" data-act="close" style="padding:0;margin-left:auto">Chiudi</button></div>
       <div class="thread" id="thread">${hello}${bubble}${msgs.map(m => `<div class="msg ${m.role}">${m.role === "user" ? esc(m.content) : fmtChat(m.content)}</div>`).join("")}${S.coachBusy ? `<div class="msg assistant" id="live">${S.coachLive ? fmtChat(S.coachLive) : '<p class="faint">Sto pensando…</p>'}</div>` : ""}</div>
       ${S.sample ? `<div class="chips cprompts">${contextPrompts().map(q => `<button class="ghost" data-act="ask" data-v="${esc(q)}" ${S.coachBusy ? "disabled" : ""}>${esc(q)}</button>`).join("")}</div>
-      <form class="ask" data-act="askform"><textarea id="q" rows="1" placeholder="Scrivi a ${esc(p.nome)}…" aria-label="Domanda per il coach"></textarea><button class="primary" type="submit" ${S.coachBusy ? "disabled" : ""}>Invia</button></form>
-      ${msgs.length && !S.coachBusy ? `<button class="link small" data-act="chatclear" style="align-self:center">Nuova conversazione</button>` : ""}` : (typeof aiKeyBox === "function" ? aiKeyBox() : `<div class="alert">Il coach risponde quando l'AI è attiva.</div>`)}
+      <form class="ask" data-act="askform"><textarea id="q" rows="1" placeholder="Scrivi a ${esc(p.nome)}…" aria-label="Domanda per ${esc(p.nome)}"></textarea><button class="primary" type="submit" ${S.coachBusy ? "disabled" : ""}>Invia</button></form>
+      ${msgs.length && !S.coachBusy ? `<button class="link small" data-act="chatclear" style="align-self:center">Nuova conversazione</button>` : ""}` : (typeof aiKeyBox === "function" ? aiKeyBox() : `<div class="alert">Rispondo quando mi attivi.</div>`)}
       <p class="small faint">Consigli generali: per dolori o dubbi di salute senti il medico; per cambiare la dieta, chi te l'ha prescritta.</p></div></div>`;
     const sh = o.querySelector(".sheet"); if (sh) sh.scrollTop = sh.scrollHeight;
     paintFab();
@@ -139,7 +141,7 @@
     let t = "";
     if (tab === "progressi") { const wk = Object.keys(weekDone()).length, tot = DAYS.length || 3, ws = window.weekStreak ? weekStreak() : { n: 0 };
       t = wk >= tot ? `Settimana completa: ${wk} sedute su ${tot}.${ws.n >= 2 ? ` Sono ${ws.n} settimane complete di fila.` : ""}` : `Questa settimana ${wk} ${wk === 1 ? "seduta" : "sedute"} su ${tot}.${ws.n >= 2 ? ` Serie in corso: ${ws.n} settimane complete.` : ""}`; }
-    if (tab === "piano") t = `Mi sono regolato in automatico sul tuo profilo e sui documenti caricati. Se vuoi, cambia come ti parlo nella card «Il tuo coach».`;
+    if (tab === "piano") t = `Mi sono regolato sul tuo profilo. Puoi cambiarlo in «Regola ${p.nome}».`;
     return t ? `<button class="cline" data-act="coach-open">${AVATAR(30)}<span>${esc(t)}</span></button>` : "";
   }
   const inject = (html, extra) => { if (!extra) return html; const i = html.indexOf("</h1>"); if (i < 0) return extra + html; const j = html.indexOf("</p>", i); const at = j > 0 && j - i < 400 ? j + 4 : i + 5; return html.slice(0, at) + extra + html.slice(at); };
@@ -158,9 +160,9 @@
   window.coachNudge = t => nudge(t);
   window.coachCard = function () {
     const p = persona();
-    const card = `<div class="block"><div class="hcard coach-card"><div class="hc-h">${AVATAR(42)}<div><h2>Il tuo coach: ${esc(p.nome)}</h2><p class="small muted">${OPTS.tono.find(x => x[0] === p.tono)[1]} · risposte ${p.risposte} · ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}</p></div></div>
+    const card = `<div class="block"><div class="hcard coach-card"><div class="hc-h">${AVATAR(42)}<div><h2>${esc(p.nome)}, il tuo coach</h2><p class="small muted">${OPTS.tono.find(x => x[0] === p.tono)[1]} · risposte ${p.risposte} · ${OPTS.focus.find(x => x[0] === p.focus)[1].toLowerCase()}</p></div></div>
       <p class="small muted">${p.custom ? "Impostazioni scelte da te." : "Impostato in automatico in base al profilo e ai documenti caricati: è un consiglio, puoi cambiarlo."}</p>
-      <div class="hc-acts"><button class="primary go" data-act="set-sub" data-v="coach">Regola il coach</button></div></div></div>`;
+      <div class="hc-acts"><button class="primary go" data-act="set-sub" data-v="coach">Regola ${esc(p.nome)}</button></div></div></div>`;
     return card;
   };
   function coachSettings() {
@@ -183,13 +185,13 @@
     else if (act === "kg-fix") { S.sheet = null; S.kgcheck = null; renderSheet(); render(); }
     else if (act === "coach-open") { S.chatOpen = true; S.sheet = "chat"; renderSheet(); }
     else if (act === "guide-ok") { lsSet("seen_" + v, true); render(); }
-    else if (act === "coach-set") { savePersona({ [b.dataset.k]: v }); render(); toast("Coach aggiornato"); }
+    else if (act === "coach-set") { savePersona({ [b.dataset.k]: v }); render(); toast(`${persona().nome} aggiornato`); }
     else if (act === "coach-reset") { savePersona(null); render(); toast("Impostazione automatica ripristinata"); }
     else if (act === "coach-name") { const n = ($("#co-nome").value || "").trim().slice(0, 20); if (n) { savePersona({ nome: n }); render(); toast(`Ora mi chiamo ${n}`); } }
   }, true);
 
   document.addEventListener("change", e => { if (e.target.id === "co-nome") { const n = (e.target.value || "").trim().slice(0, 20); if (n && n !== persona().nome) { savePersona({ nome: n }); render(); toast(`Ora mi chiamo ${n}`); } } });
-  setInterval(() => { const h = !S.profile || !!S.ob || !!S.sheet || !!S.boardEdit || (typeof inSession === "function" && inSession() && !!S.timer); if (fab.hidden !== h) paintFab(); }, 1000);
+  setInterval(() => { const h = fabHidden(); if (fab.hidden !== h) paintFab(); }, 1000);
   let lastY = 0; window.addEventListener("scroll", () => { const y = window.scrollY; fab.classList.toggle("away", y > lastY + 4 && y > 120); if (y < lastY - 4) fab.classList.remove("away"); lastY = y; }, { passive: true });
   const baseRender = window.render;
   window.render = function () { baseRender(); paintFab(); };

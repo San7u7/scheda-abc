@@ -82,7 +82,7 @@ function makeGemini(key) {
         if (nextModel) break;
         const body = { contents, generationConfig: v.th ? { ...base, thinkingConfig: v.th } : base };
         if (v.safe) body.safetySettings = SAFE;
-        P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Gemini sta guardando le immagini" : "Gemini sta ragionando"), 900);
+        P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Leo sta guardando le immagini" : "Leo sta ragionando"), 900);
         let r;
         try { r = await attempt(m, body, opts, opts.modelTier === "complex" ? 120000 : opts.images ? 90000 : opts.fast ? 25000 : 40000); }
         catch (e) { clearTimeout(slow); if (e && e.code === "network") { last = { code: "network", message: e.message }; P.stage("Connessione interrotta, riprovo"); await new Promise(z => setTimeout(z, 1500)); continue; } throw e; }
@@ -107,7 +107,7 @@ function makeGemini(key) {
     throw (errs[0] && last && last.code !== "timeout" && last.code !== "refused" ? errs[0] : last) || { code: "upstream_error", message: "Errore" };
   }
   const notify = e => {
-    const msg = { bad_key: "Chiave Gemini non valida: controllala nelle impostazioni", rate_limited: "Limite gratuito di Gemini raggiunto per ora: riprova più tardi", timeout: "Gemini non ha risposto in tempo: riprova tra poco", truncated: "Documento troppo lungo per una volta sola: caricalo in due parti", network: "Connessione assente: riprova quando sei online" }[e && e.code];
+    const msg = { bad_key: "Chiave di Google non valida: controllala nelle Impostazioni", rate_limited: "Limite gratuito raggiunto per ora: riprova più tardi", timeout: "Leo non ha risposto in tempo. Riprova tra un minuto.", truncated: "Documento troppo lungo per una volta sola: caricalo in due parti", network: "Connessione assente: riprova quando sei online" }[e && e.code];
     if (msg && typeof toast === "function") toast(msg); throw e;
   };
   const sample = async (input, opts = {}) => { try { const r = await call(input, opts, false); if (opts.onText) opts.onText({ text: r.text, delta: r.text }); return r; } catch (e) { notify(e); } };
@@ -141,21 +141,21 @@ async function loadLocalPhotos() {
 async function setupSite() {
   S.site = true; S.assets = siteAssets; S.downloads = siteDownloads;
   const k = getAIKey(); S.sample = k ? makeGemini(k) : null;
-  S.sync = k ? "Sul telefono · AI attiva" : "Sul telefono";
+  S.sync = k ? "Sul telefono · Leo attivo" : "Sul telefono";
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (_) {}
   try { S.photos = await loadLocalPhotos(); } catch (_) {}
 }
 function aiKeyBox() {
   const k = getAIKey();
-  return k ? `<div class="card"><h2>Leo usa Google Gemini</h2><p class="small muted">Coach, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
+  return k ? `<div class="card"><h2>Leo usa Google Gemini</h2><p class="small muted">Risposte di Leo, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
       <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`
-    : `<div class="card aikey"><h2>Attiva l'AI, gratis</h2><p class="small muted" style="margin:0">Ti serve una chiave personale di Google: bastano due minuti.</p>
-      <ul class="plain ai-why"><li><b>Coach</b>: risponde su allenamento e alimentazione partendo dai tuoi dati.</li><li><b>Foto e documenti</b>: legge scheda, dieta ed etichette da foto o PDF, e valuta le foto dei progressi.</li><li><b>Pasti</b>: stima calorie e macro da una foto o da una descrizione.</li></ul>
+    : `<div class="card aikey"><h2>Attiva Leo (gratis)</h2><p class="small muted" style="margin:0">Ti serve una chiave personale di Google: bastano due minuti.</p>
+      <ul class="plain ai-why"><li><b>Leo</b>: risponde su allenamento e alimentazione partendo dai tuoi dati.</li><li><b>Foto e documenti</b>: legge scheda, piano alimentare ed etichette da foto o PDF, e confronta le foto del corpo.</li><li><b>Pasti</b>: stima calorie e proteine da una foto o da una descrizione.</li></ul>
       <ol class="ai-steps"><li>Tocca «Apri Google AI Studio» e accedi con il tuo account Google.</li><li>Accetta i termini se te li chiede, poi tocca «Create API key».</li><li>Tocca l'icona di copia accanto alla chiave (inizia con «AIza»).</li><li>Torna qui: tocca «◀ Askesis» in alto a sinistra, oppure riapri l'app. Poi tocca «Incolla chiave».</li></ol>
       <a class="primary go" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">Apri Google AI Studio</a>
       ${navigator.clipboard && navigator.clipboard.readText ? `<button class="primary" data-act="ai-paste">Incolla chiave</button>` : ""}
       <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Oppure incollala qui (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;color:var(--text);font-size:16px">
-      <button class="ghost" data-act="ai-save">Attiva AI</button>
+      <button class="ghost" data-act="ai-save">Attiva Leo</button>
       <p class="small muted" style="margin:0">La chiave resta solo su questo telefono: Askesis non ha server e non la vede. Le richieste vanno direttamente a Google. Il piano gratuito ha limiti giornalieri e Google può usare le richieste per migliorare i suoi modelli. Senza chiave funzionano comunque profilo, scheda e dieta inserite a mano, allenamenti e progressi.</p></div>`;
 }
 document.addEventListener("click", async e => {
@@ -167,7 +167,7 @@ document.addEventListener("click", async e => {
     const k = (el && el.value || "").replace(/[\s\u200B-\u200D\u2060\uFEFF"'«»“”‘’]/g, "").replace(/\u2014/g, "--").replace(/[\u2013\u2212]/g, "-");
     if (k.length < 20) { toast("La chiave sembra incompleta: copiala di nuovo da AI Studio"); return; }
     b.disabled = true; b.textContent = "Verifico…";
-    try { await geminiModels(k); setAIKey(k); await setupSite(); toast("AI attivata"); }
+    try { await geminiModels(k); setAIKey(k); await setupSite(); toast("Leo attivato"); }
     catch (err) { toast(err && err.code === "bad_key" ? "Questa chiave non funziona. Ricopiala da AI Studio: deve iniziare con AIza." : err && err.code === "rate_limited" ? "Per oggi hai raggiunto il limite gratuito. Riprova più tardi." : "Google non risponde. Controlla la connessione e riprova."); }
     render();
   } else if (act === "ai-paste") {
@@ -188,7 +188,7 @@ function aiProgress(input, opts, json) {
   const text = typeof input === "string" ? input : String((input[input.length - 1] || {}).content || "");
   const task = opts.task || (opts.images && /etichett/i.test(text) ? "Leggo l'etichetta" : opts.images && /fisico|percorso|preparatore|livell/i.test(text) ? "Valuto le foto" : opts.images ? "Leggo l'immagine"
     : /crea|genera|progetta/i.test(text) && /sedut|scheda|allenament/i.test(text) && json ? "Creo la tua scheda" : /SCHEDA|scheda di allenamento/i.test(text) && json ? "Leggo la scheda" : /piano alimentare|dieta/i.test(text) && json && text.length > 2000 ? "Leggo il piano alimentare"
-    : /alternativ|sostitu/i.test(text) ? "Cerco alternative" : /calorie|macro/i.test(text) && json ? "Stimo calorie e macro" : json ? "Elaboro" : "Leo sta pensando");
+    : /alternativ|sostitu/i.test(text) ? "Cerco alternative" : /calorie|macro/i.test(text) && json ? "Stimo calorie e proteine" : json ? "Elaboro" : "Leo sta pensando");
   const est = (opts.modelTier === "complex" && !opts.images ? 50 : opts.images ? (opts.fast ? 12 : 35) : json ? (opts.fast ? 8 : 20) : 10) * 1000;
   const id = Date.now() + Math.random(), t0 = Date.now();
   const st = { id, task, stage: "", t0, est };

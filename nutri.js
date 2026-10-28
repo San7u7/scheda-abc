@@ -30,7 +30,7 @@
     const water = (T.waterL || 2.5) + (k.done || k.train ? 0.5 : 0), drunk = v.water * 0.25;
     if (!lim) {
       const pLeft = Math.round(T.pro - it.eaten.p), open = MEALS.filter(([mk]) => mealState(v, mk) === "open").length;
-      if (pLeft > 15) out.push(`Ti mancano ${pLeft} g di proteine${open ? `: circa ${Math.round(pLeft / open)} g in ognuno dei ${open} pasti che restano` : ""}.`);
+      if (pLeft > 15) out.push(`Ancora ${pLeft} g di proteine per l'obiettivo${open ? `: circa ${Math.round(pLeft / open)} g in ognuno dei ${open} pasti che restano` : ""}.`);
       else if (it.logged) out.push("Proteine di oggi quasi a posto: bene così.");
     }
     if (k.done) out.push(`Seduta ${k.day || ""} fatta: nel pasto dopo metti 30–40 g di proteine e una porzione di carboidrati, servono a recuperare.`);
@@ -50,10 +50,10 @@
   ];
   function guide() {
     const T = targets(), k = T.kind, base = planTargets(), lim = safetyLimited(), foods = (S.foods || []).filter(f => f.per100 && f.per100.p >= 8).slice(0, 3);
-    const day = k.train ? `Oggi è un giorno di allenamento: ${fmt(T.kcal)} kcal, con ${T.cho} g di carboidrati (${T.adj > 0 ? "+" : ""}${T.adj} g rispetto alla media).` : `Oggi è un giorno di riposo: ${fmt(T.kcal)} kcal, con ${T.cho} g di carboidrati (${T.adj} g rispetto alla media).`;
+    const day = k.train ? `Oggi è un giorno di allenamento: ${fmt(T.kcal)} calorie, con ${T.cho} g di carboidrati (${T.adj > 0 ? "+" : ""}${T.adj} g rispetto alla media).` : `Oggi è un giorno di riposo: ${fmt(T.kcal)} calorie, con ${T.cho} g di carboidrati (${T.adj} g rispetto alla media).`;
     return `<div class="block"><div class="card ng"><h2>La tua guida</h2><p class="small muted" style="margin:0">Una guida, non una dieta: scegli tu cosa mangiare dentro queste quote.</p>
       ${lim ? `<p>Per il tuo profilo l'app non propone quantità: per un piano su misura rivolgiti a un medico o a un dietista.</p>` : `<p style="margin:0">${day}</p>
-      <div class="ng-kv"><span><b>${fmt(T.kcal)}</b>kcal</span><span><b>${T.pro} g</b>proteine</span><span><b>${T.cho} g</b>carbo</span><span><b>${T.fat} g</b>grassi</span></div>
+      <div class="ng-kv"><span><b>${fmt(T.kcal)}</b>kcal</span><span><b>${T.pro} g</b>proteine</span><span><b>${T.cho} g</b>carboidrati</span><span><b>${T.fat} g</b>grassi</span></div>
       <div class="ng-slots">${SLOTS.map(([id, l, sh, ex]) => `<details class="ng-slot"><summary><b>${l}</b><span class="small muted">circa ${fmt(Math.round(T.kcal * sh / 10) * 10)} kcal · ${Math.round(T.pro * (sh >= .2 ? .27 : .1))} g proteine</span></summary><ul class="plain small">${ex.map(x => `<li>${x}</li>`).join("")}${foods.length && sh >= .2 ? `<li class="muted">Dai tuoi alimenti: ${foods.map(f => esc(f.nome)).join(", ")}</li>` : ""}</ul></details>`).join("")}</div>
       <p class="small muted" style="margin:0">Le porzioni sono indicative per circa ${fmt(base.kcal)} kcal di media: se ti alleni mangi un po' di più, a riposo un po' meno.</p>
       <ul class="plain small ng-rules"><li>Una fonte di proteine a ogni pasto.</li><li>Verdura a pranzo e a cena.</li><li>I carboidrati più vicini alla seduta.</li><li>Pesati 2 volte a settimana: se in 3 settimane il peso non va dove vuoi, Leo ti propone come correggere.</li></ul>`}</div></div>`;
