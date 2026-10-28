@@ -84,7 +84,20 @@
     const a = activeDay(), d = a && S.drafts[a], ev = d && evOf(d), last = ev && ev[ev.length - 1];
     if (last && last.type === "done") S.timer = { end: last.t + (last.rest || 90) * 1000, total: last.rest || 90 };
   }
-  setInterval(() => { syncTimer(); full(); mini(); fixb(); }, 1000);
+  /* cardio (modifica 5): tempo dagli istanti salvati in d.cardio {id, t, pz, pause}; annuncio solo a metà, alla fine e nei cambi */
+  function cardioTick() {
+    const a = activeDay(), d = a && S.drafts[a], c = d && d.cardio; if (!c || c.pause || typeof cardioLeft !== "function") return;
+    const it = P[a].items.find(x => x.id === c.id); if (!it || !d.sets[it.id]) return;
+    const k = cardioLeft(d, it), t = document.getElementById("cdo-t"), arc = document.getElementById("cdo-arc"), live = document.getElementById("cdo-live");
+    if (t) t.textContent = mmss(k.left);
+    if (arc) arc.style.strokeDashoffset = (+arc.getAttribute("stroke-dasharray") * k.left / k.dur).toFixed(1);
+    const say = m => { if (live) live.textContent = m; };
+    if (!c.half && k.el >= k.dur / 2) { c.half = true; saveDrafts(); say("Metà del cardio: mancano " + minTxt(k.left)); }
+    if (k.left <= 0 && !c.end) { c.end = true; c.pause = Date.now(); saveDrafts(); say("Cardio finito");
+      try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (_) {}
+      if (inSession() && d.cur && d.cur.id === it.id && typeof cardioFine === "function") cardioFine(); }
+  }
+  setInterval(() => { syncTimer(); full(); mini(); fixb(); cardioTick(); }, 1000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { syncTimer(); full(); mini(); } });
   window.addEventListener("resize", () => mini());
 

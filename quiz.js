@@ -415,7 +415,7 @@
     if (!t.sedute.length) throw { code: "invalid" };
     return t;
   }
-  const exRows = sd => sd.esercizi.map(x => ui.row({ title: x.nome, sub: `${x.serie} × ${x.min === x.max ? x.min : x.min + "–" + x.max}${x.corpo_libero ? " · corpo libero" : ""} · recupero ${restTxt(+x.recupero || 90)}` })).join("");
+  const exRows = sd => sd.esercizi.map(x => ui.row({ title: x.nome, sub: x.cardio || x.misura === "cardio" ? `Cardio · ${x.minuti || 20} minuti, ritmo ${x.intensita || "medio"}` : `${x.serie} × ${x.min === x.max ? x.min : x.min + "–" + x.max}${x.corpo_libero ? " · corpo libero" : ""} · recupero ${restTxt(+x.recupero || 90)}` })).join("");
   const KIDQ = (adult, kid) => () => grp() === "b" ? kid : adult;
 
   /* ---------- «Crea una nuova scheda»: QUESTIONARIO_SCHEDA_V2.md, sezione 1 (n = numero nel documento) ---------- */

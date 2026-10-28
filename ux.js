@@ -104,6 +104,10 @@
     const idx = items.findIndex(x => x.id === d.cur.id), it = items[idx];
     const all = items.flatMap(x => d.sets[x.id]), doneN = all.filter(s => s.done).length, allDone = doneN === all.length;
     const exDone = items.filter(x => d.sets[x.id].every(s => s.done)).length;
+    const nav = `<div class="fnav"><button class="ghost" data-act="ex-step" data-v="-1" ${idx === 0 ? "disabled" : ""}>‹ Esercizio precedente</button><button class="ghost" data-act="ex-step" data-v="1" ${idx === items.length - 1 ? "disabled" : ""}>Esercizio successivo ›</button></div>`;
+    if (typeof isCardio === "function" && isCardio(it) && !allDone) // modifica 5, tavola CardioSeduta: titolo, card del cardio, comandi; niente demo né serie
+      return `<div class="cdo-top"><h1>${tv("Seduta", "Allenamento")} ${a}</h1><p>Cardio ${cardioWhen(it) === "prima" ? "prima dei pesi" : "dopo i pesi"}</p></div><div class="cdo-main">${activeCard(it, d)}</div>${nav}
+      <div class="block"><button class="ghost" data-act="exlist">Tutti gli esercizi</button></div>`;
     return `<div class="fhead"><button class="back" data-act="exlist">${'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>'}Tutti gli esercizi</button>
         <div class="fring">${ring(doneN, all.length, 54)}<span class="num">${exDone}/${items.length}</span></div></div>
       <p class="small muted" style="margin:6px 0 10px">Esercizio ${idx + 1} di ${items.length} · ${tv("Seduta", "Allenamento")} ${a}</p>
@@ -159,13 +163,13 @@
       const a = activeDay(), d = draft(a);
       html = `<div class="block-h"><h2>Seduta ${a}</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
         <div class="stack" style="gap:8px">${P[a].items.map((it, i) => { const sets = d.sets[it.id], n = sets.filter(s => s.done).length, full = n === sets.length;
-          return `<button class="xrow ${full ? "done" : ""}" data-act="jump" data-v="${it.id}" ${it.id === d.cur.id ? 'aria-current="true"' : ""}><span class="st ${full ? "full" : n ? "part" : ""}">${CHECK}</span><span class="nm">${i + 1}. ${esc(short(exName(it)))}</span><span class="rt num">${n}/${sets.length}</span></button>`; }).join("")}</div>`;
+          return `<button class="xrow ${full ? "done" : ""}" data-act="jump" data-v="${it.id}" ${it.id === d.cur.id ? 'aria-current="true"' : ""}><span class="st ${full ? "full" : n ? "part" : ""}">${CHECK}</span><span class="nm">${i + 1}. ${esc(short(exName(it)))}</span><span class="rt num">${it.misura === "cardio" ? (full ? sets[0].min + " minuti fatti" : "Cardio · " + sets[0].min + " minuti") : n + "/" + sets.length}</span></button>`; }).join("")}</div>`;
     } else if (sh === "sess") {
       const s = S.sessions.find(x => x.id === S.sessId);
       if (!s) { S.sheet = null; return baseSheet(); }
       html = `<div class="block-h"><h2>Seduta <span class="hl">${s.day}</span> · ${dt(s.date)}</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
         <div class="srow boxed"><span><b>${s.items.length}</b>esercizi</span><span><b>${s.items.reduce((m, e) => m + e.sets.length, 0)}</b>serie</span><span><b>${s.durata || "–"}</b>minuti</span><span><b>${s.fatica != null ? s.fatica : "–"}</b>fatica</span></div>
-        <div class="list">${s.items.map(e => `<div class="lrow"><span>${esc(short(e.name))}</span><span class="r small">${e.sets.map(x => x.kg != null ? `${fmt(x.kg)}×${x.reps}` : x.reps).join(" · ")}</span></div>`).join("")}</div>
+        <div class="list">${s.items.map(e => `<div class="lrow"><span>${esc(short(e.name))}</span><span class="r small">${e.cardio ? `${e.cardio.min != null ? e.cardio.min + " minuti" : "Cardio"}${e.cardio.km ? " · " + fmt(e.cardio.km) + " km" : ""}` : e.sets.map(x => x.kg != null ? `${fmt(x.kg)}×${x.reps}` : x.reps).join(" · ")}</span></div>`).join("")}</div>
         ${s.note ? `<p class="muted">Note: ${esc(s.note)}</p>` : ""}`;
     }
     o.innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;

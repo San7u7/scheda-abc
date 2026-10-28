@@ -401,6 +401,39 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 .credits { font-size: 11px; line-height: 15px; color: var(--faint); }
 .credits a { color: var(--faint); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } .primary:active { transform: none; } }
+/* Modifica 5 (28/10): cardio in seduta, tavola CardioSeduta */
+.cdo-top { padding-left: 16px; margin-top: 4px; } .cdo-top h1 { margin: 0; } .cdo-top p { margin: 4px 0 0; font-size: 16px; color: var(--v3-t2, rgba(255,255,255,.8)); }
+.cdo-main { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+.active.cdo { background: var(--v3-s1, #111); border-radius: 24px; padding: 16px; gap: 16px; box-shadow: inset 0 0 0 2px var(--accent); }
+.active.cdo .a-name { font-size: 22px; line-height: 1.2; font-weight: 800; }
+.cdo-s { margin: 4px 0 0; font-size: 15px; color: var(--v3-t2, rgba(255,255,255,.8)); }
+.cdo-ring { position: relative; width: min(232px, 62vw); aspect-ratio: 1; align-self: center; }
+.cdo-ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
+.cdo-ring circle { fill: none; stroke: var(--v3-s3, #2a2a2a); stroke-width: 12; }
+.cdo-ring #cdo-arc, .cd-ring .arc { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.cdo-ring > div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.cdo-ring b { font-size: min(60px, 16vw); font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.cdo-ring span { font-size: 15px; color: var(--v3-t2, rgba(255,255,255,.8)); }
+.cdo-rit { border-radius: 18px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; }
+.cdo-rit span { font-size: 14px; font-weight: 700; color: var(--accent); } .cdo-rit b { font-size: 17px; }
+.cdo-pm button[disabled] { opacity: .4; }
+.cdo-acts { display: flex; flex-direction: column; gap: 12px; }
+.cdo-acts .primary { min-height: 56px; height: auto; font-size: 17px; }
+.cdo-fin { min-height: 52px; width: 100%; border-radius: 999px; border: 0; background: transparent; box-shadow: inset 0 0 0 2px var(--v3-s3, #2a2a2a); color: var(--text); font: inherit; font-weight: 600; font-size: 16px; }
+.cdo-fin:active { background: var(--v3-s2, #1a1a1a); }
+.cdo-sr, .cd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* fogli e pagine del cardio: riga con mini stepper «− 20 min +» */
+.cd-row { min-height: 72px; border-radius: 18px; background: var(--v3-s2, #1a1a1a); display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 16px; box-sizing: border-box; }
+#view.v3 .cd-row { background: var(--v3-s1, #111); }
+.cd-note { margin: 0; padding-left: 16px; }
+.cd-row .v3-rx { flex: 1; min-width: 0; } .cd-row .v3-rs { font-size: 15px; }
+.cd-mini { flex: none; width: 150px; min-height: 40px; display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: stretch; border-radius: 16px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); overflow: hidden; }
+.cd-mini button { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 20px; font-weight: 700; min-height: 40px; padding: 0; }
+.cd-mini button:active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.cd-mini b { display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: var(--v3-t1, #fff); white-space: nowrap; font-variant-numeric: tabular-nums; border-left: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-right: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+@media (max-width: 340px) { .cd-mini { width: 128px; grid-template-columns: 36px minmax(0, 1fr) 36px; } }
+@media (prefers-reduced-motion: reduce) { .cdo-ring #cdo-arc, .cd-ring .arc { transition: none; } }
+body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; }
 </style>
 
 <div class="wrap">
@@ -411,10 +444,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610282200"></script>
-<script src="lib.js?v=202610282200"></script>
-<script src="ai.js?v=202610282200"></script>
-<script src="coach.js?v=202610282200"></script>
+<script src="seed-abc.js?v=202610290000"></script>
+<script src="lib.js?v=202610290000"></script>
+<script src="ai.js?v=202610290000"></script>
+<script src="coach.js?v=202610290000"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -434,15 +467,69 @@ function setTraining(t) {
    Senza schema = «uguali» con serie/min/max/kg di sempre. */
 const SCH = { uguali: ["Serie uguali", "Stesso peso in ogni serie"], piramide_su: ["Piramide: peso che sale", "Più peso, meno ripetizioni"], piramide_giu: ["Piramide: peso che scende", "Parti pesante, poi alleggerisci"],
   pesante_scarico: ["Una pesante, poi più leggere", "Serie di punta e serie di scarico"], scalare: ["Serie a scalare (drop set)", "Cali il peso senza pausa, 2 volte"], "5x5": ["5 serie da 5", "Per chi inizia, solo esercizi base"] };
-const MISURA = { pesi: "Con pesi", corpo: "A corpo libero", tempo: "A tempo", distanza: "A distanza" };
+const MISURA = { pesi: "Con pesi", corpo: "A corpo libero", tempo: "A tempo", cardio: "Cardio", distanza: "A distanza" }; // «A distanza» confluisce nel cardio (migraCardio), resta solo per leggere dati vecchi
+/* Modifica 5 (28/10): cardio a minuti con intensità prevista e chilometri facoltativi. Scelte facili da cambiare qui. */
+const CARDIO = {
+  primaSe: ["definizione", "dimagrire", "resistenza"], // obiettivi con il cardio prima dei pesi; per gli altri va dopo (consiglio ACSM)
+  fuori: true,                                        // «Segna un cardio» fuori palestra: conta nella settimana
+  peso: { leggero: 0, medio: 1, forte: 2 },           // minuti che valgono per la settimana (OMS: contano moderato e intenso, 1 minuto intenso vale 2); il leggero si registra ma non conta
+  obiettivo: g => g === "bambino" || g === "ragazzo" ? 420 : 150, // OMS 2020: adulti e over 65 150 minuti; 5-17 anni 60 al giorno
+  stretchVolte: 3,                                    // ACSM: flessibilità 2-3 volte a settimana
+  passi: [5, 120]                                     // minuti, scatti di 5
+};
+const INT = {
+  leggero: ["Leggero", "Parli bene, potresti anche cantare", "Parlavo bene, senza fiatone"],
+  medio: ["Medio", "Parli, ma a frasi corte", "Parlavo a frasi corte"],
+  forte: ["Forte", "Riesci a dire solo poche parole", "Dicevo solo poche parole"]
+};
+const intOf = v => INT[v] ? v : "medio";
+const CARDIO_RE = /tapis|roulant|treadmill|cyclette|\bbici\b|bicicletta|spinning|exercise bike|stationary bike|recumbent|ellittic|elliptical|vogator|rowing machine|\brower\b|camminat|\bcorsa\b|jogging|running|stair ?master|stepper|cardio/i;
+const isCardio = it => !!it && it.misura === "cardio";
+const cardioWhen = it => it.quando === "prima" || it.quando === "dopo" ? it.quando : CARDIO.primaSe.includes((S.profile || {}).obiettivo) ? "prima" : "dopo";
+/* ordine della seduta: cardio «prima», pesi, cardio «dopo» (gli id restano quelli della scheda) */
+const flowOrder = items => [...items.filter(x => isCardio(x) && cardioWhen(x) === "prima"), ...items.filter(x => !isCardio(x)), ...items.filter(x => isCardio(x) && cardioWhen(x) === "dopo")];
+const kmTxt = k => fmt(Math.round(k * 10) / 10) + " km";
 function normEx(e, j, id) {
   const mis = !e.corpo_libero && !(MISURA[e.misura] && e.misura !== "pesi" && e.corpo_libero == null) ? "pesi" : MISURA[e.misura] && e.misura !== "pesi" ? e.misura : "corpo", noKg = mis !== "pesi"; // corpo_libero resta la fonte (anche l'editor vecchio lo cambia)
   const it = { id, name: e.nome, en: e.en || "", sets: e.serie, min: e.min, max: e.max, last: e.last ?? null, kg: noKg ? null : e.kg, rest: e.recupero || 90, mus: e.muscolo || "Altro", warm: e.warm ?? j === 0, tech: e.tecnica || "", note: e.note || "", unit: noKg ? "none" : (e.unit || undefined), lib: e.lib || null, demo: e.demo || null,
     misura: mis, risc: !!e.risc, lato: !!e.lato, nota: e.nota || "", schema: e.schema && SCH[e.schema.tipo] ? { ...e.schema } : null };
   it.salto = +e.salto || stepFor(it);
   if (it.schema) it.sets = it.schema.tipo === "5x5" ? 5 : Math.max(1, +it.schema.serie || e.serie || 3);
+  if (mis === "cardio") { const m = Math.min(CARDIO.passi[1], Math.max(CARDIO.passi[0], Math.round(+e.minuti || 20)));
+    Object.assign(it, { dur: m, int: intOf(e.intensita), km: e.km != null && +e.km > 0 ? +e.km : null, quando: e.quando || null, sets: 1, min: m, max: m, rest: 0, warm: false, risc: false, schema: null, mus: "Cardio" }); }
   return it;
 }
+/* migrazione senza perdite: cardio salvati «A tempo» (secondi), «A distanza» (metri) o con le ripetizioni diventano «Cardio» a minuti;
+   i valori di prima restano in x.vecchio, le sedute già fatte tengono le serie e ricevono {cardio: {min, int, km}} */
+function migraCardio() {
+  const t = S.training; let tc = false, sc = false;
+  const r5 = n => Math.min(CARDIO.passi[1], Math.max(CARDIO.passi[0], Math.round(n / 5) * 5));
+  if (t && Array.isArray(t.sedute)) for (const sd of t.sedute) for (const x of (sd.esercizi || [])) {
+    if (x.mig5 || x.misura === "cardio") continue;
+    const old = x.misura || (x.corpo_libero ? "corpo" : "pesi"), nm = (x.nome || "") + " " + (x.en || ""), v = Math.max(+x.min || 0, +x.max || 0);
+    if (!(old === "distanza" || CARDIO_RE.test(nm) || (old === "tempo" && v >= 300))) continue;
+    x.vecchio = { misura: x.misura || null, serie: x.serie, min: x.min, max: x.max, kg: x.kg ?? null, recupero: x.recupero ?? null, corpo_libero: x.corpo_libero ?? null, schema: x.schema || null };
+    const minuti = old === "tempo" ? r5(v / 60) : old === "distanza" ? 20 : v >= 5 && v <= 120 ? r5(v) : 20;
+    Object.assign(x, { misura: "cardio", corpo_libero: true, serie: 1, min: minuti, max: minuti, minuti, intensita: x.intensita || "medio", km: old === "distanza" && v ? Math.round(v / 100) / 10 : x.km ?? null, mig5: 1 });
+    delete x.schema; tc = true;
+  }
+  if (tc) persistDoc("training", t);
+  const conv = {}; if (t && t.sedute) t.sedute.forEach(sd => (sd.esercizi || []).forEach(x => { if (x.misura === "cardio" && x.vecchio) conv[x.nome] = x.vecchio.misura; }));
+  for (const s of S.sessions) for (const e of (s.items || [])) {
+    if (e.cardio || !(e.name in conv) || !Array.isArray(e.sets)) continue;
+    const tot = e.sets.reduce((a, x) => a + (+x.reps || 0), 0), m = conv[e.name];
+    e.cardio = { min: m === "tempo" ? Math.round(tot / 60) : m === "distanza" ? null : tot, int: null, km: m === "distanza" && tot ? Math.round(tot / 100) / 10 : null, vecchio: true }; sc = true;
+  }
+  if (sc) { lsSet("sessions", S.sessions); if (S.db) S.sessions.forEach(s => { if ((s.items || []).some(e => e.cardio && e.cardio.vecchio)) S.db.doc(S.base + "/" + s.id).set({ kind: "session", ...s }).catch(() => {}); }); }
+}
+/* minuti di cardio di una settimana (lunedì-domenica): sedute + cardio fuori palestra; intenso conta doppio */
+function cardioWeek(from, to) {
+  const iso = d => localISO(new Date(d)), inW = d => d >= from && d <= to; let m = 0;
+  for (const s of S.sessions) if (inW(iso(s.date))) for (const e of (s.items || [])) if (e.cardio && e.cardio.min) m += e.cardio.min * (CARDIO.peso[e.cardio.int] ?? 1);
+  if (CARDIO.fuori) for (const c of lsGet("cardio_fuori", [])) if (inW(c.date)) m += (+c.min || 0) * (CARDIO.peso[c.int] ?? 1);
+  return Math.round(m);
+}
+const stretchWeek = (from, to) => lsGet("stretch_days", []).filter(d => d >= from && d <= to).length;
 const tipoOf = it => (it.schema && SCH[it.schema.tipo]) ? it.schema.tipo : "uguali";
 const r05 = x => Math.round(x * 2) / 2;
 /* funzione pura: kg e ripetizioni di ogni serie. o.kg1 = carico di partenza (dalla progressione), o.reps = ripetizioni per «uguali».
@@ -563,6 +650,10 @@ function draft(day) {
   const d = S.drafts[day] || (S.drafts[day] = { started: false, subs: {}, sets: {}, cur: null });
   for (const it of P[day].items) {
     const fresh = draftSets(it, d);
+    if (isCardio(it) && d.sets[it.id] && !(d.sets[it.id][0] || {}).c) { // bozza vecchia (serie in secondi o metri): un solo blocco a minuti, il fatto resta fatto
+      const was = d.sets[it.id].filter(x => x.done);
+      d.sets[it.id] = was.length ? [{ ...fresh[0], done: true, int: null, vecchie: was }] : fresh;
+    }
     if (!d.sets[it.id] || (!d.started && JSON.stringify(d.sets[it.id].map(x => [x.kg, x.reps, !!x.w])) !== JSON.stringify(fresh.map(x => [x.kg, x.reps, !!x.w])))) d.sets[it.id] = fresh;
   }
   if (!d.cur || !d.sets[d.cur.id]) d.cur = firstOpen(day, d);
@@ -570,6 +661,7 @@ function draft(day) {
 }
 /* serie della bozza dallo schema (della scheda, o «solo per oggi» in d.sch); t = valori previsti, w/dr = riscaldamento/calo */
 function draftSets(it, d) {
+  if (isCardio(it)) return [{ c: 1, kg: null, reps: null, min: it.dur, int: it.int, km: it.km, done: false }];
   const x = itOf(it, d), td = d && d.sch && d.sch[it.id] && d.sch[it.id].schema;
   const pl = plan(x), ls = pl.b.lastSets, uq = tipoOf(x) === "uguali";
   const kg1 = x.unit === "none" ? null : td && td.kg1 != null ? +td.kg1 : pl.kg;
@@ -578,8 +670,9 @@ function draftSets(it, d) {
 }
 const itOf = (it, d) => { const o = d && d.sch && d.sch[it.id]; if (!o) return it; const x = { ...it, ...o }; if (o.schema) x.sets = o.schema.tipo === "5x5" ? 5 : +o.schema.serie || it.sets; return x; };
 function firstOpen(day, d) {
-  for (const it of P[day].items) { const i = d.sets[it.id].findIndex(s => !s.done); if (i >= 0) return { id: it.id, i }; }
-  const it = P[day].items[P[day].items.length - 1]; return { id: it.id, i: 0 };
+  const L = flowOrder(P[day].items);
+  for (const it of L) { const i = d.sets[it.id].findIndex(s => !s.done); if (i >= 0) return { id: it.id, i }; }
+  const it = L[L.length - 1]; return { id: it.id, i: 0 };
 }
 function saveDrafts() { lsSet("drafts", S.drafts); }
 function persistFoods() { S.foods.forEach(f => delete f.pending); lsSet("foods", S.foods); if (S.db) S.db.doc(S.base + "/foods").set({ kind: "foods", items: JSON.parse(JSON.stringify(S.foods)) }).catch(() => { S.foods.forEach(f => f.pending = true); syncMsg("Alimenti salvati solo su questo dispositivo"); }); }
@@ -763,10 +856,84 @@ function viewAllenamento() {
     <div class="xlist">${rows}</div>
     <div class="block"><button class="ghost" data-act="finish">Concludi ${laSed()}</button></div>`;
 }
+/* cardio in seduta (tavola CardioSeduta): anello a scalare dagli istanti salvati in d.cardio (timer.js lo aggiorna ogni secondo) */
+const cardioLeft = (d, it) => { const s = d.sets[it.id][0], c = d.cardio && d.cardio.id === it.id ? d.cardio : null, dur = (+s.min || it.dur) * 60;
+  const el = c ? (((c.pause || Date.now()) - c.t) - (c.pz || 0)) / 1000 : 0; return { c, dur, el: Math.max(0, el), left: Math.max(0, dur - el) }; };
+function cardioCard(it, d) {
+  const s = d.sets[it.id][0], k = cardioLeft(d, it), L = flowOrder(P[activeDay()].items), I = INT[intOf(s.int || it.int)], R = 130, C = +(2 * Math.PI * R).toFixed(1);
+  const sub = `Cardio · ${L.indexOf(it) + 1} di ${L.length} ${L.length === 1 ? "esercizio" : "esercizi"}`;
+  if (s.done) return `<section class="active cdo" aria-label="Cardio fatto"><div><div class="a-name">${esc(short(exName(it)))}</div><p class="cdo-s">${sub}</p></div>
+    <div class="cdo-rit"><span>Cardio fatto</span><b>${s.min} minuti${s.int ? ", ritmo " + INT[s.int][0].toLowerCase() : ""}${s.km ? " · " + kmTxt(s.km) : ""}</b></div></section>
+    <div class="cdo-acts"><button class="primary" data-act="cd-fine">Correggi il cardio</button><button class="cdo-fin" data-act="undo">Segna come non fatto</button></div>`;
+  const run = k.c && !k.c.pause, mm = x => mmss(Math.round(x));
+  return `<section class="active cdo" aria-label="Cardio in corso"><div><div class="a-name">${esc(short(exName(it)))}</div><p class="cdo-s">${sub}</p></div>
+    <div class="cdo-ring" role="timer" aria-label="${mm(k.left)} mancano su ${mm(k.dur)}"><svg viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="${R}"/><circle id="cdo-arc" cx="150" cy="150" r="${R}" stroke-dasharray="${C}" style="stroke-dashoffset:${(C * k.left / k.dur).toFixed(1)}"/></svg>
+      <div><b id="cdo-t">${mm(k.left)}</b><span id="cdo-k">${!k.c ? "su " + mm(k.dur) + ", pronto" : k.c.pause ? "in pausa, su " + mm(k.dur) : "mancano su " + mm(k.dur)}</span></div></div>
+    <div class="cdo-rit"><span>Ritmo ${I[0].toLowerCase()}</span><b>${I[1]}</b></div>
+    <div class="setx cdo-pm"><button data-act="cd-pm" data-v="-5" ${k.dur <= CARDIO.passi[0] * 60 ? "disabled" : ""}>Togli 5 minuti</button><button data-act="cd-pm" data-v="5">Aggiungi 5 minuti</button></div></section>
+    <div class="cdo-acts"><button class="primary" data-act="cd-run">${!k.c ? "Avvia il cardio" : run ? "Metti in pausa" : "Riprendi il cardio"}</button><button class="cdo-fin" data-act="cd-fine">Finisci il cardio</button></div>
+    <p class="cdo-sr" id="cdo-live" aria-live="polite"></p>`;
+}
+function cardioRun() {
+  const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id); if (!isCardio(it)) return;
+  const c = d.cardio && d.cardio.id === it.id ? d.cardio : null, now = Date.now(), ev = d.ev || (d.ev = []);
+  if (!c) { d.cardio = { id: it.id, t: now, pz: 0, pause: null, half: false }; ev.push({ type: "go", t: now }); S.timer = null; } // parte il lavoro: nessun recupero in corso
+  else if (c.pause) { c.pz += now - c.pause; c.pause = null; }
+  else c.pause = now;
+  saveDrafts(); render();
+}
+function cardioPm(v) {
+  const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id); if (!isCardio(it)) return;
+  const s = d.sets[it.id][0], k = cardioLeft(d, it), m = Math.min(CARDIO.passi[1], Math.max(CARDIO.passi[0], (+s.min || it.dur) + v));
+  if (m * 60 < k.el) return toast("Hai già fatto più minuti", { sub: "Finisci il cardio per segnarlo" });
+  s.min = m; saveDrafts(); render(); toast(v > 0 ? "5 minuti aggiunti" : "5 minuti tolti", { sub: `Cardio di ${m} minuti` });
+}
+/* foglio «Com'è andato il cardio?» (tavola CardioFine); o.fuori = cardio fuori palestra con i minuti da scegliere */
+function cardioSheet(o) {
+  if (!window.V3) return;
+  let int = intOf(o.int), km = o.km != null && +o.km > 0 ? +o.km : 0, min = o.min;
+  const opt = v => `<button class="pal-opt" role="radio" aria-checked="${v === int}" data-v3act="ci" data-v3arg="${v}"><span class="v3-rx"><span class="v3-rt" style="display:block">${INT[v][0]}</span><span class="v3-rs" style="display:block">${INT[v][2]}</span></span><span class="pal-rad" aria-hidden="true"><i></i></span></button>`;
+  const mini = (act, val, lab) => `<div class="cd-mini"><button data-v3act="${act}" data-v3arg="-1" data-hold="${act}-m" aria-label="${lab}: meno">−</button><b aria-live="polite">${val}</b><button data-v3act="${act}" data-v3arg="1" data-hold="${act}-p" aria-label="${lab}: più">+</button></div>`;
+  const html = () => `<div class="pal-hd"><h2 class="v3-sh1">${o.fuori ? "Segna un cardio" : "Com'è andato il cardio?"}</h2><p class="v3-shp">${o.fuori ? "Camminata, bici, corsa: conta nella settimana." : `${min} ${min === 1 ? "minuto fatto" : "minuti fatti"}. Scegli come ti sentivi.`}</p></div>
+    ${o.fuori ? `<div class="cd-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Minuti</span><span class="v3-rs" style="display:block">Scatti di 5</span></span>${mini("cmin", min + " min", "Minuti")}</div>` : ""}
+    <div class="pal-opts pal-cd" role="radiogroup" aria-label="Come ti sentivi">${["leggero", "medio", "forte"].map(opt).join("")}</div>
+    ${int === "leggero" && !CARDIO.peso.leggero ? `<p class="v3-shp cd-note" role="status">Il ritmo leggero si segna, ma non conta nei ${CARDIO.obiettivo(V3.data.profile().group)} minuti.</p>` : ""}
+    <div class="cd-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Chilometri</span><span class="v3-rs" style="display:block">${o.fuori ? "Se li sai, facoltativi" : "Li leggi sulla macchina"}</span></span>${mini("ckm", km ? kmTxt(km) : "–", "Chilometri")}</div>
+    <button class="v3-apri wide" data-v3act="cok">Segna il cardio</button>${ui2.secondary("Chiudi", "close")}`;
+  const sh = V3.sheet(html(), { label: o.fuori ? "Segna un cardio" : "Com'è andato il cardio?", on: {
+    ci(v) { int = intOf(v); paint(); },
+    ckm(v) { km = Math.max(0, Math.min(99, Math.round((km + 0.1 * +v) * 10) / 10)); paint(); },
+    cmin(v) { min = Math.max(CARDIO.passi[0], Math.min(CARDIO.passi[1], min + 5 * +v)); paint(); },
+    cok() { sh.close(); o.done({ min, int, km: km > 0 ? km : null }); }
+  } });
+  function paint() { const st = sh.el.scrollTop; sh.el.innerHTML = '<div class="v3-grab"></div>' + html(); sh.el.scrollTop = st; }
+  return sh;
+}
+const ui2 = { secondary: (l, a) => `<button class="v3-b2" data-v3act="${a}">${esc(l)}</button>` };
+function cardioFine() {
+  const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id); if (!isCardio(it)) return;
+  const s = d.sets[it.id][0], k = cardioLeft(d, it), fatti = s.done ? +s.min : k.c ? Math.max(1, Math.round(k.el / 60)) : (+s.min || it.dur);
+  if (d.cardio && !d.cardio.pause && !s.done) { d.cardio.pause = Date.now(); saveDrafts(); render(); } // il tempo si ferma mentre scegli
+  cardioSheet({ min: fatti, int: s.int || it.int, km: s.km, done(r) {
+    const was = s.done; Object.assign(s, { min: r.min, int: r.int, km: r.km, done: true }); delete d.cardio;
+    if (!was) { const t = Date.now(), ev = d.ev || (d.ev = []); ev.push({ type: "done", t, ex: it.id, name: exName(it), reps: 0, rest: 0, cardio: 1 }, { type: "go", t }); S.timer = null; d.cur = firstOpen(a, d); }
+    try { navigator.vibrate && navigator.vibrate(30); } catch (_) {}
+    saveDrafts(); render(); window.scrollTo(0, 0);
+    toast(was ? "Cardio corretto" : "Cardio segnato", { sub: `${r.min} minuti · ritmo ${INT[r.int][0].toLowerCase()}${r.km ? " · " + kmTxt(r.km) : ""}` });
+  } });
+}
+function cardioFuori() {
+  cardioSheet({ fuori: true, min: 30, int: "medio", km: null, done(r) {
+    const L = lsGet("cardio_fuori", []), x = { id: "c" + Date.now(), date: localISO(), ...r }; L.push(x); lsSet("cardio_fuori", L);
+    if (window.V3) V3.refresh();
+    toast("Cardio segnato", { sub: `${r.min} minuti · ritmo ${INT[r.int][0].toLowerCase()}`, undo: () => { lsSet("cardio_fuori", lsGet("cardio_fuori", []).filter(y => y.id !== x.id)); if (window.V3) V3.refresh(); } });
+  } });
+}
 function activeCard(it, d) {
+  if (isCardio(it)) return cardioCard(it, d);
   const sets = d.sets[it.id], i = d.cur.i, s = sets[i], X = itOf(it, d), sch = tipoOf(X) !== "uguali", pl = plan(X), b = pl.b, sub = curSub(it);
   const work = sets.filter(x => !x.w && !x.dr), wi = s.w || s.dr ? -1 : work.indexOf(s), wn = sets.filter(x => x.w).indexOf(s);
-  const rl = it.misura === "tempo" ? "Secondi" : it.misura === "distanza" ? "Metri" : "Ripetizioni", tx = t => (t[0] != null ? fmt(t[0]) + " × " : "") + t[1];
+  const rl = it.misura === "tempo" ? "Secondi" : "Ripetizioni", tx = t => (t[0] != null ? fmt(t[0]) + " × " : "") + t[1];
   const setLab = s.w ? `Riscaldamento ${wn + 1} di ${sets.filter(x => x.w).length}${s.t ? " · previsto " + tx(s.t) : ""}` : s.dr ? `Calo di peso, senza pausa${s.t ? " · previsto " + tx(s.t) : ""}` : `Serie ${wi + 1} di ${work.length}${s.t ? " · prevista " + tx(s.t) : ""}`;
   const lastTxt = b.lastSets ? `${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"}: ${b.kg != null && it.unit !== "none" ? fmt(b.kg) + " kg × " : ""}${b.lastSets.slice(0, it.sets).join(", ")}` : "Prima volta";
 
@@ -782,7 +949,7 @@ function activeCard(it, d) {
       <button class="icon-btn" data-act="sheet" data-v="ex" aria-label="Tecnica, note e sostituzione"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button></div>
     ${it.warm && !X.risc && i === 0 && !s.done ? `<p class="small muted">Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.</p>` : ""}
     <div class="setlab">${setLab}${s.done ? " · fatta" : ""}</div>
-    <div class="hero">${kgBox}<div class="box"><span class="lab">${rl}</span><span class="big">${s.reps ?? "–"}</span><div class="pm"><button data-act="repsd" data-v="-1" aria-label="Una ripetizione in meno">−</button><button data-act="repsd" data-v="1" aria-label="Una ripetizione in più">+</button></div></div></div>
+    <div class="hero">${kgBox}<div class="box"><span class="lab">${rl}</span><span class="big">${s.reps ?? "–"}</span><div class="pm"><button data-act="repsd" data-v="-1" aria-label="${it.misura === "tempo" ? "Meno 5 secondi" : "Una ripetizione in meno"}">−</button><button data-act="repsd" data-v="1" aria-label="${it.misura === "tempo" ? "Più 5 secondi" : "Una ripetizione in più"}">+</button></div></div></div>
     ${s.done ? `<div class="row2"><button class="primary" data-act="done">Correggi la serie: ${label}</button></div><button class="link small" data-act="undo">Segna come non fatta</button>` : `<button class="primary" data-act="done">Serie fatta: ${label}</button>`}
     <div class="sets" role="group" aria-label="Serie" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}" aria-label="${x.w ? "Riscaldamento" : x.dr ? "Calo di peso" : "Serie " + (work.indexOf(x) + 1)}: ${it.unit === "none" ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"} ripetizioni${x.done ? ", fatta" : ""}"${x.w || x.dr ? ' data-k="' + (x.w ? "w" : "dr") + '"' : ""}>${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
     <div class="setx">${!s.done && sets.length > 1 ? `<button data-act="delset">${s.w ? "Togli il riscaldamento" : s.dr ? "Togli il calo" : "Togli la serie " + (wi + 1)}</button>` : ""}<button data-act="addset">Aggiungi serie</button></div>
@@ -793,7 +960,7 @@ function activeCard(it, d) {
 function exHistory() {
   const h = {};
   for (const s of S.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1)) for (const e of s.items) {
-    if (!e.sets.length) continue;
+    if (e.cardio || !e.sets || !e.sets.length) continue; // il cardio non è un carico
     const top = e.sets.reduce((a, b) => ((b.kg ?? 0) > (a.kg ?? 0) || ((b.kg ?? 0) === (a.kg ?? 0) && b.reps > a.reps)) ? b : a);
     (h[e.name] = h[e.name] || []).push({ date: s.date, kg: top.kg, reps: top.reps, sets: e.sets });
   }
@@ -1064,7 +1231,7 @@ function persistDoc(name, data) {
   if (S.db) S.db.doc(S.base + "/" + name).set({ kind: name, ...JSON.parse(JSON.stringify(data)) }).catch(() => syncMsg("Salvato solo su questo dispositivo"));
 }
 function calcDiet(pr) { const t = computeTargets(pr); return { fonte: "calcolato", kcal: t.kcal, p: t.p, c: t.c, f: t.f, acqua_l: null, integratori: [], regole: [], giorni: {}, notes: t.notes }; }
-function applyAll() { setTraining(S.training); syncPlan(); }
+function applyAll() { try { migraCardio(); } catch (e) { console.warn("migrazione cardio", e); } setTraining(S.training); syncPlan(); }
 async function obClaude(kind, src) {
   const o = S.ob; o.busy = kind; o.err = null; render();
   try {
@@ -1237,6 +1404,7 @@ function askKeepSets(it, n, sets) {
 async function finish(meta) {
   const day = activeDay(), d = draft(day), items = [], ups = [];
   for (const it of P[day].items) {
+    if (isCardio(it)) { const c = d.sets[it.id].find(s => s.done && s.c); if (c) items.push({ id: it.id, name: exName(it), sets: [], cardio: { min: +c.min || it.dur, int: c.int || null, km: c.km != null && +c.km > 0 ? +c.km : null } }); continue; } // cardio: niente carichi né progressione
     // il riscaldamento non entra nei progressi; i cali restano nello storico ma non contano per aumenti
     const X = itOf(it, d), raw = d.sets[it.id].filter(s => s.done && !s.w), kgOf = s => it.unit === "none" ? null : (s.kg === "" || s.kg == null ? null : +s.kg);
     const done = raw.map(s => ({ kg: kgOf(s), reps: +s.reps || 0, ...(s.dr ? { dr: 1 } : {}) }));
@@ -1255,7 +1423,7 @@ async function finish(meta) {
   await persistSession({ id: "s" + Date.now(), date: new Date().toISOString(), day, items, ...meta });
   await persistState();
   delete S.drafts[day]; saveDrafts(); S.timer = null; S.day = null; S.tab = "oggi"; lsSet("tab2", S.tab);
-  S.savedHtml = `<h2>${allenW() ? `Allenamento ${day} salvato` : `Seduta ${day} salvata`}</h2><p class="muted">${items.length === 1 ? "1 esercizio" : items.length + " esercizi"}, ${items.reduce((a, e) => a + e.sets.length, 0)} serie.</p>` +
+  S.savedHtml = `<h2>${allenW() ? `Allenamento ${day} salvato` : `Seduta ${day} salvata`}</h2><p class="muted">${items.length === 1 ? "1 esercizio" : items.length + " esercizi"}, ${items.reduce((a, e) => a + e.sets.length, 0)} serie${items.filter(e => e.cardio).map(e => `, ${e.cardio.min} minuti di cardio`).join("")}.</p>` +
     (ups.length ? `<div class="card" style="background:var(--raised)"><b>La prossima volta aumenta il carico:</b><ul class="plain muted">${ups.map(u => `<li>${esc(u)}</li>`).join("")}</ul></div>` : `<p>Carichi invariati: punta a 1 ripetizione in più.</p>`) +
     `<p class="small muted">Prossima: ${allenW() ? "allenamento" : "seduta"} ${nextDay()}.</p>`;
   S.sheet = "saved"; window.scrollTo(0, 0); render();
@@ -1349,11 +1517,14 @@ document.addEventListener("click", e => {
   else if (act === "pickset") { const d = draft(activeDay()); d.cur.i = +v; saveDrafts(); render(); }
   else if (act === "reps") { const d = draft(activeDay()); d.sets[d.cur.id][d.cur.i].reps = +v; saveDrafts(); render(); }
   else if (act === "kg") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.kg = Math.max(0, +((+s.kg || 0) + (+v) * 0.5).toFixed(2)); saveDrafts(); render(); } // passo 0,5 kg ovunque (Giovanni 27/10)
-  else if (act === "repsd") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.reps = Math.max(1, (+s.reps || 0) + (+v)); saveDrafts(); render(); }
+  else if (act === "repsd") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i], tmp = (P[activeDay()].items.find(x => x.id === d.cur.id) || {}).misura === "tempo"; s.reps = Math.max(tmp ? 5 : 1, (+s.reps || 0) + (+v) * (tmp ? 5 : 1)); saveDrafts(); render(); } // «A tempo»: scatti di 5″
   else if (act === "addset") { const d = draft(activeDay()), sets = d.sets[d.cur.id], last = sets[sets.length - 1]; sets.push({ kg: last.kg, reps: last.reps, done: false }); d.cur.i = sets.length - 1; saveDrafts(); render(); toast(`Serie ${sets.length} aggiunta`); }
   else if (act === "delset") { const d = draft(activeDay()), sets = d.sets[d.cur.id]; if (sets.length > 1 && !sets[d.cur.i].done) { const gone = d.cur.i + 1; sets.splice(d.cur.i, 1); const nx = sets.findIndex(x => !x.done); d.cur.i = nx >= 0 ? nx : sets.length - 1; saveDrafts(); render(); toast(`Serie ${gone} tolta`); } }
   else if (act === "done") markDone();
-  else if (act === "undo") { const d = draft(activeDay()); d.sets[d.cur.id][d.cur.i].done = false; saveDrafts(); render(); }
+  else if (act === "cd-run") cardioRun();
+  else if (act === "cd-pm") cardioPm(+v);
+  else if (act === "cd-fine") cardioFine();
+  else if (act === "undo") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.done = false; saveDrafts(); render(); if (s.c) toast("Cardio da rifare", { sub: s.min + " minuti previsti" }); }
   else if (act === "t15") { if (S.timer) { S.timer.end = Math.max(Date.now(), S.timer.end) + 15000; S.timer.total += 15; renderBar(); } }
   else if (act === "tstop") { S.timer = null; renderBar(); }
   else if (act === "finish") { S.fat = null; S.confirmDiscard = false; openSheet("finish"); }
@@ -1460,8 +1631,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610282200"></script>
-<script src="ux.js?v=202610282200"></script>
-<script src="hub.js?v=202610282200"></script><script src="board.js?v=202610282200"></script><script src="timer.js?v=202610282200"></script><script src="nutri.js?v=202610282200"></script><script src="photos.js?v=202610282200"></script><script src="coachui.js?v=202610282200"></script><script src="settings.js?v=202610282200"></script><script src="aikey.js?v=202610282200"></script><script src="tour.js?v=202610282200"></script><script src="gesture.js?v=202610282200"></script><script src="ds.js?v=202610282200"></script><script src="v3.js?v=202610282200"></script><script src="quiz.js?v=202610282200"></script><script src="cibo-base.js?v=202610282200"></script><script src="alimenti.js?v=202610282200"></script><script src="sec-oggi.js?v=202610282200"></script><script src="sec-palestra.js?v=202610282200"></script><script src="sec-cibo.js?v=202610282200"></script><script src="sec-progressi.js?v=202610282200"></script>
+<script src="exdb.js?v=202610290000"></script>
+<script src="ux.js?v=202610290000"></script>
+<script src="hub.js?v=202610290000"></script><script src="board.js?v=202610290000"></script><script src="timer.js?v=202610290000"></script><script src="nutri.js?v=202610290000"></script><script src="photos.js?v=202610290000"></script><script src="coachui.js?v=202610290000"></script><script src="settings.js?v=202610290000"></script><script src="aikey.js?v=202610290000"></script><script src="tour.js?v=202610290000"></script><script src="gesture.js?v=202610290000"></script><script src="ds.js?v=202610290000"></script><script src="v3.js?v=202610290000"></script><script src="quiz.js?v=202610290000"></script><script src="cibo-base.js?v=202610290000"></script><script src="alimenti.js?v=202610290000"></script><script src="sec-oggi.js?v=202610290000"></script><script src="sec-palestra.js?v=202610290000"></script><script src="sec-cibo.js?v=202610290000"></script><script src="sec-progressi.js?v=202610290000"></script>
 
 </body></html>

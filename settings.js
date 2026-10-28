@@ -11,9 +11,11 @@
   const setPref = (k, v) => { const p = pref(); p[k] = v; lsSet("prefs", p); look(); };
   look();
   /* «Impostazioni allenamento» (decisione 27/10): chiave nuova, letta da sec-palestra.js */
-  const rout = () => Object.assign({ warm: true, stretch: "both" }, lsGet("v3_allenamento", {}) || {});
-  const setRout = (k, v) => { const r = rout(); r[k] = v; lsSet("v3_allenamento", r); };
-  const STR = [["prima", "Prima"], ["dopo", "Dopo"], ["both", "Prima e dopo"], ["no", "Non lo faccio"]];
+  /* modifica 5 (28/10): {warm, mob, stretchDopo}; la chiave vecchia «stretch» (prima, dopo, both, no) si converte alla prima lettura */
+  const rout = () => { const r = Object.assign({ warm: true }, lsGet("v3_allenamento", {}) || {});
+    if (r.mob == null || r.stretchDopo == null) { const st = r.stretch || "both"; if (r.mob == null) r.mob = ["prima", "both"].includes(st); if (r.stretchDopo == null) r.stretchDopo = ["dopo", "both"].includes(st); }
+    return r; };
+  const setRout = (k, v) => { const r = rout(); r[k] = v; delete r.stretch; lsSet("v3_allenamento", r); };
 
   /* ---------- avatar ---------- */
   const ICONS = {
@@ -65,8 +67,9 @@
         <p class="small muted" style="margin:6px 0 0">${p.days === "flex" ? "Fai le sedute in ordine, nei giorni che preferisci: ti suggerisco quando riposare." : "Segui i giorni della scheda: se ne salti uno, ti propongo di spostare la settimana."}</p></div>${tog("sound", p.sound, "Suono di fine recupero", "Un bip quando il recupero finisce, con l'app aperta. Rispetta il silenzioso.")}${tog("flash", p.flash, "Avviso visivo di fine recupero", "Lo schermo lampeggia: utile con le cuffie.")}${"wakeLock" in navigator ? tog("awake", p.awake, "Schermo sempre acceso in seduta", "Non si spegne mentre ti alleni.") : ""}</div></div>
       <h2 class="set-h" id="s-rout">Riscaldamento e allungamento</h2>
       <div class="block"><div class="hcard"><div class="setrow"><span><b>Riscaldamento prima</b><small>Cardio leggero e serie di avvicinamento prima degli esercizi.</small></span><button class="bsw" data-act="rout-warm" role="switch" aria-checked="${rout().warm !== false}" aria-label="Riscaldamento prima"><span></span></button></div>
-        <div><b>Allungamento (stretching)</b><div class="seg wrap" role="group" aria-label="Allungamento" style="margin-top:8px">${STR.map(([v, l]) => `<button data-act="rout-str" data-v="${v}" aria-pressed="${rout().stretch === v}">${l}</button>`).join("")}</div>
-        <p class="small muted" style="margin:6px 0 0">${rout().warm === false && !["prima", "both"].includes(rout().stretch) ? "«Inizia la seduta» ti porta subito al primo esercizio." : "Prima: movimenti dinamici. Dopo: allungamenti tenuti fermi."}</p></div></div></div>
+        <div class="setrow"><span><b>Mobilità prima</b><small>Movimenti per scaldare le articolazioni.</small></span><button class="bsw" data-act="rout-mob" role="switch" aria-checked="${!!rout().mob}" aria-label="Mobilità prima"><span></span></button></div>
+        <div class="setrow"><span><b>Stretching dopo</b><small>Allungamenti da fermo, lato per lato.</small></span><button class="bsw" data-act="rout-strd" role="switch" aria-checked="${!!rout().stretchDopo}" aria-label="Stretching dopo"><span></span></button></div>
+        ${rout().warm === false && !rout().mob ? `<p class="small muted" style="margin:0">«Inizia la seduta» ti porta subito al primo esercizio.</p>` : ""}</div></div>
       <h2 class="set-h" id="s-pro">Promemoria</h2>
       <div class="block"><div class="hcard"><p class="small muted" style="margin:0">I promemoria arrivano dal Calendario del telefono, anche ad app chiusa.</p>
         <ul class="plain small muted" style="margin:0"><li>Ogni mattina alle 8: il tuo obiettivo del giorno.</li><li>Ogni sera alle 21: chiudi la giornata, pasti e acqua.</li><li>Lunedì e giovedì alle 7:15: la pesata. Ogni 4 settimane: le foto del corpo.</li>${p.days === "fixed" && plan.length ? `<li>Nei giorni di allenamento, all'orario che scegli qui sotto.</li>` : `<li>All'orario che scegli: oggi seduta o riposo?</li>`}</ul>
@@ -183,7 +186,8 @@
     else if (act === "set-sub") { e.stopPropagation(); S.settings = ["coach", "avatar", "help"].includes(v) ? v : "main"; S.crop = null; S.avPick = null; window.scrollTo(0, 0); render(); }
     else if (act === "days") { e.stopPropagation(); setPref("days", v); render(); toast(v === "flex" ? "Ti alleni quando vuoi" : "Giorni fissi della scheda"); }
     else if (act === "rout-warm") { e.stopPropagation(); setRout("warm", rout().warm === false); render(); }
-    else if (act === "rout-str") { e.stopPropagation(); setRout("stretch", v); render(); }
+    else if (act === "rout-mob") { e.stopPropagation(); const on = !rout().mob; setRout("mob", on); render(); toast(on ? "Mobilità prima accesa" : "Mobilità prima spenta"); }
+    else if (act === "rout-strd") { e.stopPropagation(); const on = !rout().stretchDopo; setRout("stretchDopo", on); render(); toast(on ? "Stretching dopo acceso" : "Stretching dopo spento"); }
     else if (act === "pref") { e.stopPropagation(); const p = pref(); setPref(v, !p[v]); render(); }
     else if (act === "accent") { e.stopPropagation(); saveProfile({ colore: v }); }
     else if (act === "ics") { e.stopPropagation(); ics(); }

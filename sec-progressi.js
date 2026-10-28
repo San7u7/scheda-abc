@@ -471,7 +471,9 @@
   }
   function mainPage() {
     const c = calo();
+    const w0 = data.week(), cm = typeof cardioWeek === "function" ? cardioWeek(w0.from, w0.to) : 0, cof = typeof CARDIO !== "undefined" ? CARDIO.obiettivo(data.profile().group) : 150, sw = typeof stretchWeek === "function" ? stretchWeek(w0.from, w0.to) : 0;
     const rows = allowed().map(id => ui.row({ title: SEC[id].title, sub: rowSub(id), act: "open", arg: id })).join("")
+      + (typeof cardioWeek === "function" ? ui.row({ title: kid() ? "Movimento della settimana" : "Cardio della settimana", sub: `${cm} /${cof} minuti` + (kid() ? "" : ` · stretching ${sw} /${CARDIO.stretchVolte}`), act: "go", arg: "palestra" }) : "")
       + (minor() ? "" : ui.row({ title: "Tutti i dati", sub: S.downloads ? "Grafici di prima ed esportazione CSV" : "I grafici di prima", act: "legacy", arg: "carichi" }));
     const sap = kid() ? "La colazione dà energia per allenarsi." : minor() ? "La colazione aiuta ad allenarsi." : o65() ? "Dopo i 65 anni servono proteine a ogni pasto." : "Le proteine aiutano i muscoli a recuperare.";
     return ui.header("Progressi") + lime()

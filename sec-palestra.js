@@ -50,6 +50,34 @@
     #view.v3.v3-o65 .v3-palestra-up { font-size: 16px; }
     #view.v3 .v3-palestra-fig { display: flex; justify-content: center; }
     #view.v3 .v3-palestra-fig .v3-fig { width: 160px; height: 160px; }
+    /* modifica 5: stretching lato per lato, seduta in tre tempi, cardio nella scheda */
+    #view.v3 .v3-pal-str { gap: 16px; min-height: 0; }
+    #view.v3 .v3-pal-str .v3-bar { margin-top: -4px; } #view.v3 .v3-pal-str .v3-bar i { background: var(--v3-lime); }
+    body.v3-guided #v3bar { display: none; } /* stretching guidato a tutto schermo, come la tavola: si esce con «Indietro» */
+    #view.v3 .v3-pal-soft { font-size: 16px; font-weight: 400; color: var(--v3-t2); margin-top: 4px !important; }
+    #view.v3 .v3-pal-img { height: min(216px, 24vh); border-radius: 24px; overflow: hidden; background: #fff; }
+    #view.v3 .v3-pal-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #view.v3 .v3-pal-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    #view.v3 .v3-pal-sides span { min-height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: var(--v3-t2); box-shadow: inset 0 0 0 1.5px var(--v3-s3); text-align: center; padding: 0 8px; }
+    #view.v3 .v3-pal-sides span.on { font-weight: 700; color: var(--v3-lime); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+    #view.v3 .v3-pal-sides span.done { color: var(--v3-t3); }
+    #view.v3 .v3-pal-ring { position: relative; width: min(176px, 46vw); aspect-ratio: 1; align-self: center; }
+    #view.v3 .v3-pal-ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
+    #view.v3 .v3-pal-ring circle { fill: none; stroke: var(--v3-s3); stroke-width: 14; }
+    #view.v3 .v3-pal-ring .arc { stroke: var(--v3-lime); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+    #view.v3 .v3-pal-ring.chg .arc { stroke: transparent; }
+    #view.v3 .v3-pal-ring > div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; padding: 0 18px; }
+    #view.v3 .v3-pal-ring b { font-size: 45px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    #view.v3 .v3-pal-ring span { font-size: 15px; color: var(--v3-t2); line-height: 1.25; }
+    #view.v3 .v3-pal-ring.chg span { color: var(--v3-lime); font-weight: 700; }
+    #view.v3 .v3-pal-str .v3-palestra-acts .v3-apri { min-height: 56px; font-size: 17px; }
+    #view.v3 .v3-pal-pm button { font-family: inherit; }
+    @media (prefers-reduced-motion: reduce) { #view.v3 .v3-pal-ring .arc { transition: none; } }
+    body.no-anim #view.v3 .v3-pal-ring .arc { transition: none; }
+    #view.v3 .v3-pal-3t .v3-row { min-height: 64px; }
+    #view.v3 .v3-pal-3t .v3-when { width: 52px; flex: none; font-size: 14px; font-weight: 700; color: var(--v3-t2); }
+    #view.v3 .v3-pal-3t .v3-row.pesi { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+    #view.v3 .v3-pal-3t .v3-row.pesi .v3-when { color: var(--v3-lime); }
     `;
     document.head.appendChild(st);
   }
@@ -63,7 +91,15 @@
   const tv = (sed, all) => alt() ? all : sed;
   const dname = k => (P[k] && P[k].nome) || tv("Seduta ", "Allenamento ") + k;
   const pl = (n, one, many) => n + " " + (n === 1 ? one : many);
-  const minsOf = p => Math.max(10, Math.round(p.items.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5);
+  const isC = it => it.misura === "cardio";
+  const pesiOf = p => p.items.filter(it => !isC(it)), cardiOf = p => p.items.filter(isC);
+  const pesiMin = p => { const L = pesiOf(p); return L.length ? Math.max(10, Math.round(L.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5) : 0; };
+  const minsOf = p => pesiMin(p) + cardiOf(p).reduce((m, it) => m + (it.dur || 0), 0); // il cardio conta i suoi minuti (non serie × recupero)
+  const cardTxt = it => `${it.dur} minuti, ritmo ${INT[intOf(it.int)][0].toLowerCase()}`;
+  /* settimana: minuti di cardio (intenso doppio) e volte di stretching */
+  const wkCardio = () => { const w = data.week(); return { min: cardioWeek(w.from, w.to), of: CARDIO.obiettivo(group()), str: stretchWeek(w.from, w.to), strOf: CARDIO.stretchVolte }; };
+  const wkTiles = () => { const k = wkCardio(); return [{ label: "Cardio", value: String(k.min), of: k.of, unit: "minuti", pct: ui.pct(k.min, k.of) },
+    kid() ? null : { label: "Stretching", value: String(k.str), of: k.strOf, unit: k.strOf === 1 ? "volta" : "volte", pct: ui.pct(k.str, k.strOf) }].filter(Boolean); };
   const nameOf = it => { const n = has("exName") ? exName(it) : it.name; return typeof short === "function" ? short(n) : n; };
   const planOf = it => { try { return plan(it); } catch (_) { return { kg: it.kg, up: false, b: {} }; } };
   const upsOf = p => p.items.filter(it => planOf(it).up).length;
@@ -78,6 +114,7 @@
     return S.sessions.filter(s => { const d = iso(s.date); return d >= from && d <= to; });
   }
   const doneWeek = k => weekSessions().some(s => s.day === k);
+  const stretchDone = () => lsGet("stretch_days", []).includes(localISO());
   const primary = (label, attrs) => `<button class="v3-apri wide" ${attrs}>${e(label)}</button>`;
 
   const SAP = {
@@ -103,25 +140,36 @@
     ["Affondi con torsione", "5 per lato", ["Passo lungo, ginocchio sopra la caviglia.", "Ruota il busto verso la gamba davanti."]],
     ["Gatto e mucca", "8 volte, a quattro zampe", ["Inarca e arrotonda la schiena.", "Movimento lento."]],
     ["Piegamenti dell'anca a corpo libero", "10 volte, schiena dritta", ["Bacino indietro.", "Schiena dritta."]]];
-  const STAT = [["Dietro le cosce", "Seduto, gamba tesa, 30 secondi per lato"], ["Quadricipiti", "In piedi, tallone al sedere, 30 secondi per lato"],
-    ["Glutei", "Sdraiato, caviglia sul ginocchio, 30 secondi per lato"], ["Petto", "Avambraccio alla parete, 30 secondi per lato"],
-    ["Schiena", "Seduto sui talloni, braccia avanti, 30 secondi"], ["Polpacci", "Mani al muro, gamba dietro tesa, 30 secondi per lato"]];
+  /* modifica 5 (28/10): posizioni con immagine vera di free-exercise-db (solo dove corrisponde alla posizione) e lato per lato */
+  const STAT = [
+    { nome: "Dietro le cosce", how: "Seduto, una gamba tesa e l'altra piegata: porta il busto verso il piede", img: "Seated_Floor_Hamstring_Stretch", lato: "Gamba" },
+    { nome: "Quadricipiti", how: "Sdraiato su un fianco, prendi il piede dietro con la mano", img: "On_Your_Side_Quad_Stretch", lato: "Gamba" },
+    { nome: "Glutei", how: "Sdraiato, caviglia sul ginocchio opposto, tira la gamba verso il petto", img: "Ankle_On_The_Knee", lato: "Gamba" },
+    { nome: "Petto", how: "In piedi, mani sui fianchi, porta indietro i gomiti", img: "Elbows_Back", lato: null },
+    { nome: "Schiena", how: "Seduto sui talloni, braccia avanti a terra", img: "Childs_Pose", lato: null },
+    { nome: "Polpacci", how: "Mani al muro, gamba dietro tesa, tallone a terra", img: "Calf_Stretch_Hands_Against_Wall", lato: "Gamba" }];
+  const CAMBIO = 5; // secondi tra un lato e l'altro (o tra una posizione e la successiva)
+  const holdS = () => group() === "over65" ? 45 : 30; // fisioterapista: 30″ adulti e ragazzi, 45″ over 65; bambini niente allungamento statico
+  const stretchSteps = () => STAT.flatMap((r, pos) => (r.lato ? ["destra", "sinistra"] : [null]).map(side => ({ ...r, pos, side, secs: holdS() })));
+  const stretchMin = () => { const L = stretchSteps(); return Math.max(1, Math.round((L.length * holdS() + (L.length - 1) * CAMBIO) / 60)); };
   const r05 = n => Math.round(n * 2) / 2;
-  /* «Impostazioni allenamento» (settings.js, chiave v3_allenamento): riscaldamento prima sì/no; stretching prima, dopo, prima e dopo, mai */
-  const pref = () => Object.assign({ warm: true, stretch: "both" }, (typeof lsGet === "function" && lsGet("v3_allenamento", {})) || {});
-  const warmOn = () => pref().warm !== false, strPre = () => ["prima", "both"].includes(pref().stretch), strPost = () => ["dopo", "both"].includes(pref().stretch);
+  /* «Impostazioni allenamento» (settings.js, chiave v3_allenamento): {warm, mob, stretchDopo}; la chiave vecchia «stretch» (prima, dopo, both, no) si legge ancora */
+  const pref = () => { const r = Object.assign({ warm: true }, (typeof lsGet === "function" && lsGet("v3_allenamento", {})) || {}), st = r.stretch || "both";
+    if (r.mob == null) r.mob = ["prima", "both"].includes(st); if (r.stretchDopo == null) r.stretchDopo = ["dopo", "both"].includes(st); return r; };
+  const warmOn = () => pref().warm !== false, strPre = () => !!pref().mob, strPost = () => !!pref().stretchDopo && !kid();
   function steps() {
-    if (W.kind === "stretch") return STAT.map(r => ({ nome: r[0], how: r[1], secs: 30, tips: [r[1] + ".", "Allunga piano, senza dolore."] }));
+    if (W.kind === "stretch") return stretchSteps();
     const g = group(), out = [];
-    if (warmOn()) out.push({ nome: "Bici o camminata veloce", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", a ritmo tranquillo", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
+    if (warmOn()) out.push({ nome: "Bici o camminata veloce", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", ritmo leggero: riesci a parlare", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
     if (strPre()) (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2] }));
-    const p = P[W.day], it = p && p.items[0];
+    const p = P[W.day], it = p && p.items.find(x => x.misura !== "cardio");
     if (warmOn() && it && !kid() && it.unit !== "none" && !it.risc) { // con il riscaldamento automatico le serie leggere sono già in seduta
       const kg = planOf(it).kg;
       if (kg && kg >= 10) [[.4, 8], [.6, 5], [.8, 3]].forEach(([f, n]) => out.push({ nome: "Serie leggera di prova", how: nameOf(it) + ": " + kgTxt(r05(kg * f)) + " kg × " + n, it, tips: ["Movimento identico alla serie vera.", "Serve a provare il gesto, non a stancarti."] }));
     }
     return out;
   }
+  const warmMin = () => { if (!warmOn() && !strPre()) return 0; return (warmOn() ? (group() === "over65" ? 10 : 5) : 0) + (strPre() ? 3 : 0); };
   const mmss = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   function stopTick() { if (tick) { clearInterval(tick); tick = null; } }
   function startTick() {
@@ -134,9 +182,57 @@
       if (W.left === 0) { stopTick(); W.run = false; try { navigator.vibrate && navigator.vibrate(200); } catch (_) {} V3.refresh(); }
     }, 1000);
   }
+  /* ---------- stretching guidato (tavola CardioStretching): lato per lato, cambio automatico di 5″ con vibrazione, pausa sempre possibile ---------- */
+  const SIDE = { Gamba: ["Gamba destra", "Gamba sinistra"], Braccio: ["Braccio destro", "Braccio sinistro"] };
+  const say = m => { const l = document.getElementById("v3-pal-live"); if (l) l.textContent = m; };
+  function sRun() { // W.chg = secondi di cambio rimasti (null = si tiene la posizione)
+    stopTick(); W.run = true;
+    let end = Date.now() + (W.chg != null ? W.chg : W.left) * 1000;
+    tick = setInterval(() => {
+      if (!W || sub !== "warm" || W.kind !== "stretch") return stopTick();
+      const L = steps(), left = Math.max(0, Math.round((end - Date.now()) / 1000));
+      if (W.chg != null) {
+        W.chg = left; const c = document.getElementById("v3-pal-clock"); if (c) c.textContent = mmss(left);
+        if (left === 0) { W.chg = null; W.i++; W.left = L[W.i].secs; end = Date.now() + W.left * 1000; say(L[W.i].nome + (L[W.i].side ? ", " + SIDE[L[W.i].lato][L[W.i].side === "destra" ? 0 : 1].toLowerCase() : "") + ": tieni " + W.left + " secondi"); V3.refresh(); }
+        return;
+      }
+      W.left = left;
+      const c = document.getElementById("v3-pal-clock"), a = document.getElementById("v3-pal-arc"), st = L[W.i];
+      if (c) c.textContent = mmss(left);
+      if (a) a.style.strokeDashoffset = (+a.getAttribute("stroke-dasharray") * left / st.secs).toFixed(1);
+      if (left === 0) {
+        try { navigator.vibrate && navigator.vibrate([120, 80, 120]); } catch (_) {}
+        if (W.i >= L.length - 1) return finishWarm();
+        const nx = L[W.i + 1]; W.chg = CAMBIO; end = Date.now() + CAMBIO * 1000;
+        say(nx.pos === st.pos ? "Ora la sinistra" : "Cambio posizione: " + nx.nome); V3.refresh();
+      }
+    }, 1000);
+  }
+  function stretchPage() {
+    const L = steps(), i = Math.min(W.i, L.length - 1), st = L[i], nPos = STAT.length, R = 130, C = +(2 * Math.PI * R).toFixed(1);
+    if (W.left == null) W.left = st.secs;
+    const chg = W.chg != null, nx = L[i + 1], src = IMG + encodeURIComponent(st.img) + "/0.jpg";
+    const sv = chg && nx && nx.pos === st.pos ? nx : st; // al cambio lato l'etichetta passa subito alla sinistra
+    const sides = sv.side ? `<div class="v3-pal-sides" role="group" aria-label="Lato">${sv.side === "destra"
+      ? `<span aria-current="true" class="on">${e(SIDE[st.lato][0])}</span><span>Poi la sinistra</span>`
+      : `<span class="done">Destra fatta</span><span aria-current="true" class="on">${e(SIDE[st.lato][1])}</span>`}</div>` : "";
+    const ringTxt = chg ? `<b id="v3-pal-clock">${mmss(W.chg)}</b><span>${e(nx && nx.pos === st.pos ? "Ora la sinistra" : "Poi: " + (nx ? nx.nome : ""))}</span>`
+      : `<b id="v3-pal-clock">${mmss(W.left)}</b><span>su ${mmss(st.secs)}</span>`;
+    const off = chg ? C : C * W.left / st.secs; // lime = tempo passato, come il recupero
+    return `<div class="v3-palestra-wfull v3-pal-str"><div class="v3-palestra-wtop">${ui.back("Indietro")}<span class="v3-palestra-wc">Stretching · ${st.pos + 1} di ${nPos}</span></div>
+      <div class="v3-bar" role="img" aria-label="Posizione ${st.pos + 1} di ${nPos}"><i style="width:${Math.round((st.pos + 1) / nPos * 100)}%"></i></div>
+      <div><h1 class="v3-palestra-wn">${e(st.nome)}</h1><p class="v3-palestra-wh v3-pal-soft">Tira piano, mai dolore</p></div>
+      <div class="v3-pal-img"><img src="${e(src)}" alt="${e(st.how)}" onerror="this.parentNode.remove()"></div>${sides}
+      ${W.come ? ui.card(`<p class="v3-palestra-note">${e(st.how)}.</p><p class="v3-palestra-note">Respira lento, senza molleggiare.</p>` + ui.leo("Come si fa lo stretching: " + st.nome + "?")) : ""}
+      <div class="v3-pal-ring${chg ? " chg" : ""}" role="timer" aria-label="${e(chg ? "Cambio" : mmss(W.left) + " su " + mmss(st.secs))}"><svg viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="${R}"/><circle id="v3-pal-arc" class="arc" cx="150" cy="150" r="${R}" stroke-dasharray="${C}" style="stroke-dashoffset:${off.toFixed(1)}"/></svg><div>${ringTxt}</div></div>
+      <p class="cd-sr" id="v3-pal-live" aria-live="polite"></p>
+      <div class="v3-palestra-acts">${primary(W.run ? "Metti in pausa" : "Riprendi", 'data-v3act="s-run"')}
+        <div class="setx v3-pal-pm"><button data-v3act="s-skip">Salta la posizione</button><button data-v3act="w-come" aria-expanded="${!!W.come}">${W.come ? "Nascondi" : "Come si fa"}</button></div></div></div>`;
+  }
   function warmPage() {
+    if (W.kind === "stretch") return stretchPage();
     const L = steps(), i = Math.min(W.i, L.length - 1), st = L[i], tot = L.length, stretch = W.kind === "stretch";
-    const title = stretch ? "Stretching finale" : warmOn() ? "Riscaldamento" : "Stretching", last = i === tot - 1;
+    const title = warmOn() ? "Riscaldamento" : "Mobilità", last = i === tot - 1;
     if (st.secs && W.left == null) W.left = st.secs;
     const started = st.secs && (W.run || W.left === 0);
     const clock = st.secs ? `<div class="v3-palestra-clock"><b id="v3-pal-clock" role="timer">${mmss(W.left)}</b><span>${W.left === 0 ? "Tempo finito" : W.run ? "Tempo in corso" : "Avvia quando sei pronto"}</span></div>` : "";
@@ -144,7 +240,7 @@
     const main = st.secs && !started
       ? primary("Avvia il timer", 'data-v3act="w-timer"') + ui.secondary("Salta questo esercizio", "w-next")
       : primary(doneLabel, 'data-v3act="w-next"');
-    const skip = stretch || !warmOn() ? "Salta lo stretching" : kid() ? "Salta, con l'ok di un adulto" : "Salta tutto il riscaldamento";
+    const skip = stretch || !warmOn() ? "Salta la mobilità" : kid() ? "Salta, con l'ok di un adulto" : "Salta tutto il riscaldamento";
     const fig = st.it && imgOf(st.it) ? `<div class="v3-palestra-fig">${ui.fig(imgOf(st.it), nameOf(st.it), nameOf(st.it))}</div>` : "";
     return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back(stretch ? "Indietro" : "Esci dal riscaldamento")}<span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span></div>
       <div class="v3-bar" role="img" aria-label="${e(title)}: passo ${i + 1} di ${tot}"><i style="width:${Math.round((i + 1) / tot * 100)}%"></i></div>
@@ -180,13 +276,15 @@
   }
   function finishWarm() {
     stopTick();
-    if (W.kind === "stretch") { V3.back(); return; }
+    if (W.kind === "stretch") { // salvato per la settimana (/3 volte)
+      if (W.i >= steps().length - 1) { const t = localISO(), L = lsGet("stretch_days", []); if (!L.includes(t)) { L.push(t); lsSet("stretch_days", L.slice(-120)); } }
+      W = null; V3.back(); toast("Stretching fatto", { sub: STAT.length + " posizioni · circa " + stretchMin() + " minuti" }); return; }
     pendingStart = W.day; history.go(-stackSubs.length);
   }
 
   /* ---------- pagine ---------- */
   function hero(k, label, extra) {
-    const p = P[k], it = p.items[0], ups = upsOf(p);
+    const p = P[k], it = pesiOf(p)[0] || p.items[0], ups = upsOf(p);
     const meta = pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti";
     return `<div class="v3-palestra-hero"><div class="v3-hf"><div><p class="v3-palestra-ht">${e(dname(k))}</p>${p.focus ? `<p class="v3-palestra-hs">${e(p.focus)}</p>` : ""}<p class="v3-palestra-hm">${e(meta)}</p>${ups && !kid() ? `<span class="v3-palestra-up">${e(ups + " con carico in aumento")}</span>` : ""}</div>${it && imgOf(it) ? ui.fig(imgOf(it), nameOf(it), nameOf(it)) : ""}</div>
       ${extra ? `<p class="v3-palestra-note">${e(extra)}</p>` : ""}${primary(label, `data-v3act="inizia" data-v3arg="${e(k)}"`)}</div>`;
@@ -202,7 +300,7 @@
     if (ts.state === "fatta") {
       const d0 = doneToday(), nd = ts.next && P[ts.next] ? ts.next : null;
       today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica " + d0.fatica + " su 10" : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
-        (strPost() ? ui.row({ title: "Stretching finale", sub: "Circa 3 minuti, se ti va", act: "stretch", apri: "Inizia" }) : "") +
+        (strPost() ? ui.row({ title: "Stretching finale", sub: stretchDone() ? "Fatto oggi ✓" : pl(STAT.length, "posizione", "posizioni") + ", circa " + stretchMin() + " minuti", act: "stretch", apri: stretchDone() ? "Rifai" : "Inizia" }) : "") +
         (nd ? ui.row({ title: tv("Prossima seduta: ", "Prossimo allenamento: ") + (P[nd].nome || nd), sub: "Domani, dopo il riposo", act: "apri-seduta", arg: nd }) : "") + ageRow());
     } else {
       const k = ts.day;
@@ -212,30 +310,41 @@
     const rows = DAYS.map(k => { const p = P[k], dn = doneWeek(k);
       return ui.row({ title: dname(k), sub: dn ? tv("Fatta", "Fatto") + " questa settimana ✓" : pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti", act: "apri-seduta", arg: k, on: k === nd }); }).join("");
     const scheda = ui.section("La mia scheda", rows + ui.secondary("Apri la scheda", "modifica") +
-      ui.row({ title: "Riscaldamento e stretching", sub: "La tua routine prima e dopo", act: "routine" }));
+      ui.row({ title: "Riscaldamento e stretching", sub: "La tua routine prima e dopo", act: "routine" }) +
+      (CARDIO.fuori ? ui.row({ title: "Segna un cardio", sub: "Camminata, bici o corsa fuori palestra", act: "cardio-fuori", apri: "Segna" }) : ""));
     const sets = ws.reduce((s, x) => s + (x.items || []).reduce((a, it) => a + ((it.sets || []).length), 0), 0);
-    const mins = ws.filter(x => x.durata).reduce((s, x) => s + (+x.durata || 0), 0);
     const p4 = P[nd || ts.next || DAYS[0]];
-    const t4 = kid() ? { label: "Esercizi della prossima", value: String(p4 ? p4.items.length : 0) } : { label: "Carico in aumento", value: String(p4 ? upsOf(p4) : 0), of: p4 ? p4.items.length : null };
+    const mins = ws.filter(x => x.durata).reduce((s, x) => s + (+x.durata || 0), 0);
+    const t4 = kid() ? { label: "Esercizi", value: String(p4 ? p4.items.length : 0) } : { label: "Aumenti", value: String(p4 ? upsOf(p4) : 0), of: p4 ? pesiOf(p4).length : null };
+    /* modifica 5 (Giovanni): un solo box, la settimana; Cardio /150 e Stretching /3 si aggiungono, niente tolto (griglia 2 colonne) */
     const box = ui.limeBox({ title: "La mia settimana", action: { label: "Apri", act: "settimana" }, tiles: [
       { label: tv("Sedute", "Allenamenti"), value: String(wk.sessions.done), of: wk.sessions.planned, pct: ui.pct(wk.sessions.done, wk.sessions.planned), act: "settimana" },
       { label: "Serie fatte", value: String(sets) },
-      { label: "Minuti in palestra", value: mins ? ui.nf(mins, 0) : "–", unit: mins ? "min" : null },
-      t4] });
+      { label: "Tempo", value: mins ? ui.nf(mins, 0) : "–", unit: mins ? "min" : null },
+      t4, ...wkTiles()] });
     return ui.header("Palestra") + today + scheda + box + ui.end(sapText(), { leoQ: leoQ() });
   }
   function seduta() {
     const k = selDay, p = P[k]; if (!p) { sub = null; return home(); }
     const g = group(), dn = doneWeek(k);
-    const list = p.items.map((it, j) => { const x = planOf(it), kg = it.unit === "none" ? null : x.kg;
-      const det = tipoOf(it) !== "uguali" ? SCH[tipoOf(it)][0] + " · " + it.sets + " serie" + (kg != null ? " · da " + kgTxt(kg) + " kg" : "") : it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
-      const up = x.up && g !== "bambino" ? `<span class="v3-palestra-up">${g === "adulto" ? "+" + kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2)) + " kg oggi" : "Carico in aumento"}</span>` : "";
+    const list = flowOrder(p.items).map((it, j) => { const x = planOf(it), kg = it.unit === "none" ? null : x.kg;
+      const det = isC(it) ? "Cardio · " + cardTxt(it) : tipoOf(it) !== "uguali" ? SCH[tipoOf(it)][0] + " · " + it.sets + " serie" + (kg != null ? " · da " + kgTxt(kg) + " kg" : "") : it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
+      const up = !isC(it) && x.up && g !== "bambino" ? `<span class="v3-palestra-up">${g === "adulto" ? "+" + kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2)) + " kg oggi" : "Carico in aumento"}</span>` : "";
       return `<div class="v3-palestra-ex">${thumb(it, String(j + 1))}<span class="v3-rx"><span class="v3-rt" style="display:block">${e(nameOf(it))}</span><span class="v3-rs" style="display:block">${e(det)}</span>${up}</span></div>`; }).join("");
     const label = activeDay() === k ? tv("Riprendi la seduta", "Riprendi l'allenamento") : tv("Inizia la seduta", "Inizia l'allenamento");
-    const meta = pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti";
-    return ui.back() + `<div><h1 class="v3-t1">${e(dname(k))}</h1><p class="v3-sub">${e(dn ? tv("Fatta", "Fatto") + " questa settimana ✓" : p.focus || meta)}</p></div>` +
-      ui.card(ui.big(`${p.items.reduce((s, it) => s + it.sets, 0)} <span class="v3-of">serie</span>`, meta)) +
-      ui.section("Esercizi", `<div class="v3-palestra-list">${list}</div>`) + primary(label, `data-v3act="inizia" data-v3arg="${e(k)}"`) +
+    /* tavola CardioTreTempi: Prima (riscaldamento) · Pesi · Dopo (cardio della scheda, stretching) */
+    const wm = warmMin(), pm = pesiMin(p), sm = strPost() ? stretchMin() : 0, pe = pesiOf(p);
+    const row3 = (when, title, subT, cls) => `<div class="v3-row${cls ? " " + cls : ""}"><span class="v3-when">${e(when)}</span><span class="v3-rx"><span class="v3-rt" style="display:block">${e(title)}</span><span class="v3-rs" style="display:block">${e(subT)}</span></span></div>`;
+    const tre = [wm ? row3("Prima", "Riscaldamento", wm + " minuti, " + (warmOn() && strPre() ? "cardio e mobilità" : warmOn() ? "cardio leggero" : "mobilità")) : "",
+      ...cardiOf(p).filter(it => cardioWhen(it) === "prima").map(it => row3("Prima", nameOf(it), cardTxt(it))),
+      pe.length ? row3(tv("Pesi", "Esercizi"), pl(pe.length, "esercizio", "esercizi"), "Circa " + pm + " minuti", "pesi") : "",
+      ...cardiOf(p).filter(it => cardioWhen(it) === "dopo").map(it => row3("Dopo", nameOf(it), cardTxt(it))),
+      sm ? row3("Dopo", "Stretching", pl(STAT.length, "posizione", "posizioni") + ", " + sm + " minuti") : ""].join("");
+    const tot = wm + minsOf(p) + sm;
+    return ui.back() + `<div><h1 class="v3-t1">${e(dname(k))}</h1><p class="v3-sub">${e(dn ? tv("Fatta", "Fatto") + " questa settimana ✓" : "Circa " + tot + " minuti in tutto")}</p></div>` +
+      `<div class="v3-palestra-list v3-pal-3t" style="gap:8px">${tre}</div>` +
+      ui.limeBox({ title: "La tua settimana", tiles: wkTiles() }) + primary(label, `data-v3act="inizia" data-v3arg="${e(k)}"`) +
+      ui.section("Esercizi", `<div class="v3-palestra-list">${list}</div>`) +
       ui.end(sapText(), { leoQ: leoQ() });
   }
   function settimana() {
@@ -251,12 +360,16 @@
       ui.card(ui.big(`${wk.sessions.done} <span class="v3-of">/${wk.sessions.planned}</span>`, tv("Sedute di questa settimana", "Allenamenti di questa settimana")) +
         ui.chart.bars({ vals: h.map(w => w.sessions), max, ticks: [[wk.sessions.planned, String(wk.sessions.planned), true], [0, "0"]], xl: [[0, h[0].label], [h.length - 1, "ora"]], tip: i => `${h[i].label}: ${pl(h[i].sessions, tv("seduta", "allenamento"), tv("sedute", "allenamenti"))}`, aria: tv("Sedute", "Allenamenti") + " delle ultime 13 settimane" })) +
       (rows ? ui.section("Questa settimana", rows) : "") +
+      (() => { const c = wkCardio(); return ui.section("Cardio e stretching", ui.row({ title: "Cardio", sub: c.min >= c.of ? "Obiettivo della settimana raggiunto" : "Un minuto forte vale due", value: `${c.min} <span class="v3-of">/${c.of}</span>` }) +
+        (kid() ? "" : ui.row({ title: "Stretching", sub: "2 o 3 volte a settimana", value: `${c.str} <span class="v3-of">/${c.strOf}</span>` })) +
+        (CARDIO.fuori ? ui.secondary("Segna un cardio fuori palestra", "cardio-fuori") : "")); })() +
       ui.end("Conta " + tv("le sedute", "gli allenamenti") + " della settimana, non i giorni di fila: anche il riposo fa parte del piano.", { leoQ: "Quanti giorni di riposo mi servono?" });
   }
   function routine() {
     const r = L => L.map(x => ui.row({ title: x[0], sub: x[1] })).join("");
     return ui.back() + `<div><h1 class="v3-t1">Riscaldamento e stretching</h1><p class="v3-sub">Prima movimenti, dopo allungamenti</p></div>` +
-      ui.section("Prima: movimenti per scaldarti", r(DIN)) + ui.section("Dopo: allungamenti da fermo", r(STAT) + primary("Fai lo stretching adesso", 'data-v3act="stretch"')) +
+      ui.section("Prima: movimenti per scaldarti", r(DIN)) + (kid() ? ui.section("Dopo", ui.row({ title: "Niente allungamenti da fermo", sub: "Alla tua età bastano i giochi di movimento" })) :
+        ui.section("Dopo: allungamenti da fermo", r(STAT.map(x => [x.nome, x.how + (x.lato ? ", " + holdS() + " secondi per lato" : ", " + holdS() + " secondi")])) + primary("Fai lo stretching adesso", 'data-v3act="stretch"'))) +
       ui.end("Gli allungamenti tenuti fermi a lungo tolgono un po' di forza: meglio farli dopo i pesi.", { leoQ: "Che differenza c'è tra stretching dinamico e statico?" });
   }
 
@@ -274,6 +387,9 @@
     .pal-rad { width: 52px; flex: none; display: flex; justify-content: center; }
     .pal-rad i { width: 22px; height: 22px; border-radius: 11px; box-shadow: inset 0 0 0 2px var(--v3-t3); display: block; position: relative; }
     .pal-opt[aria-checked="true"] .pal-rad i { box-shadow: inset 0 0 0 2px var(--accent); }
+    #view.v3 .pal-cd .pal-opt { background: var(--v3-s1); }
+    .pal-cd .pal-opt[aria-checked="true"] .v3-rt { color: var(--v3-lime); }
+    .pal-cd .pal-opt[aria-checked="true"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
     .pal-opt[aria-checked="true"] .pal-rad i::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--accent); }
     .pal-tog { width: 52px; height: 48px; border: 0; background: transparent; padding: 0; flex: none; display: flex; align-items: center; justify-content: center; }
     .pal-tog i { width: 52px; height: 32px; border-radius: 16px; background: var(--v3-s3); display: block; position: relative; transition: background .18s; }
@@ -394,7 +510,7 @@
     persistDoc("training", S.training); setTraining(S.training);
     DAYS.forEach(k => { if (S.drafts[k] && !S.drafts[k].started) delete S.drafts[k]; }); saveDrafts(); // solo le anteprime: le sedute in corso restano
     ED.x = clone(x); ED.kg0 = x.kg;
-    if (!quiet) toast(short(x.nome) + " salvata nella scheda", { sub: schLabel(it) });
+    if (!quiet) toast(isC(it) ? "Cardio salvato nella scheda" : short(x.nome) + " salvata nella scheda", { sub: isC(it) ? short(x.nome) + ", " + cardTxt(it) : schLabel(it) });
   }
   function openEd(s, j) {
     const x = T().sedute[s] && T().sedute[s].esercizi[j]; if (!x) return;
@@ -408,13 +524,25 @@
     const seg = DAYS.length > 1 ? ui.seg(DAYS.map(d => DAYS.length > 3 ? d : tv("Seduta ", "Allenamento ") + d), s, "sc-day", tv("Seduta", "Allenamento")) : "";
     const wk = T().creata ? Math.max(1, Math.round((Date.now() - Date.parse(T().creata)) / 6048e5)) : null;
     const nEx = DAYS.reduce((m, d) => m + P[d].items.length, 0);
-    const rows = p.items.map((it, j) => ui.row({ title: nameOf(it), sub: it.unit === "none" && tipoOf(it) === "uguali" ? `${it.sets} × ${it.min === it.max ? it.min : it.min + "–" + it.max} · ${MISURA[it.misura].toLowerCase()}` : schLabel(it), act: "ed-open", arg: s + ":" + j, apri: "Modifica" })).join("");
+    const rows = p.items.map((it, j) => ui.row({ title: nameOf(it), sub: isC(it) ? "Cardio · " + cardTxt(it) : it.unit === "none" && tipoOf(it) === "uguali" ? `${it.sets} × ${it.min === it.max ? it.min : it.min + "–" + it.max} · ${MISURA[it.misura].toLowerCase()}` : schLabel(it), act: "ed-open", arg: s + ":" + j, apri: "Modifica" })).join("");
     return `<div class="pal-pg">${ui.back()}</div><div><h1 class="v3-t1">La mia scheda</h1><p class="v3-sub">${e(pl(DAYS.length, tv("seduta", "allenamento"), tv("sedute", "allenamenti")) + " · " + (wk ? "da " + pl(wk, "settimana", "settimane") : pl(nEx, "esercizio", "esercizi")))}</p></div>
       <div class="pal-pg v3-sec">${ui.row({ title: "Crea una nuova scheda", sub: "Da 15 a 40 domande, scegli tu", act: "q-scheda", apri: "Inizia" })}${ui.row({ title: tv("Aggiungi una seduta", "Aggiungi un allenamento"), sub: "4 domande sulla nuova " + tv("seduta", "giornata"), act: "q-seduta", apri: "Aggiungi" })}</div>
       <section class="v3-sec">${ui.label(tv("Le tue sedute", "I tuoi allenamenti"))}${seg}</section><div><h2 class="v3-rt" style="font-size:20px;padding-left:16px">${e(dname(k))}</h2><p class="v3-sub">${e((sd.focus ? sd.focus + " · " : "") + pl(p.items.length, "esercizio", "esercizi"))}</p></div>
       <div class="pal-pg">${ui.section("", rows)}</div>${ui.secondary("Aggiungi, togli o sposta esercizi", "struttura")}`;
   }
+  /* tavola CardioScheda: minuti a scatti di 5, quanto forte (prova del parlato), salva */
+  const CMAX = 60;
+  function cardioEdPage() {
+    const x = ED.x, m = Math.min(CMAX, Math.max(5, +x.minuti || 20)), int = intOf(x.intensita), when = cardioWhen({ quando: x.quando });
+    const opt2 = v => `<button class="pal-opt" role="radio" aria-checked="${v === int}" data-v3act="cd-int" data-v3arg="${v}"><span class="v3-rx"><span class="v3-rt" style="display:block">${INT[v][0]}</span><span class="v3-rs" style="display:block">${INT[v][1]}</span></span><span class="pal-rad" aria-hidden="true"><i></i></span></button>`;
+    return `<div class="pal-pg">${ui.back()}</div><div><h1 class="v3-t1">${e(short(x.nome))}</h1><p class="v3-sub">Cardio, ${when === "prima" ? "prima degli" : "dopo gli"} esercizi coi pesi</p></div>
+      ${ui.section("Durata", `<div class="cd-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Minuti di cardio</span><span class="v3-rs" style="display:block">Da 5 a ${CMAX}, scatti di 5</span></span><div class="cd-mini"><button data-v3act="cd-min" data-v3arg="-1" data-hold="cdm-m" aria-label="Meno 5 minuti">−</button><b aria-live="polite">${m} min</b><button data-v3act="cd-min" data-v3arg="1" data-hold="cdm-p" aria-label="Più 5 minuti">+</button></div></div>`)}
+      ${ui.section("Quanto forte", `<div class="pal-opts pal-cd" role="radiogroup" aria-label="Quanto forte">${["leggero", "medio", "forte"].map(opt2).join("")}</div>`)}
+      ${primary("Salva il cardio", 'data-v3act="ed-save"')}
+      <div class="pal-pg v3-sec">${ui.row({ title: "Quando", sub: when === "prima" ? "Prima dei pesi" : "Dopo i pesi", act: "cd-when", apri: "Cambia" })}${ui.row({ title: "Altre impostazioni", sub: "Come si misura, nota", act: "ed-altre" })}</div>`;
+  }
   function edPage() {
+    if (misOf(ED.x) === "cardio") return cardioEdPage();
     const x = ED.x, it = itemOf(x, ED.s, ED.e), t = tipoOf(it);
     return `${ui.back()}<div><h1 class="v3-t1">${e(short(x.nome))}</h1><p class="v3-sub">${e(edSub())}</p></div>${serieBox(it)}
       <div class="pal-pg v3-sec">${ui.row({ title: "Come fai le serie", sub: SCH[t][0] + (it.schema && it.schema.calo && t !== "scalare" ? " + calo sull'ultima" : ""), act: "ed-schema", apri: "Cambia" })}
@@ -428,7 +556,7 @@
       ${ui.row({ title: "Come si misura", sub: MISURA[m], act: "al-mis", apri: "Cambia" })}
       ${m === "pesi" && !kid() ? ui.row({ title: "Salto di peso", sub: kgTxt(it.salto) + " kg alla volta", act: "al-salto", apri: "Cambia" }) : ""}
       ${m === "pesi" ? togRow("Riscaldamento automatico", x.risc ? "2 serie leggere prima" : "Spento", x.risc, "al-risc") : ""}
-      ${togRow("Un lato alla volta", x.lato ? "Prima un lato, poi l'altro" : "Spento", x.lato, "al-lato")}
+      ${m === "cardio" ? "" : togRow("Un lato alla volta", x.lato ? "Prima un lato, poi l'altro" : "Spento", x.lato, "al-lato")}
       ${ui.row({ title: "Nota fissa", sub: x.nota || "Nessuna nota", act: "al-nota", apri: "Scrivi" })}</div>`;
   }
   /* seduta in corso: «Cambia lo schema solo per oggi» (31) ricalcola le serie non fatte della bozza, la scheda non cambia */
@@ -450,6 +578,8 @@
     }
   };
 
+  const rG = window.render;
+  window.render = function () { const r = rG.apply(this, arguments); document.body.classList.toggle("v3-guided", !!(window.V3 && V3.current() === "palestra" && sub === "warm" && W && W.kind === "stretch" && !activeDay())); return r; };
   V3.register("palestra", {
     render(el) {
       if (activeDay()) { sub = null; stackSubs.length = 0; return false; } // seduta in corso: vista vecchia (serie, recupero a tutto schermo, fine)
@@ -468,6 +598,7 @@
       "q-seduta"() { if (window.V3Quiz) open("quiz", () => V3Quiz.start(V3Quiz.cfg.seduta())); },
       "apri-seduta"(k) { if (P[k]) open("seduta", () => { selDay = k; }); },
       settimana() { open("settimana"); },
+      "cardio-fuori"() { if (typeof cardioFuori === "function") cardioFuori(); },
       routine() { open("routine"); },
       modifica() { if (!DAYS.length) return V3.legacy({ tab: "piano", hub: "train" }); const ts = data.todaySession(); open("scheda", () => { selDay = ts.day && P[ts.day] ? ts.day : DAYS[0]; }); },
       struttura() { V3.legacy({ tab: "piano", hub: "train" }); },
@@ -477,12 +608,23 @@
       "ed-rest"() { if (ED) restSheet(ED.x, r => { ED.x.recupero = r; saveEd(true); V3.refresh(); }); },
       "ed-altre"() { if (ED) open("altre"); },
       "ed-save"() { if (!ED) return; saveEd(); V3.back(); },
-      "al-mis"() { if (ED) pickSheet("Come si misura", [["pesi", "Con pesi", "Chili e ripetizioni"], ["corpo", "A corpo libero", "Solo ripetizioni"], ["tempo", "A tempo", "Secondi per serie"], ["distanza", "A distanza", "Metri per serie"]], misOf(ED.x), v => { ED.x.misura = v; saveEd(true); V3.refresh(); }); },
+      "al-mis"() { if (ED) pickSheet("Come si misura", [["pesi", "Con pesi", "Chili e ripetizioni"], ["corpo", "A corpo libero", "Solo ripetizioni"], ["tempo", "A tempo", "Secondi per serie, scatti di 5"], ["cardio", "Cardio", "Minuti e quanto forte"]], misOf(ED.x), v => {
+        ED.x.misura = v; ED.x.mig5 = 1; // scelta esplicita: la migrazione non la tocca più
+        if (v === "cardio") { ED.x.minuti = +ED.x.minuti || 20; ED.x.intensita = intOf(ED.x.intensita); ED.x.serie = 1; delete ED.x.schema; }
+        else if (+ED.x.serie === 1 && ED.x.minuti) { ED.x.serie = 3; ED.x.min = ED.x.max = v === "tempo" ? 30 : 10; }
+        saveEd(true); V3.refresh(); toast("Misura cambiata", { sub: MISURA[v] }); }); },
+      "cd-min"(d) { if (!ED) return; ED.x.minuti = Math.min(CMAX, Math.max(5, (+ED.x.minuti || 20) + 5 * +d)); ED.x.min = ED.x.max = ED.x.minuti; V3.refresh(); },
+      "cd-int"(v) { if (!ED) return; ED.x.intensita = intOf(v); V3.refresh(); },
+      "cd-when"() { if (ED) pickSheet("Quando fai il cardio", [["dopo", "Dopo i pesi", "Consigliato per forza e muscoli"], ["prima", "Prima dei pesi", "Se l'obiettivo è dimagrire o il fiato"]], cardioWhen({ quando: ED.x.quando }), v => { ED.x.quando = v; saveEd(true); V3.refresh(); toast("Cardio " + (v === "prima" ? "prima dei pesi" : "dopo i pesi")); }); },
       "al-salto"() { if (ED) pickSheet("Salto di peso", [[0.5, "0,5 kg"], [1, "1 kg"], [2, "2 kg"], [2.5, "2,5 kg"]].map(([v, t]) => [v, t, v === 2.5 ? "Bilanciere, esercizi grandi" : v <= 1 ? "Esercizi piccoli, cavi" : "Manubri"]), itemOf(ED.x, ED.s, ED.e).salto, v => { ED.x.salto = +v; saveEd(true); V3.refresh(); }); },
       "al-risc"() { if (!ED) return; ED.x.risc = !ED.x.risc; saveEd(true); V3.refresh(); },
       "al-lato"() { if (!ED) return; ED.x.lato = !ED.x.lato; saveEd(true); V3.refresh(); },
       "al-nota"() { if (ED) notaSheet(ED.x, v => { ED.x.nota = v; saveEd(true); V3.refresh(); }); },
-      stretch() { open("warm", () => { W = { kind: "stretch", day: null, i: 0, quick: false, left: null, run: false }; }); },
+      stretch() { if (kid()) return; open("warm", () => { W = { kind: "stretch", day: null, i: 0, quick: false, left: holdS(), run: false, chg: null }; }); sRun(); V3.refresh(); },
+      "s-run"() { if (!W || W.kind !== "stretch") return; if (W.run) { stopTick(); W.run = false; } else sRun(); V3.refresh(); },
+      "s-skip"() { if (!W || W.kind !== "stretch") return; const L = steps(), pos = L[W.i].pos, nx = L.findIndex((x, j) => j > W.i && x.pos !== pos);
+        if (nx < 0) { W.i = L.length - 1; return finishWarm(); }
+        const run = W.run; stopTick(); W.i = nx; W.left = L[nx].secs; W.chg = null; W.come = false; if (run) sRun(); window.scrollTo(0, 0); V3.refresh(); },
       inizia(k) {
         if (!P[k]) return;
         if (activeDay() || !(has("doneToday") && doneToday())) return begin(k);

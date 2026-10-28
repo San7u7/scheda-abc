@@ -102,7 +102,8 @@
   .v3-lt { font-size: 17px; font-weight: 700; line-height: 1.3; }
   .v3-lime .v3-in { background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); min-height: 48px; padding: 0 16px; border-radius: 24px; border: 0; font-size: 14px; font-weight: 600; flex: none; }
   .v3-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .v3-tile { background: rgba(10,10,10,.08); border-radius: 14px; padding: 14px; min-height: 124px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; position: relative; border: 0; color: inherit; text-align: left; }
+  .v3-tile { background: rgba(10,10,10,.08); border-radius: 14px; padding: 14px; min-height: 124px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; position: relative; border: 0; color: inherit; text-align: left; }
+  .v3-tile > .v3-bar { margin-top: auto; } /* 28/10: numero sempre sotto l'etichetta, barra in fondo: righe allineate con o senza barra */
   .v3-tile[data-v3act]::after { content: "›"; position: absolute; top: 10px; right: 12px; font-size: 22px; font-weight: 700; line-height: 1; }
   .v3-tl { font-size: 16px; font-weight: 600; padding-right: 14px; }
   .v3-num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -279,7 +280,7 @@
       else if (d0) { state = "fatta"; day = d0.day; }
       else { day = nextDay(); state = isTrain(today()) ? "da-fare" : "riposo"; }
       const p = P[day]; if (!p) return { state, day };
-      const sets = p.items.reduce((s, it) => s + it.sets, 0), minutes = Math.max(10, Math.round(p.items.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5);
+      const sets = p.items.reduce((s, it) => s + it.sets, 0), minutes = Math.max(10, Math.round(p.items.filter(it => it.misura !== "cardio").reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5) + p.items.filter(it => it.misura === "cardio").reduce((m, it) => m + (it.dur || 0), 0);
       const dr = S.drafts[day], doneSets = a && dr ? Object.values(dr.sets || {}).flat().filter(x => x.done).length : 0;
       return { state, day, name: p.nome || "Seduta " + day, focus: p.focus || "", exercises: p.items.length, sets, minutes, doneSets, ups: p.items.filter(it => plan(it).up).length, next: d0 ? nextDay() : null };
     },
