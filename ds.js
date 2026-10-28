@@ -52,7 +52,29 @@
   /* numbers line up */
   .num, .mb-m, .stile b, .tm-ph b, #sb-clock { font-variant-numeric: tabular-nums; }
   .mb-m { font-size: var(--t-1); }
-  `;
+  
+  /* 28/10 standard «aggiungi / togli» (Giovanni): un box unico con divisore, come «−15″ | +15″» del recupero */
+  .hero .pm, .setx, .v3-pm2, .stepper, .fq { background: rgba(198,242,78,.12) !important; box-shadow: inset 0 0 0 1px rgba(198,242,78,.45) !important; border-radius: 16px !important; overflow: hidden; gap: 0 !important; }
+  .hero .pm, .setx, .v3-pm2 { display: grid !important; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); min-height: 48px; }
+  .hero .pm button, .setx button, .v3-pm2 button, .stepper button, .fq button { position: relative; background: transparent !important; box-shadow: none !important; border: 0 !important; border-radius: 0 !important; color: var(--accent) !important; font-weight: 700; min-height: 48px; }
+  .hero .pm button + button::before, .setx button + button::before, .v3-pm2 button + button::before, .stepper button:last-child::before, .fq button:last-child::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 1px; background: rgba(198,242,78,.45); }
+  .stepper button:first-child::after, .fq button:first-child::after { content: ""; position: absolute; right: 0; top: 10px; bottom: 10px; width: 1px; background: rgba(198,242,78,.45); }
+  .hero .pm button:active, .setx button:active, .v3-pm2 button:active, .stepper button:active, .fq button:active { background: rgba(198,242,78,.14) !important; }
+  .setx button, .v3-pm2 button { font-size: 15px; padding: 0 10px; }
+  .v3-pm2 { min-height: 56px; } .v3-pm2 button { min-height: 56px; font-family: inherit; }
+  .stepper input, .fq .num { color: var(--text); }
+  /* chip delle serie su una griglia a colonne uguali, allineati ai box sotto */
+  .sets { display: grid !important; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 8px !important; }
+  .sets button { justify-content: center; min-height: 44px; padding: 0 6px !important; white-space: nowrap; }
+
+  /* 28/10 (Giovanni): i pulsanti lime pieni diventano lime trasparenti, come i box (fondo lime leggero, bordo e testo lime) */
+  .primary, .v3-apri, .v3-lime .v3-in, .sbar .fine, .sbar.tm .fine, .tmm-apri, .dc-go, .bx-fine, .mb-quick {
+    background: color-mix(in srgb, var(--accent) 16%, transparent) !important; box-shadow: inset 0 0 0 1.5px var(--accent) !important; color: var(--accent) !important; border: 0 !important; }
+  .primary:active, .v3-apri:active, .v3-lime .v3-in:active, .sbar .fine:active, .tmm-apri:active { background: color-mix(in srgb, var(--accent) 28%, transparent) !important; }
+  #tm-mini.over .tmm-apri { background: rgba(255,179,64,.16) !important; box-shadow: inset 0 0 0 1.5px #ffb340 !important; color: #ffb340 !important; }
+  /* serie: − / + di chili e ripetizioni più piccoli, in proporzione ai numeri */
+  .hero .pm { min-height: 40px !important; } .hero .pm button { min-height: 40px !important; height: 40px !important; font-size: 18px !important; }
+`;
   document.head.appendChild(st);
   // keep this sheet last even if a module injects styles later
   new MutationObserver(() => { if (document.head.lastElementChild !== st) document.head.appendChild(st); }).observe(document.head, { childList: true });

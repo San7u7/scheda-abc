@@ -129,6 +129,7 @@ p { margin: 0; }
 .hero .pm { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .hero .pm button { height: var(--tap); border-radius: var(--radius-inner); border: 0; background: var(--raised); font-size: 22px; line-height: 1; }
 .hero .pm button:active { background: var(--control); }
+.hero .pm button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 .hero .bw { font-size: 22px; line-height: 50px; font-weight: 600; color: var(--muted); }
 .reps { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 2px; scrollbar-width: none; }
 .reps::-webkit-scrollbar { display: none; }
@@ -144,6 +145,7 @@ p { margin: 0; }
 .row2 .ghost { flex: 1; }
 
 /* session bar (replaces the tab bar during a session) */
+.setx { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; } .setx button { min-height: 48px; border: 0; border-radius: 999px; background: transparent; box-shadow: inset 0 0 0 2px var(--raised); color: var(--text); font-weight: 600; font-size: 15px; }
 .sbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--surface); padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); box-shadow: 0 -10px 30px rgba(0,0,0,.6); }
 .sbar > div { max-width: 528px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
 .sbar .clock { display: flex; flex-direction: column; min-width: 64px; }
@@ -402,10 +404,10 @@ h2 { font-weight: 700; letter-spacing: -0.01em; }
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610281700"></script>
-<script src="lib.js?v=202610281700"></script>
-<script src="ai.js?v=202610281700"></script>
-<script src="coach.js?v=202610281700"></script>
+<script src="seed-abc.js?v=202610282000"></script>
+<script src="lib.js?v=202610282000"></script>
+<script src="ai.js?v=202610282000"></script>
+<script src="coach.js?v=202610282000"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -492,7 +494,7 @@ function nextDay() {
 function doneToday() { const t = localISO(); return S.sessions.filter(s => localISO(new Date(s.date)) === t).sort((a, b) => a.date < b.date ? 1 : -1)[0] || null; }
 function draft(day) {
   const d = S.drafts[day] || (S.drafts[day] = { started: false, subs: {}, sets: {}, cur: null });
-  for (const it of P[day].items) if (!d.sets[it.id] || d.sets[it.id].length !== it.sets) {
+  for (const it of P[day].items) if (!d.sets[it.id] || (!d.started && d.sets[it.id].length !== it.sets)) {
     const pl = plan(it), ls = pl.b.lastSets;
     d.sets[it.id] = Array.from({ length: it.sets }, (_, i) => ({ kg: it.unit === "none" ? null : pl.kg, reps: pl.up ? it.min : (ls ? (ls[i] ?? ls[0]) : it.min), done: false }));
   }
@@ -688,11 +690,10 @@ function viewAllenamento() {
 function activeCard(it, d) {
   const sets = d.sets[it.id], i = d.cur.i, s = sets[i], pl = plan(it), b = pl.b, sub = curSub(it);
   const lastTxt = b.lastSets ? `Ultima ${b.kg != null && it.unit !== "none" ? fmt(b.kg) + " × " : ""}${b.lastSets.slice(0, it.sets).join(" · ")}${b.from === "scheda" ? " (scheda)" : ""}` : "Prima volta";
-  const lo = Math.max(1, it.min - 2), hi = it.max + 2;
-  const chips = Array.from({ length: hi - lo + 1 }, (_, k) => lo + k).map(r => `<button class="${r >= it.min && r <= it.max ? "in" : ""}" data-act="reps" data-v="${r}" aria-pressed="${+s.reps === r}" aria-label="${r} ripetizioni">${r}</button>`).join("");
+
   const kgBox = it.unit === "none"
     ? `<div class="box"><span class="lab">Carico</span><span class="bw">Corpo libero</span></div>`
-    : `<div class="box"><label class="lab" for="kg">${unitLab(it)}</label><input id="kg" inputmode="decimal" type="text" autocomplete="off" value="${s.kg ?? ""}" placeholder="0" data-act="kgin"><div class="pm"><button data-act="kg" data-v="-1" aria-label="Meno ${fmt(stepFor(it))} kg">−</button><button data-act="kg" data-v="1" aria-label="Più ${fmt(stepFor(it))} kg">+</button></div></div>`;
+    : `<div class="box"><label class="lab" for="kg">${unitLab(it)}</label><input id="kg" inputmode="decimal" type="text" autocomplete="off" value="${s.kg ?? ""}" placeholder="0" data-act="kgin"><div class="pm"><button data-act="kg" data-v="-1" aria-label="Meno 0,5 kg">−</button><button data-act="kg" data-v="1" aria-label="Più 0,5 kg">+</button></div></div>`;
   const label = `${it.unit === "none" ? "" : fmt(s.kg) + " × "}${s.reps ?? "–"}`;
   return `<section class="active" aria-label="Esercizio in corso">
     <div class="a-head"><div><div class="a-name">${esc(short(exName(it)))}</div>
@@ -702,10 +703,10 @@ function activeCard(it, d) {
       <button class="icon-btn" data-act="sheet" data-v="ex" aria-label="Tecnica, note e sostituzione"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button></div>
     ${it.warm && i === 0 && !s.done ? `<p class="small muted">Prima: 1 serie di avvicinamento al 50–60%, 6–8 ripetizioni.</p>` : ""}
     <div class="setlab">Serie ${i + 1} di ${sets.length}${s.done ? " · fatta" : ""}</div>
-    <div class="hero">${kgBox}<div class="box"><span class="lab">Ripetizioni</span><span class="big">${s.reps ?? "–"}</span><span class="small faint">Range ${it.min}–${it.max}</span></div></div>
-    <div class="reps" role="group" aria-label="Ripetizioni">${chips}</div>
+    <div class="hero">${kgBox}<div class="box"><span class="lab">Ripetizioni</span><span class="big">${s.reps ?? "–"}</span><div class="pm"><button data-act="repsd" data-v="-1" aria-label="Una ripetizione in meno">−</button><button data-act="repsd" data-v="1" aria-label="Una ripetizione in più">+</button></div></div></div>
     ${s.done ? `<div class="row2"><button class="primary" data-act="done">Aggiorna serie · ${label}</button></div><button class="link small" data-act="undo">Annulla serie</button>` : `<button class="primary" data-act="done">Fatta · ${label}</button>`}
-    <div class="sets" role="group" aria-label="Serie">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}">${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}S${k + 1} ${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
+    <div class="sets" role="group" aria-label="Serie" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, k) => `<button class="${x.done ? "d" : ""}" data-act="pickset" data-v="${k}" aria-current="${k === i}">${x.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ""}S${k + 1} ${it.unit === "none" ? "" : fmt(x.kg) + "×"}${x.reps ?? "–"}</button>`).join("")}</div>
+    <div class="setx">${!s.done && sets.length > 1 ? `<button data-act="delset">Togli la serie ${i + 1}</button>` : ""}<button data-act="addset">Aggiungi serie</button></div>
   </section>`;
 }
 
@@ -1131,9 +1132,17 @@ function markDone() {
     try { navigator.vibrate && navigator.vibrate(30); } catch (_) {}
     const next = sets.findIndex(x => !x.done);
     if (next >= 0) { if (it.unit !== "none") sets[next].kg = s.kg; sets[next].reps = s.reps; d.cur = { id: it.id, i: next }; }
-    else { d.cur = firstOpen(a, d); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    else { d.cur = firstOpen(a, d); window.scrollTo({ top: 0, behavior: "smooth" }); if (sets.length !== it.sets) setTimeout(() => askKeepSets(it, sets.length, sets), 350); }
   }
   saveDrafts(); render();
+}
+/* 28/10 serie libere: a fine esercizio, se il numero di serie è cambiato, chiede se tenerlo nella scheda */
+function askKeepSets(it, n, sets) {
+  if (!window.V3) return;
+  const sd = S.training && S.training.sedute && S.training.sedute[it.id.charCodeAt(0) - 65], ex = sd && sd.esercizi[+it.id.slice(1) - 1]; if (!ex) return;
+  const sh = V3.sheet(`<h2 class="v3-sh1">${n} serie invece di ${it.sets}</h2><p class="v3-shp">${esc(short(exName(it)))}. Le tieni anche le prossime volte?</p>${sets ? `<p class="v3-shp" style="color:var(--v3-t1)">${sets.map(x => (x.kg != null && it.unit !== "none" ? fmt(x.kg) + "×" : "") + x.reps).join(" · ")}</p>` : ""}
+    <button class="v3-apri wide" data-v3act="keep">Sì, nella scheda</button><button class="v3-b2" data-v3act="close">Solo oggi</button>`,
+    { label: "Tieni le serie", on: { keep() { ex.serie = n; persistDoc("training", S.training); setTraining(S.training); sh.close(); toast(`${short(exName(it))}: ${n} serie nella scheda`); } } });
 }
 async function finish(meta) {
   const day = activeDay(), d = draft(day), items = [], ups = [];
@@ -1241,7 +1250,10 @@ document.addEventListener("click", e => {
   else if (act === "focus") { const a = activeDay(), d = draft(a), sets = d.sets[b.dataset.id], i = sets.findIndex(s => !s.done); d.cur = { id: b.dataset.id, i: i >= 0 ? i : 0 }; saveDrafts(); render(); const el = $(".active"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }
   else if (act === "pickset") { const d = draft(activeDay()); d.cur.i = +v; saveDrafts(); render(); }
   else if (act === "reps") { const d = draft(activeDay()); d.sets[d.cur.id][d.cur.i].reps = +v; saveDrafts(); render(); }
-  else if (act === "kg") { const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id), s = d.sets[d.cur.id][d.cur.i]; s.kg = Math.max(0, +((+s.kg || 0) + (+v) * stepFor(it)).toFixed(2)); saveDrafts(); render(); }
+  else if (act === "kg") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.kg = Math.max(0, +((+s.kg || 0) + (+v) * 0.5).toFixed(2)); saveDrafts(); render(); } // passo 0,5 kg ovunque (Giovanni 27/10)
+  else if (act === "repsd") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.reps = Math.max(1, (+s.reps || 0) + (+v)); saveDrafts(); render(); }
+  else if (act === "addset") { const d = draft(activeDay()), sets = d.sets[d.cur.id], last = sets[sets.length - 1]; sets.push({ kg: last.kg, reps: last.reps, done: false }); d.cur.i = sets.length - 1; saveDrafts(); render(); }
+  else if (act === "delset") { const d = draft(activeDay()), sets = d.sets[d.cur.id]; if (sets.length > 1 && !sets[d.cur.i].done) { sets.splice(d.cur.i, 1); const nx = sets.findIndex(x => !x.done); d.cur.i = nx >= 0 ? nx : sets.length - 1; saveDrafts(); render(); } }
   else if (act === "done") markDone();
   else if (act === "undo") { const d = draft(activeDay()); d.sets[d.cur.id][d.cur.i].done = false; saveDrafts(); render(); }
   else if (act === "t15") { if (S.timer) { S.timer.end = Math.max(Date.now(), S.timer.end) + 15000; S.timer.total += 15; renderBar(); } }
@@ -1349,8 +1361,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610281700"></script>
-<script src="ux.js?v=202610281700"></script>
-<script src="hub.js?v=202610281700"></script><script src="board.js?v=202610281700"></script><script src="timer.js?v=202610281700"></script><script src="nutri.js?v=202610281700"></script><script src="photos.js?v=202610281700"></script><script src="coachui.js?v=202610281700"></script><script src="settings.js?v=202610281700"></script><script src="aikey.js?v=202610281700"></script><script src="tour.js?v=202610281700"></script><script src="gesture.js?v=202610281700"></script><script src="ds.js?v=202610281700"></script><script src="v3.js?v=202610281700"></script><script src="sec-oggi.js?v=202610281700"></script><script src="sec-palestra.js?v=202610281700"></script><script src="sec-cibo.js?v=202610281700"></script><script src="sec-progressi.js?v=202610281700"></script>
+<script src="exdb.js?v=202610282000"></script>
+<script src="ux.js?v=202610282000"></script>
+<script src="hub.js?v=202610282000"></script><script src="board.js?v=202610282000"></script><script src="timer.js?v=202610282000"></script><script src="nutri.js?v=202610282000"></script><script src="photos.js?v=202610282000"></script><script src="coachui.js?v=202610282000"></script><script src="settings.js?v=202610282000"></script><script src="aikey.js?v=202610282000"></script><script src="tour.js?v=202610282000"></script><script src="gesture.js?v=202610282000"></script><script src="ds.js?v=202610282000"></script><script src="v3.js?v=202610282000"></script><script src="sec-oggi.js?v=202610282000"></script><script src="sec-palestra.js?v=202610282000"></script><script src="sec-cibo.js?v=202610282000"></script><script src="sec-progressi.js?v=202610282000"></script>
 
 </body></html>

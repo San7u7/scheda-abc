@@ -50,7 +50,7 @@
     const a = activeDay(), d = a && S.drafts[a], ph = d && phase(d), it = d && d.cur && P[a].items.find(x => x.id === d.cur.id);
     const show = !!ph && ph.k !== "work" && !document.getElementById("tm-full") && !S.sheet && !S.ob;
     document.body.classList.toggle("tm-mini-on", show);
-    if (!show) { if (el) el.remove(); return; }
+    if (!show) { if (el) el.remove(); fixb(); return; }
     if (!el) {
       el = document.createElement("button"); el.type = "button"; el.id = "tm-mini"; el.dataset.act = "tm-open"; el.setAttribute("aria-label", "Apri il recupero a tutto schermo");
       el.innerHTML = `<span class="tmm-l"><span class="tmm-k" id="tmm-k"></span><b id="tmm-t" role="timer"></b></span><span class="tmm-n" id="tmm-n"></span><span class="tmm-apri" aria-hidden="true">Apri</span><span class="tmm-track"><i id="tmm-bar"></i></span>`;
@@ -65,13 +65,21 @@
     // sopra la barra più alta tra quella della seduta e quella delle sezioni
     const tops = ["#bar .sbar", "#v3bar"].map(q => document.querySelector(q)).filter(x => x && !x.hidden && getComputedStyle(x).display !== "none").map(x => x.getBoundingClientRect()).filter(r => r.height > 0 && r.top < innerHeight).map(r => r.top);
     el.style.bottom = (innerHeight - (tops.length ? Math.min(...tops) : innerHeight) + 12) + "px";
+    fixb();
   }
+  // 28/10: aria in fondo sempre uguale = altezza reale di quanto sta fisso in basso (barra sezioni, barra seduta, riquadro recupero)
+  function fixb() {
+    const tops = ["#v3bar", "#bar .sbar", "#tm-mini"].map(q => document.querySelector(q)).filter(x => x && !x.hidden && getComputedStyle(x).display !== "none").map(x => x.getBoundingClientRect()).filter(r => r.height > 0 && r.top < innerHeight).map(r => r.top);
+    const h = tops.length ? Math.round(innerHeight - Math.min(...tops)) : 0;
+    if (fixb.h !== h) { fixb.h = h; document.documentElement.style.setProperty("--fixb", h + "px"); }
+  }
+  const rn0 = window.render; if (rn0) window.render = function () { const r = rn0.apply(this, arguments); setTimeout(fixb, 0); return r; };
   // il cronometro del bip (S.timer, in memoria) si ricava dagli istanti salvati: sopravvive a ricariche e uscite dall'app
   function syncTimer() {
     const a = activeDay(), d = a && S.drafts[a], ev = d && evOf(d), last = ev && ev[ev.length - 1];
     if (last && last.type === "done") S.timer = { end: last.t + (last.rest || 90) * 1000, total: last.rest || 90 };
   }
-  setInterval(() => { syncTimer(); full(); mini(); }, 1000);
+  setInterval(() => { syncTimer(); full(); mini(); fixb(); }, 1000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { syncTimer(); full(); mini(); } });
   window.addEventListener("resize", () => mini());
 
@@ -85,16 +93,17 @@
   function full() {
     let el = document.getElementById("tm-full");
     const a = activeDay(), d = a && S.drafts[a], last = d && evOf(d)[evOf(d).length - 1], ph = d && phase(d);
-    if (!ph || ph.k === "work" || S.sheet || S.ob || S.tmHide === last.t) { if (el) el.remove(); return; }
+    const v3o = document.getElementById("v3-overlay"); // un foglio v3 aperto (es. «Tieni le serie») passa davanti al recupero
+    if (!ph || ph.k === "work" || S.sheet || S.ob || (v3o && v3o.children.length) || S.tmHide === last.t) { if (el) el.remove(); return; }
     if (!el) {
       el = document.createElement("div"); el.id = "tm-full"; el.dataset.act = "tm-go"; el.dataset.t = Date.now();
       el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Recupero");
       el.innerHTML = `<div class="tmf-tot"><span>Tempo totale allenamento</span><b id="tmf-tot"></b></div>
-        <span class="tmf-k" id="tmf-k"></span>
+        <div class="tmf-main"><span class="tmf-k" id="tmf-k"></span>
         <div class="tmf-ring"><svg viewBox="0 0 300 300"><circle cx="150" cy="150" r="${R}"/><circle id="tmf-arc" cx="150" cy="150" r="${R}" stroke-dasharray="${C}"/></svg><b id="tmf-t" role="timer"></b></div>
-        <p class="tmf-next" id="tmf-next"></p>
+        <p class="tmf-next" id="tmf-next"></p></div><div class="tmf-ctl">
         <div class="tmf-adj"><button class="tmf-15" data-act="tm-m15" id="tmf-m15" aria-label="Meno 15 secondi di recupero">−15″</button><button class="tmf-15" data-act="t15" id="tmf-15" aria-label="Più 15 secondi di recupero">+15″</button></div>
-        <div class="tmf-foot"><button class="tmf-go" data-act="tm-go">Tocca per terminare la pausa</button><button class="tmf-min" data-act="tm-min">Riduci il cronometro</button></div>`;
+        <div class="tmf-foot"><button class="tmf-go" data-act="tm-go">Tocca per terminare la pausa</button><button class="tmf-min" data-act="tm-min">Riduci<span class="tmf-minx"> il cronometro</span></button></div></div>`;
       let y0 = null;
       el.addEventListener("touchstart", e => { y0 = e.touches[0].clientY; }, { passive: true });
       el.addEventListener("touchend", e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 80) { e.preventDefault(); S.tmHide = last.t; el.remove(); mini(); } y0 = null; });
@@ -188,8 +197,6 @@
   .tmm-apri { min-height: 44px; display: flex; align-items: center; padding: 0 16px; border-radius: 999px; background: var(--accent); color: #000; font-weight: 700; font-size: 15px; }
   .tmm-track { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.08); } .tmm-track i { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
   #tm-mini.over { border-color: #ffb340; } #tm-mini.over .tmm-k, #tm-mini.over b { color: #ffb340; } #tm-mini.over .tmm-track i { background: #ffb340; } #tm-mini.over .tmm-apri { background: #ffb340; }
-  body.tm-mini-on .wrap { padding-bottom: calc(var(--v3-bar, 0px) + 120px) !important; }
-  body.tm-mini-on.v3-live .wrap { padding-bottom: calc(var(--v3-bar, 0px) + 200px) !important; }
   body.tm-mini-on .coach-fab { bottom: calc(var(--v3-bar, 0px) + 100px) !important; }
   .tmf-min { width: 100%; max-width: 360px; min-height: 52px; border: 0; border-radius: 999px; background: transparent; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); color: var(--text); font-size: 16px; font-weight: 600; }
   @media (prefers-reduced-motion: reduce) { #tm-mini { animation: none; } .tmm-track i { transition: none; } }
@@ -219,6 +226,59 @@
   .tmf-tot span { font-size: 14px; font-weight: 600; opacity: .85; } .tmf-tot b { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .tmf-go { width: 100%; max-width: 360px; min-height: 56px; border: 0; border-radius: 999px; background: var(--text); color: #000; font-size: 17px; font-weight: 700; }
   #tm-full.over .tmf-k, #tm-full.over .tmf-ring b { color: #ffb340; } #tm-full.over #tmf-arc { stroke: #ffb340; } #tm-full.over .tmf-15 { padding: 0 22px; } #tm-full.over .tmf-ring b { font-size: min(68px, 17vw); }
+  @media (orientation: portrait) and (max-height: 700px) { /* telefoni piccoli */
+    #tm-full { gap: 12px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+    .tmf-tot { min-height: 48px; } .tmf-tot span { font-size: 14px; } .tmf-tot b { font-size: 22px; }
+    .tmf-main { gap: 10px; padding: 14px 12px; } .tmf-k { font-size: 16px; } .tmf-ring { width: min(160px, 50vw); } .tmf-ring b { font-size: min(52px, 15vw); }
+    .tmf-next { font-size: 15px; line-height: 20px; } .tmf-ctl { gap: 10px; } .tmf-adj, .tmf-adj .tmf-15 { min-height: 48px; } .tmf-foot { margin-top: 0; gap: 8px; } .tmf-go { min-height: 52px; } .tmf-min { min-height: 48px; }
+  }
+  /* 28/10 tavola 22b: telefono in verticale a box impilati (Tempo totale in alto, Recupero grande, ±15 come box con divisore) */
+  #tm-full { justify-content: center; gap: 16px; padding: calc(32px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .tmf-tot { position: static; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; min-height: 60px; box-sizing: border-box; padding: 0 20px; border-radius: 20px; background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); }
+  .tmf-tot span { font-size: 15px; opacity: 1; } .tmf-tot b { font-size: 26px; }
+  .tmf-main { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 480px; box-sizing: border-box; padding: 24px 16px; border: 2px solid var(--accent); border-radius: 24px; background: #111; }
+  #tm-full.over .tmf-main { border-color: #ffb340; }
+  .tmf-k { margin: 0; font-size: 18px; } .tmf-ring { width: min(240px, 62vw); } .tmf-ring b { font-size: min(72px, 18vw); } #tm-full.over .tmf-ring b { font-size: min(58px, 15vw); }
+  .tmf-next { margin: 0; font-size: 16px; line-height: 22px; }
+  .tmf-ctl { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 480px; }
+  .tmf-adj { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: 0; gap: 0; min-height: 60px; border-radius: 20px; background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); overflow: hidden; }
+  .tmf-adj .tmf-15 { position: relative; margin: 0; min-width: 0; min-height: 60px; width: 100%; border-radius: 0; background: transparent; box-shadow: none; color: var(--accent); font-size: 22px; padding: 0 12px; }
+  .tmf-adj .tmf-15 + .tmf-15::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: rgba(198,242,78,.45); }
+  .tmf-adj .tmf-15:active { background: rgba(198,242,78,.12); }
+  #tm-full.over .tmf-adj { grid-template-columns: 1fr; } #tm-full.over .tmf-adj .tmf-15 { font-size: 18px; } #tm-full.over .tmf-adj .tmf-15::before { display: none; }
+  .tmf-foot { position: static; left: auto; right: auto; bottom: auto; width: 100%; gap: 12px; margin-top: 8px; } .tmf-go, .tmf-min { max-width: none; }
+  /* 28/10 tavole 17 e 20: in orizzontale e su tablet due box affiancati, Recupero grande + Tempo totale, comandi sotto */
+  @media (orientation: landscape) and (max-height: 500px), (min-width: 600px) and (min-height: 800px) {
+    #tm-full { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 16px; align-content: stretch; align-items: stretch; justify-items: stretch; text-align: center; }
+    .tmf-main { display: flex; grid-column: 1; grid-row: 1; max-width: none; border: 2px solid var(--accent); border-radius: 24px; background: #111; align-items: center; justify-content: center; min-height: 0; }
+    .tmf-tot { position: static; flex-direction: column; max-width: none; min-height: 0; grid-column: 2; grid-row: 1; border-radius: 24px; background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); justify-content: center; gap: 6px; padding: 16px; }
+    #tm-full.over .tmf-main { border-color: #ffb340; }
+    .tmf-ctl { display: flex; grid-column: 1 / -1; grid-row: 2; align-items: center; max-width: none; }
+    .tmf-adj { margin: 0; } .tmf-foot { position: static; margin: 0; left: auto; right: auto; bottom: auto; }
+    .tmf-15 { margin-top: 0; }
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .sbar.tm { padding-top: 6px !important; padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)) !important; }
+    .sbar.tm .tm-ph.work { grid-template-columns: auto auto; justify-content: center; align-items: baseline; column-gap: 10px; min-height: 48px; padding: 6px 12px; } .sbar.tm .tm-ph.work b { font-size: 20px; }
+    .sbar.tm .fine { height: 48px; }
+    #tm-mini { min-height: 60px; padding: 6px 10px 8px 14px; } #tm-mini b { font-size: 28px; }
+    #tm-full { padding: max(20px, env(safe-area-inset-top, 0px)) max(44px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(44px, env(safe-area-inset-left, 0px)); }
+    .tmf-main { flex-direction: row; gap: 28px; padding: 12px 24px; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 28px; row-gap: 10px; text-align: left; }
+    .tmf-ring { grid-column: 1; grid-row: 1 / span 2; width: min(200px, calc(100vh - 160px)); } .tmf-ring b { font-size: min(60px, 15vh); } #tm-full.over .tmf-ring b { font-size: min(48px, 12vh); }
+    .tmf-k { grid-column: 2; grid-row: 1; align-self: end; margin: 0; font-size: 20px; } .tmf-next { grid-column: 2; grid-row: 2; align-self: start; margin: 0; max-width: none; }
+    .tmf-tot span { font-size: 15px; } .tmf-tot b { font-size: 40px; }
+    .tmf-ctl { flex-direction: row; align-items: center; gap: 12px; }
+    .tmf-adj { width: 220px; flex: none; min-height: 52px; } .tmf-adj .tmf-15 { min-height: 52px; font-size: 18px; }
+    .tmf-foot { flex-direction: row; flex: 1; gap: 12px; width: auto; } .tmf-go { flex: 1; min-height: 52px; max-width: none; } .tmf-min { width: auto; min-height: 52px; padding: 0 20px; } .tmf-minx { display: none; }
+  }
+  @media (min-width: 600px) and (min-height: 800px) {
+    #tm-full { padding: 48px; grid-template-rows: min(560px, 60vh) auto; gap: 24px 16px; }
+    .tmf-main { flex-direction: column; gap: 20px; padding: 24px; border-radius: 28px; } .tmf-tot { border-radius: 28px; } .tmf-tot span { font-size: 16px; } .tmf-tot b { font-size: 44px; }
+    .tmf-k { margin: 0; font-size: 20px; } .tmf-ring { width: min(320px, 34vh); } .tmf-ring b { font-size: 100px; } #tm-full.over .tmf-ring b { font-size: 80px; }
+    .tmf-next { margin: 0; font-size: 18px; line-height: 26px; }
+    .tmf-ctl { flex-direction: column; gap: 24px; align-items: stretch; } #tm-full { align-content: center; } .tmf-adj, .tmf-adj .tmf-15 { min-height: 60px; } .tmf-adj .tmf-15 { font-size: 22px; }
+    .tmf-foot { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; width: 100%; } .tmf-go, .tmf-min { max-width: none; min-height: 56px; }
+  }
   @media (prefers-reduced-motion: reduce) { #tm-full { animation: none; } .tmf-ring #tmf-arc { transition: none; } }
   .tm-sum ul { margin: 6px 0 0; } .tm-sum li { margin-bottom: 6px; }`;
   document.head.appendChild(st);

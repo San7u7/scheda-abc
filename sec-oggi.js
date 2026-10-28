@@ -179,8 +179,7 @@
   function waterSheet() {
     const w = water(), body = () => ui.big(`${ui.nf(w.l, 2)} <span class="v3-of">/${ui.nf(w.t, 2)} L</span>`, "Un bicchiere = 250 ml");
     const s = V3.sheet(`<h2 class="v3-sh1">Acqua di oggi</h2><div class="v3-oggi-w"><div data-oggi-w>${body()}</div>
-      <button class="v3-apri wide" data-act="water" data-v="1" data-v3act="wupd">+1 bicchiere</button>
-      <button class="v3-b2" data-act="water" data-v="-1" data-v3act="wupd">Togli un bicchiere</button></div>${ui.secondary("Chiudi", "close")}`,
+      <div class="v3-pm2"><button data-act="water" data-v="-1" data-v3act="wupd">Togli bicchiere</button><button data-act="water" data-v="1" data-v3act="wupd">Aggiungi bicchiere</button></div></div>${ui.secondary("Chiudi", "close")}`,
     { label: "Acqua di oggi", on: { wupd() { const x = water(); w.l = x.l; const b = s.el.querySelector("[data-oggi-w]"); if (b) b.innerHTML = body(); } } });
   }
 
