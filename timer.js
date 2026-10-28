@@ -184,7 +184,7 @@
   .tm-ph.over { background: #3a2a0a; } .tm-ph.over .tm-k, .tm-ph.over b { color: #ffb340; } .tm-ph.over .tm-track i { background: #ffb340; }
   .tm-ph.work .tm-track { display: none; }
   .tm-ph.work { grid-template-columns: 1fr; justify-items: center; text-align: center; row-gap: 2px; padding: 8px 12px; } .tm-ph.work b { justify-self: center; }
-  .tm-ph.work { background: rgba(198,242,78,.14); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); } .tm-ph.work .tm-k, .tm-ph.work b { color: var(--accent); }
+  .tm-ph.work { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); } .tm-ph.work .tm-k, .tm-ph.work b { color: var(--accent); }
   .sbar.tm .tm-ph.work b { font-size: 22px; }
   #tm-mini { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); z-index: 9; max-width: 528px; margin: 0 auto; min-height: 76px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 16px; padding: 10px 12px 12px 18px; border: 2px solid var(--accent); border-radius: 18px; background: rgba(22,22,22,.88); -webkit-backdrop-filter: blur(16px) saturate(120%); backdrop-filter: blur(16px) saturate(120%); color: var(--text); text-align: left; font: inherit; overflow: hidden; box-shadow: 0 0 0 1px #000, 0 12px 32px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.10); cursor: pointer; animation: tmm-in .45s cubic-bezier(.2,1,.3,1) both; }
   @keyframes tmm-in { 0% { opacity: 0; transform: translateY(14px) scale(.94); } 60% { opacity: 1; transform: translateY(-2px) scale(1.015); } 100% { opacity: 1; transform: none; } }
@@ -234,24 +234,24 @@
   }
   /* 28/10 tavola 22b: telefono in verticale a box impilati (Tempo totale in alto, Recupero grande, ±15 come box con divisore) */
   #tm-full { justify-content: center; gap: 16px; padding: calc(32px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
-  .tmf-tot { position: static; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; min-height: 60px; box-sizing: border-box; padding: 0 20px; border-radius: 20px; background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); }
+  .tmf-tot { position: static; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; max-width: 480px; min-height: 60px; box-sizing: border-box; padding: 0 20px; border-radius: 20px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
   .tmf-tot span { font-size: 15px; opacity: 1; } .tmf-tot b { font-size: 26px; }
   .tmf-main { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 480px; box-sizing: border-box; padding: 24px 16px; border: 2px solid var(--accent); border-radius: 24px; background: #111; }
   #tm-full.over .tmf-main { border-color: #ffb340; }
   .tmf-k { margin: 0; font-size: 18px; } .tmf-ring { width: min(240px, 62vw); } .tmf-ring b { font-size: min(72px, 18vw); } #tm-full.over .tmf-ring b { font-size: min(58px, 15vw); }
   .tmf-next { margin: 0; font-size: 16px; line-height: 22px; }
   .tmf-ctl { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 480px; }
-  .tmf-adj { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: 0; gap: 0; min-height: 60px; border-radius: 20px; background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); overflow: hidden; }
+  .tmf-adj { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: 0; gap: 0; min-height: 60px; border-radius: 20px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); overflow: hidden; }
   .tmf-adj .tmf-15 { position: relative; margin: 0; min-width: 0; min-height: 60px; width: 100%; border-radius: 0; background: transparent; box-shadow: none; color: var(--accent); font-size: 22px; padding: 0 12px; }
-  .tmf-adj .tmf-15 + .tmf-15::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: rgba(198,242,78,.45); }
-  .tmf-adj .tmf-15:active { background: rgba(198,242,78,.12); }
+  .tmf-adj .tmf-15 + .tmf-15::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .tmf-adj .tmf-15:active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
   #tm-full.over .tmf-adj { grid-template-columns: 1fr; } #tm-full.over .tmf-adj .tmf-15 { font-size: 18px; } #tm-full.over .tmf-adj .tmf-15::before { display: none; }
   .tmf-foot { position: static; left: auto; right: auto; bottom: auto; width: 100%; gap: 12px; margin-top: 8px; } .tmf-go, .tmf-min { max-width: none; }
   /* 28/10 tavole 17 e 20: in orizzontale e su tablet due box affiancati, Recupero grande + Tempo totale, comandi sotto */
   @media (orientation: landscape) and (max-height: 500px), (min-width: 600px) and (min-height: 800px) {
     #tm-full { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 16px; align-content: stretch; align-items: stretch; justify-items: stretch; text-align: center; }
     .tmf-main { display: flex; grid-column: 1; grid-row: 1; max-width: none; border: 2px solid var(--accent); border-radius: 24px; background: #111; align-items: center; justify-content: center; min-height: 0; }
-    .tmf-tot { position: static; flex-direction: column; max-width: none; min-height: 0; grid-column: 2; grid-row: 1; border-radius: 24px; background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); justify-content: center; gap: 6px; padding: 16px; }
+    .tmf-tot { position: static; flex-direction: column; max-width: none; min-height: 0; grid-column: 2; grid-row: 1; border-radius: 24px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); justify-content: center; gap: 6px; padding: 16px; }
     #tm-full.over .tmf-main { border-color: #ffb340; }
     .tmf-ctl { display: flex; grid-column: 1 / -1; grid-row: 2; align-items: center; max-width: none; }
     .tmf-adj { margin: 0; } .tmf-foot { position: static; margin: 0; left: auto; right: auto; bottom: auto; }

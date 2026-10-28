@@ -110,9 +110,9 @@
   if (!document.getElementById("v3-sec-cibo")) {
     const st = document.createElement("style"); st.id = "v3-sec-cibo";
     st.textContent = `
-    #view.v3 .v3-cibo-caro { display: flex; gap: 12px; overflow-x: auto; contain: inline-size; width: calc(100% + 32px); min-width: 0; box-sizing: border-box; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 2px 32px; scroll-padding-inline: 32px; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+    #view.v3 .v3-cibo-caro { display: flex; gap: 12px; overflow-x: auto; contain: inline-size; width: calc(100% + 32px); min-width: 0; box-sizing: border-box; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 2px 16px; scroll-padding-inline: 16px; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
     #view.v3 .v3-cibo-caro::-webkit-scrollbar { display: none; }
-    #view.v3 .v3-cibo-mc { flex: 0 0 100%; scroll-snap-align: center; background: var(--v3-s1); border-radius: 18px; padding: 16px; box-sizing: border-box; display: flex; transition: opacity .2s; }
+    #view.v3 .v3-cibo-mc { flex: 0 0 calc(100% - 52px); scroll-snap-align: start; background: var(--v3-s1); border-radius: 18px; padding: 16px; box-sizing: border-box; display: flex; transition: opacity .2s; }
     #view.v3 .v3-cibo-mc.cur { box-shadow: inset 0 0 0 2px var(--v3-lime); }
     #view.v3 .v3-cibo-mc:not(.cur) { opacity: .5; cursor: pointer; }
     #view.v3 .v3-cibo-in { display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 0; }
@@ -219,7 +219,7 @@
   function bindCaro(el) {
     const c = el.querySelector(".v3-cibo-caro"); if (!c) return;
     const center = (i, smooth) => { const m = c.querySelector(`.v3-cibo-mc[data-i="${i}"]`); if (!m) return;
-      const x = m.offsetLeft - (c.clientWidth - m.offsetWidth) / 2; c._prog = Date.now() + (smooth ? 700 : 250);
+      const x = m.offsetLeft - 16; // 28/10: card del momento allineata al bordo, la successiva si vede a destra c._prog = Date.now() + (smooth ? 700 : 250);
       if (smooth && c.scrollTo && !matchMedia("(prefers-reduced-motion: reduce)").matches) c.scrollTo({ left: x, behavior: "smooth" }); else c.scrollLeft = x; };
     const mark = i => {
       c.querySelectorAll(".v3-cibo-mc").forEach(m => { const on = +m.dataset.i === i, inn = m.firstElementChild;
@@ -230,7 +230,7 @@
     center(ci, false); requestAnimationFrame(() => { if (c.isConnected) center(ci, false); });
     let tm = null;
     c.addEventListener("scroll", () => { clearTimeout(tm); tm = setTimeout(() => { if (Date.now() < (c._prog || 0)) return;
-      let best = ci, bd = 1e9; c.querySelectorAll(".v3-cibo-mc").forEach(m => { const d = Math.abs(m.offsetLeft + m.offsetWidth / 2 - c.scrollLeft - c.clientWidth / 2); if (d < bd) { bd = d; best = +m.dataset.i; } });
+      let best = ci, bd = 1e9; const all = c.querySelectorAll(".v3-cibo-mc"); all.forEach(m => { const d = Math.abs(m.offsetLeft - 16 - c.scrollLeft); if (d < bd) { bd = d; best = +m.dataset.i; } }); if (c.scrollLeft >= c.scrollWidth - c.clientWidth - 2 && all.length) best = +all[all.length - 1].dataset.i;
       if (best !== ci) { ci = best; mark(ci); } }, 90); }, { passive: true });
     c._center = center; c._mark = mark;
   }
@@ -268,12 +268,12 @@
     let h = ui.back() + title(LAB(k), s.lab + (st === "custom" ? ": un'altra cosa" : ""));
     if (st === "custom") {
       h += ui.card(`<p class="v3-cibo-t">${e(v.custom[k].text)}</p>${m ? `<p class="v3-rs">Il piano prevedeva: ${e(m.t.toLowerCase())}</p>` : ""}`) + plateBox(mealNums(dw, k), dayT) +
-        acts(leg("Modifica cosa ho mangiato", "mealalt", k) + ui.secondary("Togli il segno", "unmark", k));
+        acts(leg("Modifica cosa ho mangiato", "mealalt", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
     } else if (st === "plan") {
       h += ui.section("Nel piatto", ui.card(`<ul class="v3-cibo-ing">${m.i.map(x => `<li>${e(casa(x))}</li>`).join("")}</ul>`)) + plateBox(mealNums(dw, k), dayT) + rolesCard(mealText(dw, k)) +
-        acts(ui.secondary("Cambia le quantità", "qty", k) + ui.secondary("Non l'ho mangiato: togli il segno", "unmark", k));
+        acts(ui.secondary("Cambia le quantità", "qty", k) + ui.secondary("Non l'ho mangiato: rimetti da fare", "unmark", k));
     } else if (st === "skip") {
-      h += (m ? ui.card(`<p class="v3-cibo-t">${e(m.t)}</p>`) : "") + acts((m ? lime("L'ho mangiato", "eat", k) : "") + leg("Ho mangiato un'altra cosa", "mealalt", k) + ui.secondary("Togli «non mangiato»", "unmark", k));
+      h += (m ? ui.card(`<p class="v3-cibo-t">${e(m.t)}</p>`) : "") + acts((m ? lime("L'ho mangiato", "eat", k) : "") + leg("Ho mangiato un'altra cosa", "mealalt", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
     } else {
       h += (m ? ui.section("Nel piatto", ui.card(`<ul class="v3-cibo-ing">${m.i.map(x => `<li>${e(casa(x))}</li>`).join("")}</ul>`)) : "") +
         acts((m ? lime("Ho mangiato questo", "eat", k) + ui.secondary("Questo, ma in quantità diverse", "qty", k) : "") + leg(m ? "Un'altra cosa" : "Segna cosa ho mangiato", "mealalt", k) + (s.past ? leg("Non mangiato", "mealskip", k) : ""));
@@ -288,7 +288,7 @@
     if (!qa) quiz = ui.card(`<p class="v3-cibo-q">Secondo te?</p><p class="v3-cibo-qq">${e(z.q)}</p><div class="v3-cibo-two">${z.o.map((o, j) => ui.secondary(o, "quiz", j)).join("")}</div>${ui.secondary("Salta la domanda", "quiz", -1)}`);
     else if (qa.k === k) quiz = ui.card(`<p class="v3-cibo-q">${qa.ok ? "Esatto!" : qa.skip ? "Domanda saltata" : "Quasi"}</p><p class="v3-rs">${e(z.x)}</p>`);
     return ui.back() + title(`${LAB(k)} ${segn(k)} ✓`, "Ecco cosa ti ha dato") + quiz + plateBox(mealNums(dw, k), data.today()) + rolesCard(text) +
-      acts(ui.secondary("Torna ai pasti di oggi", "home") + ui.secondary("Ho sbagliato, togli il segno", "unmark", k)) + endCur(c);
+      acts(ui.secondary("Torna ai pasti di oggi", "home") + ui.secondary("Ho sbagliato: rimetti da fare", "unmark", k)) + endCur(c);
   }
 
   /* calorie e proteine giorno per giorno */
@@ -413,8 +413,13 @@
     },
     on: {
       dot(i) { const c = document.querySelector("#view .v3-cibo-caro"); ci = +i; if (c && c._mark) { c._mark(ci); c._center(ci, true); } },
-      eat(k) { markEaten(k); ci = null; const t = top(); if (t && t.p === "learned") { V3.refresh(); return; } if (t && t.p === "pasto") replace({ p: "learned", k }); else open({ p: "learned", k }); },
-      unmark(k) { const p = top(); unmark(k); if (p && p.p === "learned") V3.go("cibo"); else V3.refresh(); },
+      eat(k) { markEaten(k); ci = null; toast(`${LAB(k)} segnato`, { sub: numLine(mealNums(dowOf(today()), k)), undo: () => { unmark(k); V3.go("cibo"); } }); const t = top(); if (t && t.p === "learned") { V3.refresh(); return; } if (t && t.p === "pasto") replace({ p: "learned", k }); else open({ p: "learned", k }); },
+      unmark(k) { // 28/10: conferma prima di rimettere il pasto tra quelli da fare (tavola 24)
+        let done = false; const p = top(), st = stOf(today(), k), v = dayV(today()), what = st === "custom" ? `«${v.custom[k].text}» e i suoi numeri di oggi` : st === "skip" ? "il segno «non mangiato»" : "il segno e i numeri di oggi";
+        const sh = V3.sheet(`<h2 class="v3-sh1">Rimettere ${LAB(k).toLowerCase()} da fare?</h2><p class="v3-shp">Cancello ${e(what)}.</p><button class="v3-apri wide" data-v3act="ok">Sì, rimetti da fare</button><button class="v3-b2" data-v3act="close">No, lascialo segnato</button>`,
+          { label: "Rimetti tra i pasti da fare", on: { ok() { done = true; unmark(k); sh.close(); } },
+            onClose: () => { if (!done) return; setTimeout(() => { if (p && p.p === "learned") V3.go("cibo"); else V3.refresh(); toast(`${LAB(k)} rimesso da fare`); }, 60); } });
+      },
       qty(k) { editQty(k); },
       quiz(j) { const p = top(), iso = today(), z = quizFor(mealText(dowOf(iso), p.k), iso); quizSet(iso, { k: p.k, j: +j, ok: +j === z.a, skip: +j < 0 }); V3.refresh(); },
       home() { V3.go("cibo"); },

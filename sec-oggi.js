@@ -180,7 +180,7 @@
     const w = water(), body = () => ui.big(`${ui.nf(w.l, 2)} <span class="v3-of">/${ui.nf(w.t, 2)} L</span>`, "Un bicchiere = 250 ml");
     const s = V3.sheet(`<h2 class="v3-sh1">Acqua di oggi</h2><div class="v3-oggi-w"><div data-oggi-w>${body()}</div>
       <div class="v3-pm2"><button data-act="water" data-v="-1" data-v3act="wupd">Togli bicchiere</button><button data-act="water" data-v="1" data-v3act="wupd">Aggiungi bicchiere</button></div></div>${ui.secondary("Chiudi", "close")}`,
-    { label: "Acqua di oggi", on: { wupd() { const x = water(); w.l = x.l; const b = s.el.querySelector("[data-oggi-w]"); if (b) b.innerHTML = body(); } } });
+    { label: "Acqua di oggi", on: { wupd(a, btn) { const x = water(); toast(btn && btn.dataset.v === "-1" ? "Bicchiere tolto" : "Bicchiere aggiunto", { sub: `${ui.nf(x.l, 2)} di ${ui.nf(x.t, 2)} L oggi` }); w.l = x.l; const b = s.el.querySelector("[data-oggi-w]"); if (b) b.innerHTML = body(); } } });
   }
 
   /* «Personalizza sezione»: scegli 4 riquadri. Salva nella chiave esistente «tiles» di board.js (stesso formato: 4 chiavi) */
@@ -194,7 +194,7 @@
     const paint = () => { s.el.innerHTML = '<div class="v3-grab"></div>' + html(); };
     const s = V3.sheet(html(), { label: "Scegli 4 riquadri", on: {
       tsel(k) { const i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 4) sel.push(k); paint(); },
-      tsave() { if (sel.length !== 4) return; lsSet("tiles", sel); s.close(); },
+      tsave() { if (sel.length !== 4) return; lsSet("tiles", sel); s.close(); toast("Riquadri aggiornati"); },
       treset() { lsSet("tiles", null); s.close(); }
     }, onClose: () => setTimeout(() => V3.refresh(), 0) });
   }

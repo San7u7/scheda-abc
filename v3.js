@@ -76,9 +76,12 @@
   .v3-sub { font-size: 16px; color: var(--v3-t2); margin-top: 4px; }
   .v3-gear { width: 48px; height: 48px; flex: none; border-radius: 24px; background: var(--v3-s2); border: 0; color: var(--v3-t3); display: flex; align-items: center; justify-content: center; padding: 0; }
   .v3-sec { display: flex; flex-direction: column; gap: 12px; }
+  /* 28/10 (Giovanni): titoli, date ed etichette sulla stessa linea dei testi dentro le card (rientro 16 px) */
+  #view.v3 .v3-hd > div:first-child, #view.v3 h1.v3-t1, #view.v3 .v3-sub, #view.v3 .v3-lab { padding-left: 16px; }
+  #view.v3 .v3-hd h1.v3-t1, #view.v3 .v3-hd .v3-sub, #view.v3 .v3-cc .v3-sub, #view.v3 .v3-lab-row .v3-lab { padding-left: 0; } #view.v3 .v3-lab-row { padding-left: 16px; }
   .v3-lab { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
   .v3-lab-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .v3-row { background: var(--v3-s1); border-radius: 18px; min-height: 72px; padding: 12px 12px 12px 14px; display: flex; align-items: center; gap: 12px; box-sizing: border-box; color: var(--v3-t1); border: 0; width: 100%; text-align: left; }
+  .v3-row { background: var(--v3-s1); border-radius: 18px; min-height: 72px; padding: 12px 12px 12px 16px; display: flex; align-items: center; gap: 12px; box-sizing: border-box; color: var(--v3-t1); border: 0; width: 100%; text-align: left; }
   .v3-row.on { box-shadow: inset 0 0 0 2px var(--v3-lime); }
   .v3-row[data-v3act] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .v3-when { width: 40px; flex: none; font-size: 16px; font-variant-numeric: tabular-nums; }
@@ -90,7 +93,7 @@
   .v3-apri.wide { width: 100%; font-size: 15px; }
   .v3-b2 { min-height: 48px; width: 100%; border-radius: 24px; border: 2px solid var(--v3-lime); background: transparent; color: var(--v3-t1); font-size: 15px; font-weight: 600; padding: 0 16px; box-sizing: border-box; }
   .v3-back { align-self: flex-start; min-height: 48px; padding: 0 18px; border: 2px solid var(--v3-lime); border-radius: 24px; color: var(--v3-t1); font-size: 15px; font-weight: 600; background: transparent; display: inline-flex; align-items: center; }
-  .v3-lime { background: rgba(198,242,78,.12); box-shadow: inset 0 0 0 1px rgba(198,242,78,.45); color: var(--v3-t1); border-radius: 24px; /* 28/10: lime trasparente come il box Tempo totale */ padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .v3-lime { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); color: var(--v3-t1); border-radius: 24px; /* 28/10: lime trasparente come il box Tempo totale */ padding: 16px; display: flex; flex-direction: column; gap: 16px; }
   .v3-lime-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .v3-lt { font-size: 17px; font-weight: 700; line-height: 1.3; }
   .v3-lime .v3-in { background: var(--v3-lime); color: var(--v3-ink); min-height: 48px; padding: 0 16px; border-radius: 24px; border: 0; font-size: 14px; font-weight: 600; flex: none; }
@@ -105,7 +108,7 @@
   .v3-bar i { display: block; height: 100%; background: #fff; border-radius: 6px; }
   .v3-lime .v3-bar { background: rgba(255,255,255,.12); }
   .v3-lime .v3-bar i { background: var(--v3-lime); }
-  .v3-lime .v3-tile { background: rgba(198,242,78,.08); } .v3-lime .v3-tile[data-v3act]::after { color: var(--v3-lime); } .v3-lime .v3-lt { color: var(--v3-lime); }
+  .v3-lime .v3-tile { background: color-mix(in srgb, var(--accent) 8%, transparent); } .v3-lime .v3-tile[data-v3act]::after { color: var(--v3-lime); } .v3-lime .v3-lt { color: var(--v3-lime); }
   .v3-end { display: flex; gap: 12px; align-items: center; }
   .v3-sap { background: var(--v3-soft); border-radius: 16px; min-height: 72px; padding: 14px 16px; flex: 1; min-width: 0; box-sizing: border-box; border: 0; color: var(--v3-t1); text-align: left; cursor: pointer; }
   .v3-st { display: block; font-size: 17px; font-weight: 700; color: var(--v3-lime); margin-bottom: 4px; }
