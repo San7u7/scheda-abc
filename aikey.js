@@ -5,7 +5,7 @@
 (function () {
   if (typeof S === "undefined" || typeof getAIKey !== "function") return;
   const need = () => S.site && !getAIKey();
-  const page = (skipAct) => `<div class="ob aistep"><h1>${skipAct === "ai-later-ob" ? `Prima di scheda e <span class="hl">piano alimentare</span>` : `Ultimo <span class="hl">passo</span>`}</h1>${aiKeyBox()}<button class="link small" data-act="${skipAct}" style="align-self:center;min-height:44px">Attiva Leo più tardi</button></div>`;
+  const page = (skipAct) => `<div class="ob aistep"><div class="lk-h"><h1 style="margin:0;font-size:30px">Attiva Leo</h1><p>${skipAct === "ai-later-ob" ? "Gratis, in 2 minuti · serve per scheda e piano" : "Gratis, in 2 minuti · ultimo passo"}</p></div>${aiKeyBox({ bare: true })}<button class="lk-later" data-act="${skipAct}">Attiva Leo più tardi</button></div>`;
 
   // generic app: step 2 (after the profile) shows the key first
   const vOb = window.viewOnboarding;
@@ -31,7 +31,8 @@
 
   const st = document.createElement("style");
   st.textContent = `
-  .aistep { gap: 14px; }
+  .aistep { gap: 28px; }
+  .lk-later { min-height: 48px; border-radius: 24px; border: 0; background: transparent; box-shadow: inset 0 0 0 2px var(--accent, #c6f24e); color: #fff; font-size: 15px; font-weight: 600; width: 100%; }
   .aikey { gap: 10px; }
   .ai-why { margin: 0; } .ai-why li { margin-bottom: 4px; color: var(--muted); } .ai-why b { color: var(--text); }
   .ai-steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }

@@ -145,19 +145,41 @@ async function setupSite() {
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (_) {}
   try { S.photos = await loadLocalPhotos(); } catch (_) {}
 }
-function aiKeyBox() {
+/* 28/10 tappa C: riquadro «Attiva Leo» (tavola ChiaveLeo): 3 passi numerati, campo, «Attiva Leo», riga «Privacy e limiti» con «Apri».
+   Unico per quiz, primo accesso (aikey.js), Impostazioni e Leo. o.bare = senza titolo (la pagina ha già «Attiva Leo»); o.sub = sottotitolo. */
+const AI_PRIVACY = `<h2 class="v3-sh1">Privacy e limiti</h2>
+  <p class="v3-shp"><b>Leo</b> risponde su allenamento e alimentazione partendo dai tuoi dati. <b>Foto e documenti</b>: legge scheda, piano alimentare ed etichette da foto o PDF, e confronta le foto del corpo. <b>Pasti</b>: stima calorie e proteine da una foto o da una descrizione.</p>
+  <p class="v3-shp">La chiave resta solo su questo telefono: Askesis non ha server e non la vede. Le richieste vanno direttamente a Google. Il piano gratuito ha limiti giornalieri e Google può usare le richieste per migliorare i suoi modelli. Senza chiave funzionano comunque profilo, scheda e dieta inserite a mano, allenamenti e progressi.</p>
+  <button class="v3-b2" data-v3act="close">Chiudi</button>`;
+function aiKeyBox(o = {}) {
   const k = getAIKey();
-  return k ? `<div class="card"><h2>Leo usa Google Gemini</h2><p class="small muted">Risposte di Leo, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
-      <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`
-    : `<div class="card aikey"><h2>Attiva Leo (gratis)</h2><p class="small muted" style="margin:0">Ti serve una chiave personale di Google: bastano due minuti.</p>
-      <ul class="plain ai-why"><li><b>Leo</b>: risponde su allenamento e alimentazione partendo dai tuoi dati.</li><li><b>Foto e documenti</b>: legge scheda, piano alimentare ed etichette da foto o PDF, e confronta le foto del corpo.</li><li><b>Pasti</b>: stima calorie e proteine da una foto o da una descrizione.</li></ul>
-      <ol class="ai-steps"><li>Tocca «Apri Google AI Studio» e accedi con il tuo account Google.</li><li>Accetta i termini se te li chiede, poi tocca «Create API key».</li><li>Tocca l'icona di copia accanto alla chiave (inizia con «AIza»).</li><li>Torna qui: tocca «◀ Askesis» in alto a sinistra, oppure riapri l'app. Poi tocca «Incolla chiave».</li></ol>
-      <a class="primary go" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center">Apri Google AI Studio</a>
-      ${navigator.clipboard && navigator.clipboard.readText ? `<button class="primary" data-act="ai-paste">Incolla chiave</button>` : ""}
-      <input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Oppure incollala qui (inizia con AIza…)" style="height:48px;border-radius:14px;border:0;background:var(--raised);padding:0 14px;color:var(--text);font-size:16px">
-      <button class="ghost" data-act="ai-save">Attiva Leo</button>
-      <p class="small muted" style="margin:0">La chiave resta solo su questo telefono: Askesis non ha server e non la vede. Le richieste vanno direttamente a Google. Il piano gratuito ha limiti giornalieri e Google può usare le richieste per migliorare i suoi modelli. Senza chiave funzionano comunque profilo, scheda e dieta inserite a mano, allenamenti e progressi.</p></div>`;
+  if (k) return `<div class="card"><h2>Leo usa Google Gemini</h2><p class="small muted">Risposte di Leo, stime dei pasti, lettura di foto, etichette e documenti usano la tua chiave, salvata solo su questo telefono.</p>
+      <div class="row2"><button class="ghost" data-act="ai-test">Prova la chiave</button><button class="ghost" data-act="ai-remove">Rimuovi chiave</button></div></div>`;
+  const step = (n, t, s, x = "") => `<li class="lk-step"><span class="lk-n" aria-hidden="true">${n}</span><span class="lk-tx"><b>${t}</b><span>${s}</span></span>${x}</li>`;
+  return `<div class="lk">${o.bare ? "" : `<div class="lk-h"><h2>Attiva Leo</h2><p>${o.sub || "Gratis, in 2 minuti"}</p></div>`}
+    <ol class="lk-box">${step(1, "Apri Google AI Studio", "Accedi con il tuo account", `<a class="lk-btn" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" aria-label="Apri Google AI Studio">Apri</a>`)}${step(2, "Crea la chiave", "Tocca «Create API key»")}${step(3, "Copiala e torna qui", "Inizia con «AIza»")}</ol>
+    <div class="lk-in"><input type="text" id="ai-key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" placeholder="Incolla qui la chiave" aria-label="Incolla qui la chiave"><button class="lk-go" data-act="ai-save">Attiva Leo</button></div>
+    <div class="lk-row"><span class="lk-tx"><b>Privacy e limiti</b><span>La chiave resta sul telefono</span></span><button class="lk-btn" data-act="ai-privacy" aria-label="Apri privacy e limiti">Apri</button></div></div>`;
 }
+(function () {
+  const st = document.createElement("style"); st.id = "lk-style";
+  st.textContent = `
+  .lk { display: flex; flex-direction: column; gap: 28px; color: #fff; }
+  .lk-h { padding-left: 16px; } .lk-h h2 { margin: 0; font-size: 24px; font-weight: 800; } .lk-h p { margin: 4px 0 0; font-size: 16px; color: rgba(255,255,255,.8); }
+  .lk-box { list-style: none; margin: 0; border-radius: 24px; background: color-mix(in srgb, var(--accent, #c6f24e) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, #c6f24e) 45%, transparent); padding: 8px 12px 8px 16px; display: flex; flex-direction: column; }
+  .lk-step { min-height: 64px; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+  .lk-n { width: 32px; height: 32px; flex: none; border-radius: 16px; background: color-mix(in srgb, var(--accent, #c6f24e) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent, #c6f24e); color: var(--accent, #c6f24e); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .lk-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .lk-tx b { font-size: 16px; } .lk-tx span { font-size: 14px; color: #c8c8c8; }
+  .lk-row .lk-tx b { font-size: 17px; } .lk-row .lk-tx span { font-size: 15px; }
+  .lk-btn { min-height: 44px; width: 96px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 999px; border: 0; background: color-mix(in srgb, var(--accent, #c6f24e) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent, #c6f24e); color: var(--accent, #c6f24e); font-weight: 700; font-size: 15px; text-decoration: none; padding: 0; }
+  .lk-in { display: flex; flex-direction: column; gap: 12px; }
+  .lk-in input { min-height: 52px; height: 52px; border-radius: 16px; background: #161616; border: 0; box-shadow: inset 0 0 0 1.5px #3a3a3a; padding: 0 16px; color: #fff; font-size: 16px; width: 100%; box-sizing: border-box; }
+  .lk-in input::placeholder { color: #8a8a8a; }
+  .lk-go { min-height: 56px; border-radius: 999px; border: 0; background: color-mix(in srgb, var(--accent, #c6f24e) 16%, transparent) !important; box-shadow: inset 0 0 0 1.5px var(--accent, #c6f24e); color: var(--accent, #c6f24e) !important; font-weight: 700; font-size: 17px; width: 100%; }
+  .lk-btn:active, .lk-go:active { background: color-mix(in srgb, var(--accent, #c6f24e) 28%, transparent) !important; }
+  .lk-row { min-height: 72px; border-radius: 18px; background: #161616; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 16px; box-sizing: border-box; }`;
+  document.head.appendChild(st);
+})();
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act;
@@ -173,6 +195,9 @@ document.addEventListener("click", async e => {
   } else if (act === "ai-paste") {
     try { const t = await navigator.clipboard.readText(), el = document.getElementById("ai-key"); if (el) el.value = t || ""; if (!t) { toast("Gli appunti sono vuoti: copia la chiave in AI Studio"); return; } const sv = document.querySelector('[data-act="ai-save"]'); if (sv) sv.click(); }
     catch (_) { toast("Non posso leggere gli appunti: tieni premuto nel campo e scegli «Incolla»"); }
+  } else if (act === "ai-privacy") {
+    if (window.V3 && V3.sheet) V3.sheet(AI_PRIVACY, { label: "Privacy e limiti" });
+    else toast("La chiave resta solo su questo telefono: le richieste vanno direttamente a Google.");
   } else if (act === "ai-remove") { setAIKey(""); await setupSite(); render(); toast("Chiave rimossa"); }
   else if (act === "ai-test") {
     b.disabled = true; b.textContent = "Provo…";

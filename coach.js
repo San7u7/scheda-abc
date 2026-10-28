@@ -6,24 +6,48 @@ const DOW = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Vener
 const DOW_KEYS = ["domenica", "lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato"];
 const ACCENTS = [["lime", "#c6f24e", "Lime"], ["azzurro", "#5ac8fa", "Azzurro"], ["arancio", "#ff9f0a", "Arancio"], ["rosa", "#ff6482", "Rosa"], ["menta", "#63e6be", "Menta"]];
 const GOALS = [["massa", "Aumentare la massa"], ["mantenimento", "Mantenere"], ["definizione", "Perdere grasso"]];
-const ACTIVITY = [["bassa", "Lavoro seduto, poco movimento", 1.4], ["media", "Un po' di movimento ogni giorno", 1.55], ["alta", "Lavoro attivo o molto sport", 1.7]];
+/* Livelli di attività fisica (PAL) dei LARN SINU (tabelle Energia: fabbisogno = metabolismo basale × PAL 1,4 · 1,6 · 1,8 · 2,0),
+   http://sinu.it/wp-content/uploads/2025/07/Tabelle-riassuntive_online.pdf. Tappa C 28/10: prima erano 1,4 · 1,55 · 1,7. */
+const ACTIVITY = [["bassa", "Poco: seduto quasi tutto il giorno", 1.4], ["media", "Abbastanza: cammino o sto in piedi spesso", 1.6], ["alta", "Molto: lavoro fisico o sport quasi ogni giorno", 1.8], ["moltoalta", "Moltissimo: lavoro pesante e sport intenso", 2.0]];
 
-/* ---------- targets (Mifflin-St Jeor) ---------- */
+/* ---------- targets (Mifflin-St Jeor × PAL LARN × fattore obiettivo), allineati a LARN ed EFSA (QUESTIONARIO_PIANO_V2.md §3.3 e §5) ----------
+   Proteine: PRI LARN 0,9 g/kg (18-64) e 1,1 g/kg (65+); chi si allena 1,2 (mantenimento) o 1,6 (deficit o massa);
+   tetto circa 1,7 g/kg (EFSA 2012: fino a circa 2 volte la PRI è sicuro, https://doi.org/10.2903/j.efsa.2012.2557);
+   carboidrati mai sotto il 45% delle calorie (LARN): se servirebbe, le proteine scendono (mai sotto la PRI).
+   Over 65: almeno 30 kcal/kg (ESPEN geriatria 2022, https://doi.org/10.1016/j.clnu.2022.01.024), mai deficit automatico.
+   Indice di massa corporea sotto 18,5: niente deficit, under = true (il questionario lo usa come arresto e invito al medico, CREA Dir. 1). */
 function computeTargets(pr) {
   const w = +pr.peso, h = +pr.altezza, a = +pr.eta, notes = [];
   const bmr = 10 * w + 6.25 * h - 5 * a + (pr.sesso === "f" ? -161 : 5);
   const act = (ACTIVITY.find(x => x[0] === pr.attivita) || ACTIVITY[1])[2];
   let goal = pr.obiettivo, bmi = w / Math.pow(h / 100, 2);
+  const o65 = a >= 65, under = bmi < 18.5;
   if (a < 18 && goal !== "mantenimento") { goal = "mantenimento"; notes.push("Sotto i 18 anni l'app non calcola surplus o deficit: per un obiettivo diverso serve un professionista."); }
-  if (goal === "definizione" && bmi < 18.5) { goal = "mantenimento"; notes.push("Con un indice di massa corporea sotto 18,5 l'app non propone deficit: parlane con un medico."); }
+  if (o65 && goal === "definizione") { goal = "mantenimento"; notes.push("Dopo i 65 anni l'app non propone deficit: per dimagrire serve il medico."); }
+  if (goal !== "mantenimento" && under) { goal = "mantenimento"; notes.push("Con un indice di massa corporea sotto 18,5 l'app non propone deficit né surplus: parlane con un medico."); }
   const f = goal === "massa" ? 1.1 : goal === "definizione" ? 0.85 : 1;
-  const kcal = Math.round(bmr * act * f / 10) * 10;
-  const p = Math.round(w * (goal === "mantenimento" ? 1.6 : 2.0)), fat = Math.round(kcal * 0.25 / 9), c = Math.max(0, Math.round((kcal - p * 4 - fat * 9) / 4));
-  return { kcal, p, c, f: fat, bmr: Math.round(bmr), goalApplied: goal, notes };
+  let kcal = Math.round(bmr * act * f / 10) * 10;
+  if (o65) kcal = Math.max(kcal, Math.round(30 * w / 10) * 10);
+  const train = pr.train != null ? !!pr.train : (typeof DAYS !== "undefined" && DAYS.length > 0);
+  const pri = o65 ? 1.1 : 0.9;
+  const gkg = Math.min(1.7, a < 18 ? 0.95 : !train ? pri : goal === "mantenimento" ? Math.max(pri, 1.2) : Math.max(pri, 1.6));
+  let p = Math.round(w * gkg), fat = Math.round(kcal * 0.25 / 9);
+  const pMax = Math.max(Math.round(w * pri), Math.floor((kcal * 0.55 - fat * 9) / 4));
+  if (p > pMax) p = pMax;
+  const c = Math.max(0, Math.round((kcal - p * 4 - fat * 9) / 4));
+  return { kcal, p, c, f: fat, bmr: Math.round(bmr), goalApplied: goal, notes, bmi: Math.round(bmi * 10) / 10, under };
 }
+/* Acqua (L al giorno) LARN per sesso ed età; over 65 ESPEN racc. 5 (bevande almeno 1,6 L donne, 2,0 L uomini). */
+function waterLarn(pr) {
+  const a = +(pr && pr.eta) || 30, f = pr && pr.sesso === "f";
+  return a <= 3 ? 1.2 : a <= 6 ? 1.6 : a <= 10 ? 1.8 : a <= 14 ? (f ? 1.9 : 2.1) : a <= 17 ? (f ? 2.0 : 2.5) : a >= 65 ? (f ? 1.6 : 2.0) : (f ? 2.0 : 2.5);
+}
+/* Fibra LARN: 12,6-16,7 g ogni 1000 kcal, almeno 25 g al giorno. */
+const fiberLarn = kcal => Math.max(25, Math.round((kcal || 2000) * 12.6 / 1000));
 
-/* ---------- plan accessors (S.diet filled by import or by computeTargets) ---------- */
-function planTargets() { const d = S.diet || {}; return { kcal: d.kcal || 2000, pro: d.p || 100, cho: d.c || 0, fat: d.f || 0, fiber: 30, waterL: d.acqua_l || (S.profile ? Math.round(S.profile.peso * 0.035 * 10) / 10 : 2) }; }
+/* ---------- plan accessors (S.diet filled by import or by computeTargets). Il piano del dietista non viene mai modificato:
+   kcal, proteine, carboidrati, grassi e acqua del piano restano quelli del documento caricato. ---------- */
+function planTargets() { const d = S.diet || {}, kcal = d.kcal || 2000; return { kcal, pro: d.p || 100, cho: d.c || 0, fat: d.f || 0, fiber: fiberLarn(kcal), waterL: d.acqua_l || (S.profile ? waterLarn(S.profile) : 2) }; }
 const hasMealPlan = () => !!(S.diet && S.diet.giorni && Object.keys(S.diet.giorni).length);
 function mealOf(dow, k) { const g = S.diet && S.diet.giorni && S.diet.giorni[dow]; const m = g && g[k]; return m && m.t ? m : null; }
 const ZERO = () => ({ kcal: 0, p: 0, c: 0, f: 0 });
@@ -178,7 +202,7 @@ Scheda:
 ${prog || "nessuna scheda caricata"}
 Ultime sedute:
 ${sess || "- nessuna"}
-Alimentazione: ${S.diet && S.diet.fonte === "piano" ? "piano di un professionista caricato nell'app" : "nessun piano, obiettivo calcolato dall'app con la formula Mifflin-St Jeor (stima)"}: ${T.kcal} kcal, proteine ${T.pro} g, acqua ${T.waterL} L.${supplements().length ? " Integratori del piano: " + supplements().map(s => s.name + " " + s.plan).join(", ") + "." : ""}
+Alimentazione: ${S.diet && S.diet.creato ? "piano creato dall'app con il questionario, secondo le linee guida OMS" : S.diet && S.diet.fonte === "piano" ? "piano di un professionista caricato nell'app" : "nessun piano, obiettivo calcolato dall'app con la formula Mifflin-St Jeor (stima)"}: ${T.kcal} kcal, proteine ${T.pro} g, acqua ${T.waterL} L.${supplements().length ? " Integratori del piano: " + supplements().map(s => s.name + " " + s.plan).join(", ") + "." : ""}
 Oggi: ${Math.round(it.eaten.kcal)} kcal e ${Math.round(it.eaten.p)} g proteine mangiate${hasMealPlan() ? `, pasti del piano ancora da fare ${Math.round(it.rest.kcal)} kcal` : ""}.
 Ultimi 7 giorni:
 ${days}

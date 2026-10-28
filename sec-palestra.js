@@ -193,8 +193,8 @@
   }
   function home() {
     if (!DAYS.length) {
-      const minor = data.profile().minor;
-      return ui.header("Palestra") + ui.section("Prima cosa da fare", `<div class="v3-palestra-hero"><div><p class="v3-palestra-ht">Crea la tua scheda</p><p class="v3-palestra-hs">${minor ? "Sotto i 18 anni la scheda la fa il tuo allenatore: caricala qui." : "Caricala come testo o foto, oppure fattene creare una di base."}</p></div><button class="v3-apri wide" data-act="redo" data-v="2">${minor ? "Carica la scheda" : "Carica o crea la scheda"}</button></div>`) +
+      const kidP = data.profile().group === "bambino", teen = data.profile().group === "ragazzo"; // 28/10 tappa C: bambino solo indicazioni, ragazzo con istruttore
+      return ui.header("Palestra") + ui.section("Prima cosa da fare", `<div class="v3-palestra-hero"><div><p class="v3-palestra-ht">Crea la tua scheda</p><p class="v3-palestra-hs">${kidP ? "Fino a 13 anni la scheda la fa il tuo allenatore: caricala qui." : teen ? "Con un istruttore che ti segue la preparo io, oppure carica la tua." : "Rispondi alle domande e la preparo io, oppure carica la tua."}</p></div>${kidP ? `<button class="v3-apri wide" data-act="redo" data-v="2">Carica la scheda</button><button class="v3-b2" data-v3act="q-scheda">Cosa fare alla tua età</button>` : `<button class="v3-apri wide" data-v3act="q-scheda">Rispondi alle domande</button><button class="v3-b2" data-act="redo" data-v="2">Carica la scheda che hai</button>`}</div>`) +
         ui.end(sapText(), { leoQ: "Come si costruisce una buona scheda?" });
     }
     const ts = data.todaySession(), wk = data.week(), ws = weekSessions();
@@ -405,10 +405,14 @@
   const edSub = () => (T().sedute[ED.s].nome || tv("Seduta ", "Allenamento ") + String.fromCharCode(65 + ED.s)) + " · esercizio " + (ED.e + 1);
   function schedaPage() {
     const k = selDay && P[selDay] ? selDay : DAYS[0], s = DAYS.indexOf(k), sd = T().sedute[s], p = P[k];
-    const seg = DAYS.length > 1 ? ui.seg(DAYS.map(d => tv("Seduta ", "Allenamento ") + d), s, "sc-day", tv("Seduta", "Allenamento")) : "";
+    const seg = DAYS.length > 1 ? ui.seg(DAYS.map(d => DAYS.length > 3 ? d : tv("Seduta ", "Allenamento ") + d), s, "sc-day", tv("Seduta", "Allenamento")) : "";
+    const wk = T().creata ? Math.max(1, Math.round((Date.now() - Date.parse(T().creata)) / 6048e5)) : null;
+    const nEx = DAYS.reduce((m, d) => m + P[d].items.length, 0);
     const rows = p.items.map((it, j) => ui.row({ title: nameOf(it), sub: it.unit === "none" && tipoOf(it) === "uguali" ? `${it.sets} × ${it.min === it.max ? it.min : it.min + "–" + it.max} · ${MISURA[it.misura].toLowerCase()}` : schLabel(it), act: "ed-open", arg: s + ":" + j, apri: "Modifica" })).join("");
-    return `<div class="pal-pg">${ui.back()}</div><div><h1 class="v3-t1">${e(dname(k))}</h1><p class="v3-sub">${e((sd.focus ? sd.focus + " · " : "") + pl(p.items.length, "esercizio", "esercizi"))}</p></div>${seg}
-      <div class="pal-pg">${ui.section("Esercizi", rows)}</div>${ui.secondary("Aggiungi, togli o sposta esercizi", "struttura")}`;
+    return `<div class="pal-pg">${ui.back()}</div><div><h1 class="v3-t1">La mia scheda</h1><p class="v3-sub">${e(pl(DAYS.length, tv("seduta", "allenamento"), tv("sedute", "allenamenti")) + " · " + (wk ? "da " + pl(wk, "settimana", "settimane") : pl(nEx, "esercizio", "esercizi")))}</p></div>
+      <div class="pal-pg v3-sec">${ui.row({ title: "Crea una nuova scheda", sub: "Da 15 a 40 domande, scegli tu", act: "q-scheda", apri: "Inizia" })}${ui.row({ title: tv("Aggiungi una seduta", "Aggiungi un allenamento"), sub: "4 domande sulla nuova " + tv("seduta", "giornata"), act: "q-seduta", apri: "Aggiungi" })}</div>
+      <section class="v3-sec">${ui.label(tv("Le tue sedute", "I tuoi allenamenti"))}${seg}</section><div><h2 class="v3-rt" style="font-size:20px;padding-left:16px">${e(dname(k))}</h2><p class="v3-sub">${e((sd.focus ? sd.focus + " · " : "") + pl(p.items.length, "esercizio", "esercizi"))}</p></div>
+      <div class="pal-pg">${ui.section("", rows)}</div>${ui.secondary("Aggiungi, togli o sposta esercizi", "struttura")}`;
   }
   function edPage() {
     const x = ED.x, it = itemOf(x, ED.s, ED.e), t = tipoOf(it);
@@ -456,9 +460,12 @@
       if (sub === "scheda" && DAYS.length) { el.innerHTML = schedaPage(); return; }
       if (sub === "esercizio" && ED) { el.innerHTML = edPage(); return; }
       if (sub === "altre" && ED) { el.innerHTML = altrePage(); return; }
+      if (sub === "quiz" && window.V3Quiz && V3Quiz.cur) { el.innerHTML = V3Quiz.html(); return; }
       el.innerHTML = home();
     },
-    on: {
+    on: Object.assign({}, window.V3Quiz ? V3Quiz.on : {}, {
+      "q-scheda"() { if (window.V3Quiz) open("quiz", () => V3Quiz.start(V3Quiz.cfg.scheda())); },
+      "q-seduta"() { if (window.V3Quiz) open("quiz", () => V3Quiz.start(V3Quiz.cfg.seduta())); },
       "apri-seduta"(k) { if (P[k]) open("seduta", () => { selDay = k; }); },
       settimana() { open("settimana"); },
       routine() { open("routine"); },
@@ -493,6 +500,6 @@
       "w-skip"() { if (W) finishWarm(); },
       "w-quick"() { if (!W) return; stopTick(); W.quick = !W.quick; W.i = 0; W.left = null; W.run = false; V3.refresh(); },
       "w-come"() { if (!W) return; W.come = !W.come; V3.refresh(); } // in linea, non in un foglio: vedi nota sul foglio nelle pagine interne
-    }
+    })
   });
 })();

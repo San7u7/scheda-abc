@@ -136,6 +136,7 @@
     #view.v3 .v3-cibo-acts2 { display: flex; flex-direction: column; gap: 12px; }
     #view.v3 .v3-cibo-x { display: flex; align-items: center; gap: 12px; }
     #view.v3 .v3-cibo-seg .v3-sg { min-height: 48px; }
+    #view.v3 .v3-cibo-pact .v3-row .v3-apri { width: 96px; min-width: 96px; padding: 0; }
     #view.v3 .v3-cibo-tg { width: 96px; flex: none; }
     @media (prefers-reduced-motion: reduce) { #view.v3 .v3-cibo-mc, #view.v3 .v3-cibo-dots i { transition: none; } }`;
     document.head.appendChild(st);
@@ -390,12 +391,15 @@
   function pagePiano() {
     const td = dowOf(today()); if (pianoDow == null) pianoDow = td;
     const meals = MEALS.filter(([k]) => mealOf(pianoDow, k));
-    const rows = meals.map(([k, l]) => { const m = mealOf(pianoDow, k); return ui.row({ title: l, sub: m.t, value: kid() ? null : nf(nutOf(pianoDow, k).kcal, 0) }); }).join("") || ui.card(ui.big("–", "Nessun pasto previsto in questo giorno"));
-    const tot = MEALS.reduce((s, [k]) => s + nutOf(pianoDow, k).kcal, 0);
-    return ui.back() + title("Il mio piano alimentare", (S.diet && S.diet.fonte === "piano") ? "Il piano del tuo dietista" : "Il tuo piano") +
+    const rows = meals.map(([k, l]) => { const m = mealOf(pianoDow, k); return ui.row({ title: l, sub: m.t, act: "lg", arg: "diet", apri: "Modifica" }); }).join("") || ui.card(ui.big("–", "Nessun pasto previsto in questo giorno"));
+    const tot = MEALS.reduce((s, [k]) => s + nutOf(pianoDow, k).kcal, 0), d = S.diet || {};
+    const src = d.creato ? "Creato con le tue risposte" : d.fonte === "piano" ? "Dal dietista" : "Il tuo piano";
+    const when = d.creatoIl ? " · " + new Date(d.creatoIl).toLocaleDateString("it-IT", { day: "numeric", month: "long" }) : "";
+    return ui.back() + title("Il mio piano", src + when) +
+      `<div class="v3-sec v3-cibo-pact">${ui.row({ title: "Crea un nuovo piano", sub: "Rispondi alle domande e lo preparo", act: "crea", apri: "Inizia" })}${`<button class="v3-row" data-act="redo" data-v="3" aria-label="Carica il piano del dietista"><span class="v3-rx"><span class="v3-rt" style="display:block">Carica il piano del dietista</span><span class="v3-rs" style="display:block">Da foto o file PDF</span></span><span class="v3-apri" aria-hidden="true">Carica</span></button>`}</div>` +
       `<div class="v3-cibo-seg">${ui.seg(DLAB, DOWS.indexOf(pianoDow), "dow", "Giorno della settimana")}</div>` +
-      ui.section(`Pasti di ${DOW[pianoDow].toLowerCase()}${pianoDow === td ? " (oggi)" : ""}${kid() ? "" : ` · ${nf(tot, 0)} calorie`}`, rows) +
-      acts(ui.secondary("Modifica i pasti", "lg", "diet") + ui.secondary("I miei alimenti", "lg", "") + leg("Carica un altro piano", "redo", 3)) +
+      ui.section(`${pianoDow === td ? "Il piano di oggi" : "Pasti di " + DOW[pianoDow].toLowerCase()}${kid() ? "" : ` · ${nf(tot, 0)} calorie`}`, rows) +
+      acts(ui.secondary("I miei alimenti", "lg", "")) +
       ui.end("Le quantità del piano sono a crudo: pesale prima di cuocere.", { leoQ: "Perché si pesa a crudo?" });
   }
 
@@ -405,13 +409,14 @@
     enter(o) { if (o && o.meal && MEALS.some(m => m[0] === o.meal)) open({ p: "pasto", k: o.meal }); },
     render(el) {
       const p = top();
-      if (p && p.p === "guida") return false; // guida flessibile della vista vecchia (non c'è ancora il questionario)
+      if (p && p.p === "guida") return false; // guida flessibile della vista vecchia
+      if (p && p.p === "quiz") { if (window.V3Quiz && V3Quiz.cur) { el.innerHTML = V3Quiz.html(); return; } }
       const plan = hasMealPlan();
       if (!p) { el.innerHTML = plan ? mainPlan() : mainNoPlan(); if (plan) bindCaro(el); return; }
       el.innerHTML = p.p === "giornata" ? pageGiornata() : p.p === "pasto" ? pagePasto(p.k) : p.p === "learned" ? pageLearned(p.k) : p.p === "numeri" ? pageNumeri()
         : p.p === "scopri" ? pageScopri() : p.p === "settimana" ? pageSettimana() : p.p === "curiosita" ? pageCuriosita() : p.p === "piano" ? pagePiano() : p.p === "cur" ? pageCur(p.id) : p.p === "why" ? pageWhy(p.id) : (plan ? mainPlan() : mainNoPlan());
     },
-    on: {
+    on: Object.assign({}, window.V3Quiz ? V3Quiz.on : {}, {
       dot(i) { const c = document.querySelector("#view .v3-cibo-caro"); ci = +i; if (c && c._mark) { c._mark(ci); c._center(ci, true); } },
       eat(k) { markEaten(k); ci = null; toast(`${LAB(k)} segnato`, { sub: numLine(mealNums(dowOf(today()), k)), undo: () => { unmark(k); V3.go("cibo"); } }); const t = top(); if (t && t.p === "learned") { V3.refresh(); return; } if (t && t.p === "pasto") replace({ p: "learned", k }); else open({ p: "learned", k }); },
       unmark(k) { // 28/10: conferma prima di rimettere il pasto tra quelli da fare (tavola 24)
@@ -430,12 +435,12 @@
       settimana() { open({ p: "settimana" }); },
       curiosita() { open({ p: "curiosita" }); },
       piano() { pianoDow = null; open({ p: "piano" }); },
-      crea() { open({ p: "guida" }); },
+      crea() { if (!window.V3Quiz) return open({ p: "guida" }); V3Quiz.start(V3Quiz.cfg.piano()); open({ p: "quiz" }); },
       per(i) { numPer = +i; V3.refresh(); },
       dow(i) { pianoDow = DOWS[+i]; V3.refresh(); },
       lg(hub) { V3.legacy({ tab: "piano", hub }); },
       cur(id) { open({ p: "cur", id }); },
       why(id) { open({ p: "why", id }); }
-    }
+    })
   });
 })();
