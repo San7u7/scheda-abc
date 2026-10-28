@@ -39,25 +39,26 @@
       const st = mstate(k);
       items.push({ kind: "meal", key: k, title: label, sub: m ? m.t : "Segna cosa hai mangiato", when: MT[k], t: mins(MT[k]), done: st === "plan" || st === "custom", skip: st === "skip" });
     }
-    const s = data.todaySession();
+    /* 28/10 (Giovanni): l'allenamento c'è sempre: da fare, in corso, fatto, riposo o settimana completa (che apre il riepilogo) */
+    const s = data.todaySession(), wk = data.week().sessions, full = wk.planned > 0 && wk.done >= wk.planned, n = nowMin();
     if (s.state === "in-corso") items.push({ kind: "sess", title: sessName(s.name) + " in corso", sub: `${s.doneSets} di ${s.sets} serie fatte`, when: "Ora", t: -1, live: true });
-    else if (s.state === "da-fare") { const r = prefs().remind || "18:00"; items.push({ kind: "sess", title: sessName(s.name), sub: `${s.exercises} esercizi · ${s.minutes} min`, when: r, t: mins(r) }); }
-    else if (s.state === "fatta") { const d = doneToday(), dt = d ? new Date(d.date) : null; items.push({ kind: "sess", title: sessName(s.name), sub: "Fatta oggi", when: dt ? dt.getHours() + ":" + String(dt.getMinutes()).padStart(2, "0") : "", t: dt ? dt.getHours() * 60 + dt.getMinutes() : 0, done: true }); }
+    else if (full) items.push({ kind: "week", title: "Settimana completa ✓", sub: "Complimenti, hai tenuto il ritmo", when: `${wk.done}/${wk.planned}`, t: n });
+    else if (s.state === "da-fare") { const r = prefs().remind || "18:00"; items.push({ kind: "sess", title: sessName(s.name) + " oggi", sub: `${s.exercises} esercizi · circa ${s.minutes} min`, when: r, t: mins(r) }); }
+    else if (s.state === "fatta") { const d = doneToday(), dt = d ? new Date(d.date) : null; items.push({ kind: "sess", title: sessName(s.name), sub: `${wk.done} di ${wk.planned} questa settimana`, when: dt ? dt.getHours() + ":" + String(dt.getMinutes()).padStart(2, "0") : "", t: dt ? dt.getHours() * 60 + dt.getMinutes() : 0, done: true }); }
+    else if (s.state === "riposo" && s.name) items.push({ kind: "sess", title: "Oggi riposo", sub: `Prossima: ${sessName(s.name)} · ${wk.done} di ${wk.planned} fatte`, when: "Oggi", t: n });
     return items.sort((a, b) => a.t - b.t);
   }
   /* riga del momento + la prossima: seduta in corso prima di tutto, poi le voci aperte non ancora passate da 2 ore */
-  function upcoming(items) {
-    const open = items.filter(x => !x.done && !x.skip), n = nowMin();
-    const live = open.filter(x => x.live), next = open.filter(x => !x.live && x.t + 120 > n);
-    const list = live.concat(next);
-    if (!list.length && open.length) list.push(open[open.length - 1]);
-    return list.slice(0, 2);
+  function upcoming(items) { // 28/10: il pasto del momento + sempre la riga dell'allenamento (in corso = prima)
+    const n = nowMin(), meals = items.filter(x => x.kind === "meal" && !x.done && !x.skip), tr = items.find(x => x.kind !== "meal");
+    const meal = meals.find(x => x.t + 120 > n) || meals[meals.length - 1];
+    return (tr && tr.live ? [tr, meal] : [meal, tr]).filter(Boolean);
   }
   const rowOf = (x, on) => {
     const o = { title: x.title, sub: x.sub, when: x.when, on };
     if (x.done) { o.value = "Fatto ✓"; o.sub = x.kind === "sess" ? x.sub : o.sub; }
     else if (x.skip) o.value = "Saltato";
-    o.act = x.kind === "meal" ? "pasto" : "seduta"; o.arg = x.key || "";
+    o.act = x.kind === "meal" ? "pasto" : x.kind === "week" ? "riepilogo" : "seduta"; o.arg = x.key || "";
     return ui.row(o);
   };
 
@@ -85,7 +86,7 @@
     if (k === "sess") {
       const w = data.week().sessions;
       if (!w.planned) return ({ label: "Sedute della settimana", value: "–", miss: "Crea la scheda", act: "go", arg: "palestra" });
-      return ({ label: "Sedute della settimana", value: w.done, of: w.planned, pct: ui.pct(w.done, w.planned), act: "go", arg: "palestra" });
+      return ({ label: "Sedute della settimana", value: w.done, of: w.planned, pct: ui.pct(w.done, w.planned), act: "riepilogo" });
     }
     if (k === "pro") return ({ label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), act: "go", arg: "cibo" });
     if (k === "kcal") return ({ label: "Calorie", value: d.kcal, of: d.kcalT, pct: ui.pct(d.kcal, d.kcalT), act: "go", arg: "cibo" });
@@ -136,6 +137,43 @@
       ui.end("Segnare i pasti ti fa vedere cosa mangi davvero", { act: "sap", arg: "pro", leoQ: "Perché segnare i pasti?" });
   }
 
+  /* ---------- riepilogo settimana (28/10, tela tavola 13): kg mossi per giorno incrociati con le proteine ---------- */
+  let wOff = 0;
+  function weekData(off) {
+    const from = addDays(localISO(mondayOf(new Date())), -7 * off), days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
+    const ss = S.sessions.filter(x => { const d = localISO(new Date(x.date)); return d >= from && d <= days[6]; });
+    const kgOf = x => (x.items || []).reduce((m, it) => m + (it.sets || []).reduce((a, z) => a + (+z.kg || 0) * (+z.reps || 0), 0), 0);
+    const per = days.map(iso => { const di = data.day(iso), l = ss.filter(x => localISO(new Date(x.date)) === iso);
+      return { iso, n: l.length, kg: l.reduce((m, x) => m + kgOf(x), 0), proOk: !!(di.logged && di.proT && di.pro >= di.proT * .9) }; });
+    const fat = ss.filter(x => x.fatica != null).map(x => +x.fatica), gym = per.filter(d => d.n);
+    return { per, done: ss.length, planned: DAYS.length, kg: Math.round(per.reduce((m, d) => m + d.kg, 0)), fat: fat.length ? Math.round(fat.reduce((a, b) => a + b, 0) / fat.length) : null, gym: gym.length, proGym: gym.filter(d => d.proOk).length };
+  }
+  function weekPage() {
+    const w = weekData(wOff), kid = data.profile().group === "bambino", full = w.planned && w.done >= w.planned;
+    const nx = P[nextDay()], nxName = nx ? sessName(nx.nome || "Seduta " + nextDay()) : "";
+    const verdict = full ? (wOff === 0 && !kid && w.kg > weekData(1).kg ? "Settimana piena, carichi su" : "Settimana piena")
+      : wOff === 0 ? (w.done ? `${w.done} di ${w.planned}, manca ${nxName}` : "Settimana da iniziare") : `${w.done} di ${w.planned} sedute fatte`;
+    const max = Math.max(1, ...w.per.map(d => kid ? d.n : d.kg));
+    const bars = w.per.map((d, i) => { const v = kid ? d.n : d.kg; return `<span class="v3-wk-b${v ? (d.proOk ? " ok" : " lo") : ""}" style="height:${v ? Math.max(8, v / max * 100) : 3}%" title="${"LMMGVSD"[i]}"></span>`; }).join("");
+    const aria = w.per.filter(d => d.n).map(d => `${["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"][new Date(d.iso + "T12:00:00").getDay()]} ${kid ? d.n + " allenamento" : ui.nf(Math.round(d.kg)) + " kg"}${d.proOk ? ", proteine a obiettivo" : ", proteine sotto"}`).join("; ") || "Nessuna seduta";
+    const ups = DAYS.reduce((m, k) => m + (P[k] ? P[k].items.filter(it => plan(it).up).length : 0), 0);
+    return ui.back() + `<div class="v3-oggi-ttl"><h1 class="v3-t1">La tua settimana</h1><p class="v3-sub v3-wk-v">${ui.esc(verdict)}</p></div>` +
+      ui.seg(["Questa settimana", "Precedente"], wOff, "wsel", "Settimana") +
+      ui.card(`<div class="v3-wk-h"><span>${kid ? "Allenamenti" : "Kg mossi"}</span><b>${w.done} di ${w.planned} ${kid ? "allenamenti" : "sedute"}</b></div>` +
+        `<p class="v3-bn">${kid ? w.done : ui.nf(w.kg) + ' <span class="v3-of">kg</span>'}</p>` +
+        `<div class="v3-wk-c" role="img" aria-label="${ui.esc(aria)}">${bars}</div><div class="v3-wk-d" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>` +
+        `<p class="v3-bd">Pieno: proteine a obiettivo quel giorno</p>`) +
+      `<div class="v3-oggi-tl">${ui.row({ title: "Proteine a obiettivo", sub: w.gym ? `${w.proGym} ${w.proGym === 1 ? "seduta" : "sedute"} su ${w.gym}` : "Nessuna seduta ancora", act: "go", arg: "cibo" })}` +
+      ui.row(kid ? { title: "Prossimo allenamento", sub: nxName, act: "go", arg: "palestra" } : { title: w.fat != null ? `Fatica media ${w.fat} /10` : "Fatica non segnata", sub: ups ? `${ups} ${ups === 1 ? "carico pronto" : "carichi pronti"} a salire` : "Carichi stabili", act: "go", arg: "palestra" }) + `</div>` +
+      ui.end("Il muscolo cresce a riposo, se mangi proteine.", { act: "sap", arg: "pro", leoQ: "Perché le proteine contano nei giorni di palestra?" });
+  }
+  if (!document.getElementById("v3-sec-oggi-wk")) { const st = document.createElement("style"); st.id = "v3-sec-oggi-wk"; st.textContent = `
+    #view.v3 .v3-wk-v { color: var(--v3-lime); font-weight: 600; }
+    #view.v3 .v3-wk-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; } #view.v3 .v3-wk-h span { font-size: 15px; font-weight: 600; color: var(--v3-t2); } #view.v3 .v3-wk-h b { font-size: 15px; color: var(--v3-lime); }
+    #view.v3 .v3-wk-c { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 120px; border-bottom: 1px solid var(--v3-s3); }
+    #view.v3 .v3-wk-b { display: block; background: var(--v3-s3); border-radius: 6px 6px 0 0; } #view.v3 .v3-wk-b.ok { background: #fff; } #view.v3 .v3-wk-b.lo { background: rgba(255,255,255,.4); }
+    #view.v3 .v3-wk-d { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; text-align: center; font-size: 13px; color: var(--v3-t3); }`; document.head.appendChild(st); }
+
   /* ---------- azioni ---------- */
   function openMeal(k) { V3.go("cibo", { meal: k }); } // apre Cibo direttamente sulla pagina del pasto k
   function waterSheet() {
@@ -164,12 +202,14 @@
 
   V3.register("oggi", {
     render(el) {
-      el.innerHTML = sub === "giornata" ? dayPage() : mainPage();
+      el.innerHTML = sub === "giornata" ? dayPage() : sub === "settimana" ? weekPage() : mainPage();
     },
     on: {
       pasto(k) { openMeal(k); },
       seduta() { V3.go("palestra"); },
       giornata() { sub = "giornata"; V3.page(() => { sub = null; }); },
+      riepilogo() { const prev = sub; sub = "settimana"; wOff = 0; V3.page(() => { sub = prev; }); },
+      wsel(i) { wOff = +i; V3.refresh(); },
       acqua() { waterSheet(); },
       riquadri() { tilesSheet(); },
       sap(k) {
