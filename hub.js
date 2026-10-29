@@ -286,7 +286,7 @@
       f.items = f.items.filter(x => x.src !== "stima").concat(items);
       const used = items.filter(x => x.fid).length; f.note = (used ? `${used === 1 ? "Un alimento preso" : used + " alimenti presi"} dalle tue etichette. ` : "") + (out.note || "") + (S.sample.last ? ` (${S.sample.last.model}, ${Math.round((Date.now() - t0) / 1000)} s${S.sample.last.tries > 1 ? ", " + S.sample.last.tries + "° modello" : ""})` : "");
     } catch (e) {
-      f.err = e && e.code === "cancelled" ? "Stima annullata." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova, oppure scrivi tu i valori." : "Non sono riuscito a stimare: riprova o aggiungi dai tuoi alimenti.";
+      f.err = e && e.code === "cancelled" ? "Stima annullata." : e && e.code === "timeout" ? "Gemini non ha risposto in tempo: riprova, oppure scrivi tu i valori." : "Non sono riuscito a stimare: riprova o aggiungi dai tuoi alimenti." + ` [${String((e && (e.message || e.code)) || e).slice(0, 140)}]`;
     }
     clearInterval(f.tick); f.busy = false; renderSheet();
   };
