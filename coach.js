@@ -190,9 +190,17 @@ function fmtChat(t) {
   return html + (inList ? "</ul>" : "");
 }
 const QUICK = ["Fai il punto della settimana", "Cosa mangio prima e dopo la seduta?", "Oggi sono stanco: come adatto la seduta?", "Pranzo fuori casa: come resto in linea?"];
+/* modifica 5 (Cardio_PROPOSTA.md): Leo conosce cardio e stretching della settimana, con le stesse regole di cardioWeek (leggero 0, medio 1, forte 2) */
+function moveLine() {
+  if (typeof cardioWeek !== "function" || typeof CARDIO === "undefined") return "";
+  const w = window.V3 && V3.data.week ? V3.data.week() : (() => { const t = localISO(), d = (new Date().getDay() + 6) % 7; return { from: addDays(t, -d), to: addDays(t, 6 - d) }; })();
+  const g = (() => { try { return V3.data.profile().group; } catch (_) { return "adulto"; } })();
+  const fuori = (lsGet("cardio_fuori", []) || []).filter(c => c.date >= w.from && c.date <= w.to).map(c => `${c.date} ${c.min} min ritmo ${c.int}${c.km ? " " + c.km + " km" : ""}`);
+  return `Movimento della settimana (${w.from} - ${w.to}): cardio ${cardioWeek(w.from, w.to)} minuti validi su ${CARDIO.obiettivo(g)} (OMS: il ritmo leggero si segna ma non conta, il forte vale doppio); stretching ${(n => n === 1 ? "1 volta" : n + " volte")(typeof stretchWeek === "function" ? stretchWeek(w.from, w.to) : 0)} su ${CARDIO.stretchVolte}${fuori.length ? `; cardio fuori palestra: ${fuori.join(", ")}` : ""}.`;
+}
 function coachContext() {
   const t = localISO(), pr = S.profile || {}, T = planTargets(), wt = weightTrend(), it = intake(t), wb = weekBalance();
-  const sess = S.sessions.slice().sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 6).map(s => `- ${localISO(new Date(s.date))} seduta ${s.day}${s.durata ? `, ${s.durata} min` : ""}${s.fatica != null ? `, fatica ${s.fatica}/10` : ""}${s.note ? `, note: ${s.note}` : ""}: ` + s.items.map(e => `${splitName(e.name)[0]} ${e.sets.map(x => x.kg != null ? `${x.kg}x${x.reps}` : x.reps).join("/")}`).join("; ")).join("\n");
+  const sess = S.sessions.slice().sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 6).map(s => `- ${localISO(new Date(s.date))} seduta ${s.day}${s.durata ? `, ${s.durata} min` : ""}${s.fatica != null ? `, fatica ${s.fatica}/10` : ""}${s.note ? `, note: ${s.note}` : ""}${s.dolore ? ", ha segnalato dolore" : ""}: ` + s.items.map(e => e.cardio ? `${splitName(e.name)[0]} cardio ${e.cardio.min} min${e.cardio.int ? " ritmo " + e.cardio.int : ""}${e.cardio.km ? " " + e.cardio.km + " km" : ""}` : `${splitName(e.name)[0]} ${e.sets.map(x => x.kg != null ? `${x.kg}x${x.reps}` : x.reps).join("/")}`).join("; ")).join("\n");
   const prog = DAYS.map(d => `${d}${P[d].day ? " (" + P[d].day + ")" : ""}: ` + P[d].items.map(it2 => { const pl = plan(it2); return `${splitName(exName(it2))[0]} ${it2.sets}x${it2.min}-${it2.max}${pl.b.kg != null ? ` @${pl.b.kg}kg` : ""}${pl.b.lastSets ? ` ultime ${pl.b.lastSets.join("/")}` : ""}${pl.ready ? " SERIE CHIUSE (aumento da proporre e confermare)" : ""}${pl.up ? " CARICO NUOVO" : ""}`; }).join("; ")).join("\n");
   const days = Array.from({ length: 7 }, (_, i) => addDays(t, -i)).map(d => { const v = S.days[d]; if (!v) return `- ${d}: non registrato`; const x = intake(d); return `- ${d}: ${Math.round(x.eaten.kcal)} kcal, ${Math.round(x.eaten.p)} g proteine${v.peso ? `, peso ${v.peso} kg` : ""}`; }).join("\n");
   const goal = (GOALS.find(g => g[0] === pr.obiettivo) || GOALS[1])[1];
@@ -202,6 +210,7 @@ Scheda:
 ${prog || "nessuna scheda caricata"}
 Ultime sedute:
 ${sess || "- nessuna"}
+${moveLine()}
 Alimentazione: ${S.diet && S.diet.creato ? "piano creato dall'app con il questionario, secondo le linee guida OMS" : S.diet && S.diet.fonte === "piano" ? "piano di un professionista caricato nell'app" : "nessun piano, obiettivo calcolato dall'app con la formula Mifflin-St Jeor (stima)"}: ${T.kcal} kcal, proteine ${T.pro} g, acqua ${T.waterL} L.${supplements().length ? " Integratori del piano: " + supplements().map(s => s.name + " " + s.plan).join(", ") + "." : ""}
 Oggi: ${Math.round(it.eaten.kcal)} kcal e ${Math.round(it.eaten.p)} g proteine mangiate${hasMealPlan() ? `, pasti del piano ancora da fare ${Math.round(it.rest.kcal)} kcal` : ""}.
 Ultimi 7 giorni:
@@ -243,7 +252,13 @@ async function exportCsv(kind) {
   let rows;
   if (kind === "sedute") {
     rows = [["data", "seduta", "durata_min", "fatica", "esercizio", "serie", "kg", "ripetizioni", "note"]];
-    for (const s of S.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1)) for (const e of s.items) e.sets.forEach((x, i) => rows.push([localISO(new Date(s.date)), s.day, s.durata ?? "", s.fatica ?? "", e.name, i + 1, x.kg, x.reps, i === 0 ? (s.note || "") : ""]));
+    rows[0].push("cardio_min", "ritmo", "km");
+    for (const s of S.sessions.slice().sort((a, b) => a.date < b.date ? -1 : 1)) for (const e of s.items) {
+      if (e.cardio) { rows.push([localISO(new Date(s.date)), s.day, s.durata ?? "", s.fatica ?? "", e.name, 1, "", "", s.note || "", e.cardio.min ?? "", e.cardio.int || "", e.cardio.km ?? ""]); continue; } // cardio: minuti, non chili
+      e.sets.forEach((x, i) => rows.push([localISO(new Date(s.date)), s.day, s.durata ?? "", s.fatica ?? "", e.name, i + 1, x.kg, x.reps, i === 0 ? (s.note || "") : "", "", "", ""]));
+    }
+    for (const c of lsGet("cardio_fuori", []) || []) rows.push([c.date, "fuori palestra", "", "", "Cardio", 1, "", "", "", c.min ?? "", c.int || "", c.km ?? ""]);
+    rows = [rows[0]].concat(rows.slice(1).sort((x, y) => x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
   } else {
     rows = [["data", "peso_kg", "pasti_registrati", "kcal_stimate", "proteine_g", "acqua_l"]];
     for (const [d, v] of Object.entries(S.days).sort()) { normDay(v); const it = intake(d); rows.push([d, v.peso ? +v.peso : "", MEALS.filter(([k]) => ["plan", "custom"].includes(mealState(v, k))).length + v.extra.length, Math.round(it.eaten.kcal), Math.round(it.eaten.p), v.water * 0.25]); }
