@@ -180,6 +180,15 @@
   const saved = () => (typeof lsGet === "function" ? lsGet(DT_KEY, {}) : {}) || {};
   const sessOn = iso => S.sessions.filter(s => isoOf(s.date) === iso);
   const hasPlanDiet = () => !!(S.diet && S.diet.fonte === "piano");
+  /* 29/10 audit A6: piano dei pasti in vigore = piano del dietista oppure «la mia dieta» seguita (alimenti.js) */
+  window.hasPlanNow = () => hasMealPlan() || !!(window.V3Alim && V3Alim.following());
+  /* audit A2: l'obiettivo del giorno si fissa in UN punto, quando il giorno diventa registrato (qualsiasi foglio o pulsante salvi il pasto) */
+  const sd0 = window.saveDay;
+  if (typeof sd0 === "function") window.saveDay = function (iso) {
+    const r = sd0.apply(this, arguments);
+    try { if (iso && !saved()[iso] && S.days[iso] && intake(iso).logged) data.saveDayTarget(iso); } catch (_) {}
+    return r;
+  };
 
   function targetsFor(train) { // stessa formula di nutri.js (dayTargets), ma per un giorno qualsiasi
     const T = planTargets();
@@ -205,7 +214,7 @@
     return { logged: !!it.logged, kcal: Math.round(it.eaten.kcal), pro: Math.round(it.eaten.p), cho: Math.round(it.eaten.c), fat: Math.round(it.eaten.f) };
   }
   function dayInfo(iso) {
-    const t = today(), train = isTrain(iso), sv = saved()[iso], T = sv || (iso === t && window.dayTargets ? (() => { const x = dayTargets(); return { kcal: x.kcal, pro: x.pro, cho: x.cho, fat: x.fat }; })() : targetsFor(train));
+    const t = today(), sv = saved()[iso], train = isTrain(iso) || (iso < t && !!(sv && sv.train)), T = sv || (iso === t && window.dayTargets ? (() => { const x = dayTargets(); return { kcal: x.kcal, pro: x.pro, cho: x.cho, fat: x.fat }; })() : targetsFor(train)); // audit A2: il giorno passato resta del tipo con cui è stato fissato l'obiettivo
     const ea = iso > t ? { logged: false, kcal: 0, pro: 0, cho: 0, fat: 0 } : eatenOn(iso);
     return { iso, dow: new Date(iso + "T12:00:00").getDay(), today: iso === t, future: iso > t, closed: iso < t, train, sessions: sessOn(iso).length,
       logged: ea.logged, kcal: ea.kcal, pro: ea.pro, cho: ea.cho, fat: ea.fat, kcalT: T.kcal, proT: T.pro, choT: T.cho, fatT: T.fat };
@@ -224,7 +233,7 @@
       const p = S.profile || {}, eta = +p.eta || null;
       const group = eta == null ? "adulto" : eta <= 13 ? "bambino" : eta <= 17 ? "ragazzo" : eta >= 65 ? "over65" : "adulto";
       return { nome: p.nome || "", eta, sesso: p.sesso || null, peso: +p.peso || null, altezza: +p.altezza || null, obiettivo: p.obiettivo || null, livello: p.livello || null,
-        group, minor: group === "bambino" || group === "ragazzo", over65: group === "over65", hasTraining: DAYS.length > 0, hasMealPlan: hasMealPlan(), dietFromPlan: hasPlanDiet() };
+        group, minor: group === "bambino" || group === "ragazzo", over65: group === "over65", hasTraining: DAYS.length > 0, hasMealPlan: hasPlanNow(), dietFromPlan: hasPlanDiet() };
     },
     targets(train) { return targetsFor(!!train); },
     day: dayInfo,
@@ -267,7 +276,7 @@
     photos() { return (S.photos || []).map(p => ({ date: String(p.date).slice(0, 10), pose: p.pose || null })).sort((a, b) => a.date < b.date ? -1 : 1); },
     nextMeal() {
       const t = today(), dw = new Date().getDay(), v = S.days[t], st = k => v ? mealState({ meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {} }, k) : "open";
-      const open = MEALS.filter(([k]) => st(k) === "open" && (!hasMealPlan() || mealOf(dw, k)));
+      const open = MEALS.filter(([k]) => st(k) === "open" && (!hasPlanNow() || mealOf(dw, k)));
       if (!open.length) return null;
       const [k, label] = open[0], m = mealOf(dw, k), n = nutOf(dw, k);
       return { key: k, label, text: m ? m.t : null, items: m ? m.i || [] : [], kcal: m ? n.kcal : null, pro: m ? n.p : null, left: open.length };

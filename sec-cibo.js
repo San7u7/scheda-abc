@@ -97,7 +97,7 @@
   ];
   const CUR0 = { id: "acqua", top: "Il corpo", ti: "L'acqua", t: "I muscoli sono fatti per tre quarti d'acqua.", more: "Bere poco fa sentire più stanchi anche in palestra. Un bicchiere a ogni pasto e uno durante l'allenamento sono un buon inizio.", q: "Quanta acqua devo bere?" };
   /* curiosità di un pasto in un giorno: a rotazione tra quelle che c'entrano col piatto */
-  function curFor(text, iso) { const all = CUR.filter(c => c.re.test(text)); return all.length ? all[doy(iso) % all.length] : CUR0; }
+  function curFor(text, iso) { const all = CUR.filter(c => c.re.test(text) && !(minor() && /calori/i.test(c.t + " " + (c.more || "")))); /* minori: niente curiosità sulle calorie */ return all.length ? all[doy(iso) % all.length] : CUR0; }
 
   /* ---------- «Secondo te?» (una domanda al giorno) ---------- */
   const QUIZ = [
@@ -108,7 +108,7 @@
     { re: /uov/i, q: "Anche il tuorlo dell'uovo ha proteine?", o: ["Sì", "No, solo l'albume"], a: 0, x: "Il tuorlo ne ha quasi metà, più vitamine e grassi." },
     { re: /olio/i, q: "Un cucchiaio d'olio ha più calorie di un frutto?", o: ["Sì", "No"], a: 0, x: "Circa 90 contro 50–80: l'olio fa bene, ma ne basta poco." }
   ];
-  const quizFor = (text, iso) => { const all = QUIZ.filter(z => z.re.test(text)); return all.length ? all[doy(iso) % all.length] : QUIZ[doy(iso) % QUIZ.length]; };
+  const quizFor = (text, iso) => { const Q = QUIZ.filter(z => !(minor() && /calori/i.test(z.q + " " + z.x))), all = Q.filter(z => z.re.test(text)); return all.length ? all[doy(iso) % all.length] : Q[doy(iso) % Q.length]; }; /* minori: niente domande sulle calorie */
 
   /* ---------- stile della sezione (una volta) ---------- */
   if (!document.getElementById("v3-sec-cibo")) {
@@ -185,7 +185,7 @@
     const sn = st === "plan" && S.days[today()] && S.days[today()].snap && S.days[today()].snap[k]; // segnato: valori fissati quel giorno
     const n = sn || nutOf(dw, k); return { kcal: Math.round(n.kcal), p: Math.round(n.p), c: Math.round(n.c), f: Math.round(n.f) };
   }
-  const numLine = n => kid() ? `${n.p} g di proteine` : `${nf(n.kcal, 0)} calorie · ${n.p} g di proteine`;
+  const numLine = n => minor() ? `${n.p} g di proteine` : `${nf(n.kcal, 0)} calorie · ${n.p} g di proteine`;
 
   /* ============================== PAGINA PRINCIPALE ============================== */
   function card(k, i, list) {
@@ -321,7 +321,7 @@
     const done = list.filter(k => stOf(iso, k) === "plan" || stOf(iso, k) === "custom").length, ni = nextIdx(list);
     const rows = list.map((k, i) => { const s = stateOf(k, i, list), m = mealOf(dw, k), t = s.st === "custom" ? v.custom[k].text : m ? m.t : "Non ancora segnato";
       return ui.row({ title: `${LAB(k)} · ${s.lab}`, sub: t, act: "pasto", arg: k, on: i === ni && s.st === "open" }); }).join("");
-    const ex = v.extra.map(x => `<div class="v3-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Fuori programma</span><span class="v3-rs" style="display:block">${e(x.text)} · ${kid() ? Math.round(x.p) + " g di proteine" : nf(Math.round(x.kcal), 0) + " calorie"}</span></span>${leg("Togli", "delextra", x.id, "v3-b2 v3-cibo-tg")}</div>`).join("");
+    const ex = v.extra.map(x => `<div class="v3-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Fuori programma</span><span class="v3-rs" style="display:block">${e(x.text)} · ${minor() ? Math.round(x.p) + " g di proteine" : nf(Math.round(x.kcal), 0) + " calorie"}</span></span>${leg("Togli", "delextra", x.id, "v3-b2 v3-cibo-tg")}</div>`).join("");
     return ui.back() + title("Tutti i pasti di oggi", `Hai segnato ${done} ${done === 1 ? "pasto" : "pasti"} su ${list.length}`) +
       ui.section("Pasti di oggi", rows + ex + alt("Aggiungi cibo fuori programma", "extra")) +
       endCur(curFor(mealText(dw, list[ni] || "pra"), iso));
@@ -329,7 +329,7 @@
 
   function plateBox(n, dayT) {
     const tiles = [
-      kid() ? null : { label: "Calorie", value: n.kcal, pct: ui.pct(n.kcal, dayT.kcalT), miss: `${ui.pct(n.kcal, dayT.kcalT)}% della giornata` },
+      minor() ? null : { label: "Calorie", value: n.kcal, pct: ui.pct(n.kcal, dayT.kcalT), miss: `${ui.pct(n.kcal, dayT.kcalT)}% della giornata` },
       { label: "Proteine", value: n.p, unit: "g", pct: ui.pct(n.p, dayT.proT), miss: `${ui.pct(n.p, dayT.proT)}% della giornata` },
       { label: "Carboidrati", value: n.c, unit: "g", pct: dayT.choT ? ui.pct(n.c, dayT.choT) : null, miss: dayT.choT ? `${ui.pct(n.c, dayT.choT)}% della giornata` : null },
       { label: "Grassi", value: n.f, unit: "g", pct: dayT.fatT ? ui.pct(n.f, dayT.fatT) : null, miss: dayT.fatT ? `${ui.pct(n.f, dayT.fatT)}% della giornata` : null }
@@ -419,7 +419,7 @@
     return ui.back() + title("Scopri di più", "Cosa mangi, cosa impari") +
       `<div class="v3-sec">${ui.row({ title: "I cibi della settimana", sub: `Legumi ${w.cnt.leg} ${w.cnt.leg === 1 ? "volta" : "volte"} · pesce ${w.cnt.pesce} ${w.cnt.pesce === 1 ? "volta" : "volte"}`, act: "settimana" }) +
       ui.row({ title: "Le mie curiosità", sub: `${n} ${n === 1 ? "scoperta" : "scoperte"} finora`, act: "curiosita" }) +
-      (hasMealPlan() ? ui.row({ title: "Il mio piano alimentare", sub: pr ? `Oggi a pranzo: ${pr.t.toLowerCase()}` : "Pasto per pasto, giorno per giorno", act: "piano" }) : ui.row({ title: "Crea il tuo piano", sub: "Oppure carica quello del dietista", act: "crea" }))}</div>` +
+      (hasMealPlan() ? ui.row({ title: "Il mio piano alimentare", sub: pr ? `Oggi a pranzo: ${pr.t.toLowerCase()}` : "Pasto per pasto, giorno per giorno", act: "piano" }) : AL && AL.following() ? ui.row({ title: "La mia dieta", sub: "La segui al posto del piano", act: "al-dieta" }) : ui.row({ title: "Crea il tuo piano", sub: "Oppure carica quello del dietista", act: "crea" }))}</div>` +
       ui.end("Ogni pasto segnato è una cosa in più che sai sul cibo.", { leoQ: "Come funziona un piano alimentare?" });
   }
 
@@ -447,7 +447,7 @@
     return ui.back() + title("Il mio piano", src + when) +
       `<div class="v3-sec v3-cibo-pact">${ui.row({ title: "Crea un nuovo piano", sub: "Rispondi alle domande e lo preparo", act: "crea", apri: "Inizia" })}${`<button class="v3-row" data-act="redo" data-v="3" aria-label="Carica il piano del dietista"><span class="v3-rx"><span class="v3-rt" style="display:block">Carica il piano del dietista</span><span class="v3-rs" style="display:block">Da foto o file PDF</span></span><span class="v3-apri" aria-hidden="true">Carica</span></button>`}</div>` +
       `<div class="v3-cibo-seg">${ui.seg(DLAB, DOWS.indexOf(pianoDow), "dow", "Giorno della settimana")}</div>` +
-      ui.section(`${pianoDow === td ? "Il piano di oggi" : "Pasti di " + DOW[pianoDow].toLowerCase()}${kid() ? "" : ` · ${nf(tot, 0)} calorie`}`, rows) +
+      ui.section(`${pianoDow === td ? "Il piano di oggi" : "Pasti di " + DOW[pianoDow].toLowerCase()}${minor() ? "" : ` · ${nf(tot, 0)} calorie`}`, rows) +
       acts(AL ? ui.secondary("La mia dieta", "al-dieta") + ui.secondary("I miei alimenti", "al-lista") : ui.secondary("I miei alimenti", "lg", "")) +
       ui.end("Le quantità del piano sono a crudo: pesale prima di cuocere.", { leoQ: "Perché si pesa a crudo?" });
   }

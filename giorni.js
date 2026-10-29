@@ -21,6 +21,7 @@
   const LAB = k => (MEALS.find(m => m[0] === k) || [k, k])[1];
   const prof = () => data.profile();
   const kid = () => prof().group === "bambino";
+  const minor = () => prof().minor; // audit A5: niente calorie sotto i 18 anni
   const kw = () => { const g = prof().group; return g === "bambino" || g === "over65"; };
   const sessWord = () => kw() ? "allenamento" : "seduta";
   const sName = k => { const n = P[k] ? (P[k].nome || "Seduta " + k) : "Seduta " + k; return kw() ? n.replace(/^Seduta\b/, "Allenamento") : n; };
@@ -72,7 +73,7 @@
   /* ---------- lettura ---------- */
   const dayV = iso => { const v = S.days[iso]; return v ? { meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {}, extra: v.extra || [] } : { meals: {}, custom: {}, skip: {}, extra: [] }; };
   function mealsOf(iso) {
-    const dw = dt(iso).getDay(), plan = hasMealPlan(), v = dayV(iso);
+    const dw = dt(iso).getDay(), plan = hasPlanNow(), v = dayV(iso);
     return MEALS.filter(([k]) => !plan || mealOf(dw, k)).map(([k]) => ({ k, m: plan ? mealOf(dw, k) : null, st: mealState(v, k), c: v.custom[k] }));
   }
   const sessOf = iso => S.sessions.filter(s => localISO(new Date(s.date)) === iso).sort((a, b) => a.date < b.date ? 1 : -1)[0] || null;
@@ -138,8 +139,8 @@
     const g = gName(iso);
     const html = () => {
       const x = mealsOf(iso).find(y => y.k === k) || { k, m: mealOf(dt(iso).getDay(), k), st: mealState(dayV(iso), k), c: dayV(iso).custom[k] }, di = data.day(iso);
-      const what = x.st === "plan" ? "Segnato come da piano" : x.st === "custom" ? "Segnato: " + x.c.text : x.st === "skip" ? "Segnato come non mangiato" : x.m ? `Da piano: ${x.m.t}${kid() || x.m.kcal == null ? "" : " · " + nf(x.m.kcal, 0) + " calorie"}` : "Non ancora segnato";
-      const nums = kid() ? "" : ui.limeBox({ title: `I numeri di ${g}`, tiles: [{ label: "Calorie", value: di.kcal, of: di.kcalT, pct: ui.pct(di.kcal, di.kcalT) }, { label: "Proteine", value: di.pro, of: di.proT, unit: "g", pct: ui.pct(di.pro, di.proT) }] });
+      const what = x.st === "plan" ? "Segnato come da piano" : x.st === "custom" ? "Segnato: " + x.c.text : x.st === "skip" ? "Segnato come non mangiato" : x.m ? `Da piano: ${x.m.t}${minor() || x.m.kcal == null ? "" : " · " + nf(x.m.kcal, 0) + " calorie"}` : "Non ancora segnato";
+      const nums = kid() ? "" : ui.limeBox({ title: `I numeri di ${g}`, tiles: [...(minor() ? [] : [{ label: "Calorie", value: di.kcal, of: di.kcalT, pct: ui.pct(di.kcal, di.kcalT) }]), { label: "Proteine", value: di.pro, of: di.proT, unit: "g", pct: ui.pct(di.pro, di.proT) }] });
       const acts = ask
         ? `<p class="v3-shp">Si cancellano il segno e i numeri di questo pasto.</p><button class="v3-apri wide" data-v3act="g-unyes">Sì, togli il segno</button><button class="v3-b2" data-v3act="g-unno">No, tienilo</button>`
         : (x.m && x.st !== "plan" ? `<button class="v3-apri wide" data-v3act="g-plan">Segna come da piano</button>` : "") +

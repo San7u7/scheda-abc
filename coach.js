@@ -103,7 +103,7 @@ function intake(iso) {
     else if (st === "open") { rest = addN(rest, nutOf(dow, k)); restKeys.push(k); } }
   for (const x of v.extra) eaten = addN(eaten, x);
   const projected = eaten.kcal + rest.kcal;
-  return { eaten, rest, restKeys, projected, gap: T.kcal - projected, pGap: T.pro - (eaten.p + rest.p), logged: MEALS.some(([k]) => mealState(v, k) !== "open") || v.extra.length > 0 };
+  return { eaten, rest, restKeys, projected, gap: T.kcal - projected, pGap: T.pro - (eaten.p + rest.p), logged: MEALS.some(([k]) => { const s = mealState(v, k); return s === "plan" || s === "custom"; }) || v.extra.length > 0 }; // 29/10 audit A3: lo «non mangiato» da solo non segna il giorno (non abbassa le medie)
 }
 const BOOST = [
   { t: "150 g yogurt greco 0%", kcal: 85, p: 15, prot: true, where: ["spu", "mer"] },

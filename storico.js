@@ -70,7 +70,7 @@
   const dayV = iso => { const v = S.days[iso]; return v ? { meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {}, extra: v.extra || [], snap: v.snap || {}, water: +v.water || 0, peso: v.peso } : null; };
   /* pasti del giorno con le parole del diario (giorni.js mealRow) */
   function meals(iso) {
-    const dw = dt(iso).getDay(), plan = hasMealPlan(), v = dayV(iso) || { meals: {}, custom: {}, skip: {}, extra: [], snap: {} };
+    const dw = dt(iso).getDay(), plan = hasPlanNow(), v = dayV(iso) || { meals: {}, custom: {}, skip: {}, extra: [], snap: {} };
     return MEALS.filter(([k]) => !plan || mealOf(dw, k)).map(([k]) => {
       const st = mealState(v, k), m = plan ? mealOf(dw, k) : null; let n = null, text = "";
       if (st === "plan") { n = v.snap[k] || (window.planNutOf ? planNutOf(dw, k) : nutOf(dw, k)); text = m ? m.t + ". " + (m.i || []).join(". ") : ""; }

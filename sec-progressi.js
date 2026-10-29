@@ -33,7 +33,7 @@
   const prof = () => data.profile();
   const grp = () => prof().group;
   const kid = () => grp() === "bambino", minor = () => prof().minor, o65 = () => prof().over65;
-  const aw = () => minor() || o65(); // glossario: «Allenamento» per minori e over 65, «Seduta» per gli altri
+  const aw = () => kid() || o65(); // glossario unico (29/10, audit A4): «Allenamento» per bambino e over 65, «Seduta» per gli altri
   const planned = () => (typeof DAYS !== "undefined" ? DAYS.length : 0);
   const of = (t, u) => ` <span class="v3-of">/${esc(t)}${u ? " " + esc(u) : ""}</span>`;
   const pl = t => `<p class="v3-progressi-pl">${esc(t)}</p>`;
@@ -475,7 +475,7 @@
     const w0 = data.week(), cm = typeof cardioWeek === "function" ? cardioWeek(w0.from, w0.to) : 0, cof = typeof CARDIO !== "undefined" ? CARDIO.obiettivo(data.profile().group) : 150, sw = typeof stretchWeek === "function" ? stretchWeek(w0.from, w0.to) : 0;
     /* 29/10 (tavole 75 e 81): «Il mio report» e «Il mio storico» in cima; «La mia settimana» vive in Palestra; «Tutti i dati» sostituito dallo storico (CSV in Impostazioni) */
     const rows = (window.V3Report ? ui.row({ title: "Il mio report", sub: kid() ? "Com'è andata la settimana" : "Com'è andata e cosa fare adesso", act: "report" }) : "")
-      + (window.V3Storico ? ui.row({ title: "Il mio storico", sub: minor() ? "Pasti, allenamenti e numeri" : `Pasti, ${aw() ? "allenamenti" : "sedute"} e tutti i numeri`, act: "storico" }) : "")
+      + (window.V3Storico ? ui.row({ title: "Il mio storico", sub: `Pasti, ${aw() ? "allenamenti" : "sedute"} e tutti i numeri`, act: "storico" }) : "")
       + allowed().filter(id => id !== "settimana" || !window.V3Storico).map(id => ui.row({ title: SEC[id].title, sub: rowSub(id), act: "open", arg: id })).join("")
       + (typeof cardioWeek === "function" ? ui.row({ title: kid() ? "Movimento della settimana" : "Cardio della settimana", sub: `${cm} /${cof} minuti` + (kid() ? "" : ` · stretching ${sw} /${CARDIO.stretchVolte}`), act: "cardio" }) : "")
       + (minor() || window.V3Storico ? "" : ui.row({ title: "Tutti i dati", sub: S.downloads ? "Grafici di prima ed esportazione CSV" : "I grafici di prima", act: "legacy", arg: "carichi" }));

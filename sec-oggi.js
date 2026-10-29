@@ -35,7 +35,7 @@
   const weekLab = () => kidWords() ? "Allenamenti della settimana" : "Sedute della settimana";
 
   function timeline() {
-    const dw = new Date().getDay(), plan = hasMealPlan(), items = [];
+    const dw = new Date().getDay(), plan = hasPlanNow(), items = [];
     for (const [k, label] of MEALS) {
       const m = plan ? mealOf(dw, k) : null;
       if (plan && !m) continue;
@@ -69,7 +69,7 @@
   const FV = /(frutt[aoi](?!\s+secc)|verdur|vegetal|insalat|ortagg|spremut|\bmel[ae]\b|banan|aranc|\bper[ae]\b|kiwi|pomodor|zucchin|spinac|broccol|carot|finocch|cavol|fagiolin|bietol|peperon|melanzan|frutti di bosco)/i;
   function fruitVeg() { // porzioni di oggi: stesso calcolo dello storico e dei report (V3Stats), così i numeri coincidono ovunque
     if (window.V3Stats) { V3Stats.clear(); const d = V3Stats.day(localISO()); return d.fv == null ? 0 : d.fv; }
-    if (!hasMealPlan()) return null;
+    if (!hasPlanNow()) return null;
     const dw = new Date().getDay(); let n = 0;
     for (const [k] of MEALS) if (mstate(k) === "plan") { const m = mealOf(dw, k); if (m) n += (m.i || []).filter(t => FV.test(t)).length; }
     return n;
