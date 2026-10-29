@@ -131,9 +131,9 @@
   }
 
   /* ---------- fogli: Esci e Mi fa male (prototipo 27/10) ---------- */
-  function esci() {
-    const sh = V3.sheet(`<h2 class="v3-sh1">Vuoi uscire ${tv("dalla seduta", "dall'allenamento")}?</h2><p class="v3-shp">Quello che hai fatto finora è già salvato sul telefono.</p>
-      <div class="sx-shb"><button class="v3-apri wide" data-v3act="fine">${tv("Concludi la seduta", "Concludi l'allenamento")}</button><button class="v3-b2" data-v3act="pausa">Metti in pausa</button><button class="v3-b2" data-v3act="close">${tv("Continua la seduta", "Continua l'allenamento")}</button></div>`, { on: {
+  function esci() { /* tavola 97: la pausa è la scelta principale, concludere resta in fondo */
+    const sh = V3.sheet(`<h2 class="v3-sh1">Vuoi fare una pausa?</h2><p class="v3-shp">Quello che hai fatto finora è già salvato sul telefono. Il recupero si ferma.</p>
+      <div class="sx-shb"><button class="v3-apri wide" data-v3act="pausa">Metti in pausa</button><button class="v3-b2" data-v3act="close">${tv("Continua la seduta", "Continua l'allenamento")}</button><button class="sx-ghost" data-v3act="fine">${tv("Ho finito: concludi la seduta", "Ho finito: concludi l'allenamento")}</button></div>`, { on: {
       fine() { sh.close(); setTimeout(() => { S.fat = null; S.pain = !!draft(activeDay()).male; S.confirmDiscard = false; openSheet("finish"); }, 60); },
       pausa() { sh.close(); const d = draft(activeDay()); delete d.tmr; stopRest(d); saveDrafts(); setTimeout(() => { V3.go("oggi"); toast(tv("Seduta in pausa", "Allenamento in pausa"), { sub: "La riprendi da Palestra" }); }, 60); }
     } });
@@ -155,6 +155,79 @@
       alt() { sh.close(); setTimeout(() => document.dispatchEvent(new CustomEvent("sx-alts")), 60); }
     } });
   }
+
+  /* ---------- tavole 95-96: «Come si fa» in 3 passi semplici. Le frasi tecniche della scheda passano da un piccolo dizionario ---------- */
+  const PLAIN = [
+    [/negativa (lenta|controllata)/i, "Torna indietro piano, in 2-3 secondi"],
+    [/spinta (decisa|esplosiva|veloce)/i, "Spingi deciso"],
+    [/\bROM\b[^,.;]*/i, "Fai sempre tutto il movimento"],
+    [/scapole (addotte|indietro)[^,.;]*/i, "Spalle indietro e in basso"],
+    [/[^,.;]*cedimento[^,.;]*/i, "Fermati quando il movimento non è più pulito"],
+    [/(core|addome) (attivo|contratto)/i, "Pancia stretta"],
+    [/fase eccentrica[^,.;]*/i, "Scendi piano"],
+    [/fase concentrica[^,.;]*/i, "Sali deciso"]
+  ];
+  const KIDS = ["Muoviti piano e guarda la foto", "Respira: fuori quando fai fatica, dentro quando torni", "Se il movimento non viene bene, fermati"];
+  const GEN = ["Scendi in 2-3 secondi, risali deciso", "Espira mentre spingi o tiri, inspira nel ritorno", "Stesso movimento in ogni ripetizione"];
+  function plainSteps(it) {
+    const sub = curSub(it), raw = [sub && sub.cue, it.tech].filter(Boolean).join(". ");
+    const out = [];
+    raw.split(/[.;]\s*|,\s+/).map(x => x.trim()).filter(x => x.length > 3).forEach(x => {
+      const r = PLAIN.find(([re]) => re.test(x)); const t = r ? r[1] : x; const c = t.charAt(0).toUpperCase() + t.slice(1);
+      if (!out.includes(c)) out.push(c);
+    });
+    for (const g of kid() ? KIDS : GEN) { if (out.length >= 3) break; if (!out.includes(g)) out.push(g); }
+    return (kid() ? out.filter(x => !/\d|kg|%/.test(x)).concat(KIDS) : out).filter((x, i, a) => a.indexOf(x) === i).slice(0, 3);
+  }
+  const avoid = it => { const n = String(it.note || "").trim(); return /^(evita|non )/i.test(n) ? n.replace(/\.$/, "") : ""; };
+  function comeHtml() {
+    const a = activeDay(), d = draft(a), it = P[a].items.find(x => x.id === d.cur.id), k = kid(), id = window.demoFor ? demoFor(it) : null;
+    const canSwap = S.sample || (window.LIB && it.lib && window.LIB[it.lib]), av = avoid(it);
+    return `<h2 class="sx-c-h">${esc(short(exName(it)))}</h2>
+      ${id ? `<img class="sx-c-img" src="${IMG}${encodeURIComponent(id)}/0.jpg" alt="${esc(short(exName(it)))}: posizione di partenza" onerror="this.remove()">` : ""}
+      ${it.nota ? `<div class="alert">${esc(it.nota)}</div>` : ""}
+      <h3 class="sx-c-l">Come si fa</h3><ol class="sx-c-steps">${plainSteps(it).map((t, i) => `<li><span aria-hidden="true">${i + 1}</span><span>${esc(t)}.</span></li>`).join("")}</ol>
+      ${av && !k ? `<div class="sx-why"><p><b>Da evitare:</b> ${esc(av.charAt(0).toLowerCase() + av.slice(1))}.</p></div>` : ""}
+      ${k ? `<p class="sx-c-p">Se senti male, fermati e chiama l'adulto con te.</p>${canSwap ? `<button class="sx-sec2" data-act="alts">Prova quello più facile</button>` : ""}`
+        : `${canSwap || window.PalSchema ? `<h3 class="sx-c-l">Altro</h3>` : ""}${canSwap ? `<button class="sx-sec2" data-act="alts">Cambia esercizio</button>` : ""}${window.PalSchema && it.unit !== "none" ? `<button class="sx-sec2" data-act="sch-oggi">Cambia lo schema solo per oggi</button>` : ""}`}
+      <button class="sx-ghost" data-act="close">Chiudi</button>`;
+  }
+  const rs0 = window.renderSheet;
+  window.renderSheet = function () {
+    if (S.sheet === "saved" && S.sxNext) { const r = rs0.apply(this, arguments), sh = document.querySelector("#overlay .sheet"), b = sh && sh.querySelector('[data-act="upsave"], [data-act="close"].primary'); if (b) b.insertAdjacentHTML("beforebegin", `<div class="sx-nextw"><h3 class="sx-c-l">${S.ups ? "Gli altri esercizi" : "La prossima volta"}</h3>${S.sxNext}</div>`); return r; }
+    if (S.sheet !== "saved") S.sxNext = null;
+    if (S.sheet !== "ex" || !activeDay()) return rs0.apply(this, arguments);
+    $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet sx-c" role="dialog" aria-modal="true" aria-label="Come si fa"><div class="grab"></div>${comeHtml()}</div></div>`;
+  };
+
+  /* ---------- tavola 98: seduta salvata = 3 numeri + «La prossima volta» esercizio per esercizio ---------- */
+  const fin1 = window.finish;
+  window.finish = async function (meta) {
+    const day = activeDay(), items = day ? P[day].items.slice() : [], before = S.sessions.length, k = kid();
+    await fin1.apply(this, arguments);
+    if (S.sessions.length <= before || !S.savedHtml) return;
+    const s = S.sessions[S.sessions.length - 1], old = S.savedHtml;
+    const rec = (old.match(/<div class="card lime"><b>Nuovi record<\/b>[\s\S]*?<\/ul><\/div>/) || [""])[0];
+    const sec = s.durata ? s.durata * 60 : s.tempi ? s.tempi.total : 0, mins = Math.max(1, Math.round(sec / 60));
+    const nSets = s.items.reduce((m, e) => m + e.sets.length, 0), kg = s.items.reduce((m, e) => m + e.sets.reduce((a2, x) => a2 + (+x.kg || 0) * (+x.reps || 0), 0), 0);
+    const tile = (n, u, l) => `<div class="sx-sum-t"><b>${n}${u ? `<small> ${u}</small>` : ""}</b><span>${l}</span></div>`;
+    const tiles = [sec ? tile(mins, "min", "Durata") : "", tile(nSets, "", k ? "Giri" : "Serie"), k || !kg ? tile(s.items.length, "", "Esercizi") : tile(kg >= 1000 ? fmt(Math.round(kg / 100) / 10) : fmt(Math.round(kg)), kg >= 1000 ? "t" : "kg", "Sollevati")].filter(Boolean);
+    const upNames = new Set(((S.ups && S.ups.list) || []).map(x => x.key));
+    const next = s.items.filter(e => !e.cardio && e.sets.length).map(e => {
+      const it = items.find(x => x.id === e.id); if (!it) return "";
+      const key = exKey(it); if (upNames.has(key)) return ""; // la proposta di aumento ha già la sua riga sotto
+      const st = S.state.ex[key] || {}, last = (st.lastSets || []).map(Number), kgN = st.kg, tmp = it.misura === "tempo";
+      const tgt = last.length ? Math.min(it.max, Math.min(...last) + (tmp ? 5 : 1)) : it.min;
+      const txt = k ? `Prova ${tgt} ${tmp ? "secondi" : "volte"}` : st.closedLast === localISO() && kgN != null && it.unit !== "none" ? `Tutte le serie al massimo: alla prossima seduta chiusa puoi salire` : `${kgN != null && it.unit !== "none" ? fmt(kgN) + " kg: " : ""}punta a ${tgt} ${tmp ? "secondi" : "ripetizioni"}`;
+      return `<li><b>${esc(short(e.name))}</b><span>${esc(txt)}</span></li>`;
+    }).filter(Boolean);
+    const dd = new Date(s.date), DOWS = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+    S.savedHtml = `<h2 class="sx-c-h">${allenW() ? `Allenamento ${s.day} salvato` : `Seduta ${s.day} salvata`} ✓</h2>
+      <p class="sx-c-p">${DOWS[dd.getDay()].replace(/^./, c => c.toUpperCase())} ${dd.getDate()} ${dd.toLocaleDateString("it-IT", { month: "long" })} · prossima: ${allenW() ? "allenamento" : "seduta"} ${nextDay()}.</p>
+      <div class="sx-sum" style="--n:${tiles.length}">${tiles.join("")}</div>${rec}`;
+    S.sxNext = next.length ? `<ul class="sx-next">${next.join("")}</ul>` : ""; // va sotto la proposta di aumento
+    if (S.sheet === "saved") renderSheet();
+  };
 
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b || !activeDay()) return;
@@ -236,6 +309,24 @@
   .sx-hint { margin: 0; text-align: center; font-size: 16px; color: rgba(255,255,255,.8); }
   .sx-hint.small { font-size: 16px; }
   .sx-sec2 { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-size: 15px; font-weight: 600; }
+  .sx-ghost { min-height: 48px; width: 100%; border: 0; background: transparent; color: rgba(255,255,255,.8); font-size: 16px; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+  .sx-c, .sheet:has(.sx-sum) { display: flex; flex-direction: column; gap: 16px; }
+  .sx-c > *, .sheet:has(.sx-sum) > * { flex-shrink: 0; } /* il foglio scorre, i blocchi non si schiacciano */
+  .sx-c-h { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; }
+  .sx-c-img { width: 100%; height: 180px; object-fit: cover; border-radius: 20px; display: block; background: #fff; }
+  .sx-c-l { margin: 4px 0 0; padding-left: 4px; font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .sx-c-p { margin: 0; font-size: 17px; line-height: 1.45; color: rgba(255,255,255,.85); }
+  .sx-c-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .sx-c-steps li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; font-size: 17px; line-height: 1.45; }
+  .sx-c-steps li > span:first-child { width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .sx-sum { border-radius: 24px; padding: 14px; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .sx-sum-t { border-radius: 16px; background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .sx-sum-t b { font-size: 26px; font-variant-numeric: tabular-nums; }
+  .sx-sum-t small { font-size: 16px; font-weight: 600; color: rgba(255,255,255,.8); }
+  .sx-sum-t span { font-size: 15px; color: rgba(255,255,255,.8); }
+  .sx-next { margin: 0; padding: 0; list-style: none; }
+  .sx-next li { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-top: 1px solid var(--raised); }
+  .sx-next b { font-size: 17px; } .sx-next span { font-size: 16px; color: rgba(255,255,255,.85); }
   .sx-note { margin: 0; padding-left: 16px; font-size: 16px; color: rgba(255,255,255,.8); }
   .sx-fine { border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
   .sx-fine p { margin: 0; font-size: 16px; }
