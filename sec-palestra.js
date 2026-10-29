@@ -50,6 +50,10 @@
     #view.v3.v3-o65 .v3-palestra-up { font-size: 16px; }
     #view.v3 .v3-palestra-fig { display: flex; justify-content: center; }
     #view.v3 .v3-palestra-fig .v3-fig { width: 160px; height: 160px; }
+    #view.v3 .v3-palestra-fig .v3-fig2 { position: relative; width: 100%; height: min(216px, 24vh); border-radius: 24px; overflow: hidden; background: #fff; } /* stessa misura dello stretching */
+    #view.v3 .v3-fig2 img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    #view.v3 .v3-fig2 img.b { animation: demoflip 2.4s steps(1, end) infinite; }
+    @media (prefers-reduced-motion: reduce) { #view.v3 .v3-fig2 img.b { animation: none; opacity: 0; } }
     /* modifica 5: stretching lato per lato, seduta in tre tempi, cardio nella scheda */
     #view.v3 .v3-pal-str { gap: 16px; min-height: 0; }
     #view.v3 .v3-pal-str .v3-bar { margin-top: -4px; } #view.v3 .v3-pal-str .v3-bar i { background: var(--v3-lime); }
@@ -134,11 +138,11 @@
   }
 
   /* ---------- passi guidati: riscaldamento e stretching finale ---------- */
-  const DIN = [["Rotazioni delle braccia", "10 avanti e 10 indietro", ["Braccia tese, cerchi ampi.", "Spalle basse."]],
-    ["Cerchi con le anche", "10 per lato", ["Mani sui fianchi.", "Cerchi lenti e ampi."]],
-    ["Slanci delle gambe", "10 avanti e 10 di lato, per gamba", ["Tieniti a un appoggio.", "Slancio morbido, senza strappi."]],
-    ["Affondi con torsione", "5 per lato", ["Passo lungo, ginocchio sopra la caviglia.", "Ruota il busto verso la gamba davanti."]],
-    ["Gatto e mucca", "8 volte, a quattro zampe", ["Inarca e arrotonda la schiena.", "Movimento lento."]],
+  const DIN = [["Rotazioni delle braccia", "10 avanti e 10 indietro", ["Braccia tese, cerchi ampi.", "Spalle basse."], "Arm_Circles"],
+    ["Cerchi con le anche", "10 per lato", ["Mani sui fianchi.", "Cerchi lenti e ampi."], "Standing_Hip_Circles"],
+    ["Slanci delle gambe", "10 avanti e 10 di lato, per gamba", ["Tieniti a un appoggio.", "Slancio morbido, senza strappi."], "Front_Leg_Raises"],
+    ["Affondi con torsione", "5 per lato", ["Passo lungo, ginocchio sopra la caviglia.", "Ruota il busto verso la gamba davanti."], "Worlds_Greatest_Stretch"],
+    ["Gatto e mucca", "8 volte, a quattro zampe", ["Inarca e arrotonda la schiena.", "Movimento lento."], "Cat_Stretch"],
     ["Piegamenti dell'anca a corpo libero", "10 volte, schiena dritta", ["Bacino indietro.", "Schiena dritta."]]];
   /* modifica 5 (28/10): posizioni con immagine vera di free-exercise-db (solo dove corrisponde alla posizione) e lato per lato */
   const STAT = [
@@ -160,8 +164,8 @@
   function steps() {
     if (W.kind === "stretch") return stretchSteps();
     const g = group(), out = [];
-    if (warmOn()) out.push({ nome: "Bici o camminata veloce", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", ritmo leggero: riesci a parlare", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."] });
-    if (strPre()) (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2] }));
+    if (warmOn()) out.push({ nome: "Bici o camminata veloce", how: (kid() ? "5 minuti" : g === "over65" ? "10 minuti di cyclette o tapis roulant" : "5 minuti di cyclette o tapis roulant") + ", ritmo leggero: riesci a parlare", secs: g === "over65" ? 600 : 300, tips: ["Ritmo che ti permette di parlare.", "Deve scaldarti, non stancarti."], img: "Bicycling_Stationary" });
+    if (strPre()) (W.quick ? DIN.slice(0, 3) : DIN).forEach(r => out.push({ nome: r[0], how: r[1], tips: r[2], img: r[3] || null }));
     const p = P[W.day], it = p && p.items.find(x => x.misura !== "cardio");
     if (warmOn() && it && !kid() && it.unit !== "none" && !it.risc) { // con il riscaldamento automatico le serie leggere sono già in seduta
       const kg = planOf(it).kg;
@@ -241,7 +245,9 @@
       ? primary("Avvia il timer", 'data-v3act="w-timer"') + ui.secondary("Salta questo esercizio", "w-next")
       : primary(doneLabel, 'data-v3act="w-next"');
     const skip = stretch || !warmOn() ? "Salta la mobilità" : kid() ? "Salta, con l'ok di un adulto" : "Salta tutto il riscaldamento";
-    const fig = st.it && imgOf(st.it) ? `<div class="v3-palestra-fig">${ui.fig(imgOf(st.it), nameOf(st.it), nameOf(st.it))}</div>` : "";
+    /* 29/10: ogni passo ha la sua immagine (free-exercise-db), posizione di partenza e di arrivo alternate per mostrare come si fa */
+    const fid = st.img || (st.it ? (() => { try { return has("demoFor") ? demoFor(st.it) : st.it.demo; } catch (_) { return null; } })() : null);
+    const fig = fid ? `<div class="v3-palestra-fig"><div class="v3-fig v3-fig2" role="img" aria-label="Come si fa: ${e(st.nome)}"><img src="${IMG + encodeURIComponent(fid)}/0.jpg" alt="" onerror="this.closest('.v3-palestra-fig').remove()"><img class="b" src="${IMG + encodeURIComponent(fid)}/1.jpg" alt="" onerror="this.remove()"></div></div>` : "";
     return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back(stretch ? "Indietro" : "Esci dal riscaldamento")}<span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span></div>
       <div class="v3-bar" role="img" aria-label="${e(title)}: passo ${i + 1} di ${tot}"><i style="width:${Math.round((i + 1) / tot * 100)}%"></i></div>
       <div><h1 class="v3-palestra-wn">${e(st.nome)}</h1><p class="v3-palestra-wh">${e(st.how)}</p></div>
