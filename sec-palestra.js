@@ -38,6 +38,8 @@
     #view.v3 .v3-palestra-up { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--v3-lime); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 10px; padding: 2px 8px; }
     #view.v3 .v3-palestra-wtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     #view.v3 .v3-palestra-wc { font-size: 16px; color: var(--v3-t2); text-align: right; }
+    #view.v3 .v3-palestra-wfull > .v3-palestra-wc { text-align: left; padding-left: 16px; } /* 30/10: il conteggio scende sotto, in alto «Salta» */
+    #view.v3 .v3-pal-skiptop { width: auto; flex: none; padding: 0 18px; }
     #view.v3 .v3-palestra-wn { font-size: 28px; font-weight: 800; line-height: 1.15; padding-left: 16px; }
     #view.v3 .v3-palestra-wh { font-size: 18px; font-weight: 700; margin-top: 6px !important; line-height: 1.35; padding-left: 16px; }
     #view.v3 .v3-palestra-clock { text-align: center; padding: 12px 0; }
@@ -257,16 +259,16 @@
     const main = st.secs && !started
       ? primary("Avvia il timer", 'data-v3act="w-timer"') + ui.secondary("Salta questo esercizio", "w-next")
       : primary(doneLabel, 'data-v3act="w-next"');
-    const skip = stretch || !warmOn() ? "Salta la mobilità" : kid() ? "Salta, con l'ok di un adulto" : "Salta tutto il riscaldamento";
+    const skip = stretch || !warmOn() ? "Salta la mobilità" : kid() ? "Salta con l'adulto" : "Salta il riscaldamento";
     /* 29/10: ogni passo ha la sua immagine (free-exercise-db), posizione di partenza e di arrivo alternate per mostrare come si fa */
     const fid = st.img || (st.it ? (() => { try { return has("demoFor") ? demoFor(st.it) : st.it.demo; } catch (_) { return null; } })() : null);
     const fig = fid ? `<div class="v3-palestra-fig"><div class="v3-fig v3-fig2" role="img" aria-label="Come si fa: ${e(st.nome)}"><img src="${IMG + encodeURIComponent(fid)}/0.jpg" alt="" onerror="this.closest('.v3-palestra-fig').remove()"><img class="b" src="${IMG + encodeURIComponent(fid)}/1.jpg" alt="" onerror="this.remove()"></div></div>` : "";
-    return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back(stretch ? "Indietro" : "Esci dal riscaldamento")}<span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span></div>
+    return `<div class="v3-palestra-wfull"><div class="v3-palestra-wtop">${ui.back("Indietro")}<button class="v3-b2 v3-pal-skiptop" data-v3act="w-skip">${e(skip)} ›</button></div><span class="v3-palestra-wc">${e(title)} · ${i + 1} di ${tot}</span>
       <div class="v3-bar" role="img" aria-label="${e(title)}: passo ${i + 1} di ${tot}"><i style="width:${Math.round((i + 1) / tot * 100)}%"></i></div>
       <div><h1 class="v3-palestra-wn">${e(st.nome)}</h1><p class="v3-palestra-wh">${e(st.how)}</p></div>
       ${fig}${W.come ? ui.card(st.tips.map(t => `<p class="v3-palestra-note">${e(t)}</p>`).join("") + ui.leo("Come si fa: " + st.nome + "?")) : ""}${clock}
       <div class="v3-palestra-acts">${main}
-        <div class="v3-palestra-tools"><button class="v3-b2" data-v3act="w-come" aria-expanded="${!!W.come}">${W.come ? "Nascondi" : "Come si fa"}</button><button class="v3-b2" data-v3act="w-skip">${e(skip)}</button></div>
+        <div class="v3-palestra-tools"><button class="v3-b2" data-v3act="w-come" aria-expanded="${!!W.come}">${W.come ? "Nascondi" : "Come si fa"}</button></div>
         ${!stretch && i === 0 && !kid() && strPre() ? `<button class="v3-b2" data-v3act="w-quick">${W.quick ? "Versione completa" : "Versione rapida: 3 movimenti"}</button>` : ""}</div></div>`;
   }
 

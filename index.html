@@ -456,10 +456,10 @@ body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; 
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610300200"></script>
-<script src="lib.js?v=202610300200"></script>
-<script src="ai.js?v=202610300200"></script>
-<script src="coach.js?v=202610300200"></script>
+<script src="seed-abc.js?v=202610300300"></script>
+<script src="lib.js?v=202610300300"></script>
+<script src="ai.js?v=202610300300"></script>
+<script src="coach.js?v=202610300300"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -1591,7 +1591,7 @@ document.addEventListener("click", e => {
   else if (act === "reps") { const d = draft(activeDay()); d.sets[d.cur.id][d.cur.i].reps = +v; saveDrafts(); render(); }
   else if (act === "kg") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.kg = Math.max(0, +((+s.kg || 0) + (+v) * 0.5).toFixed(2)); saveDrafts(); render(); } // passo 0,5 kg ovunque (Giovanni 27/10)
   else if (act === "repsd") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i], tmp = (P[activeDay()].items.find(x => x.id === d.cur.id) || {}).misura === "tempo"; s.reps = Math.max(tmp ? 5 : 1, (+s.reps || 0) + (+v) * (tmp ? 5 : 1)); saveDrafts(); render(); } // «A tempo»: scatti di 5″
-  else if (act === "addset") { const d = draft(activeDay()), sets = d.sets[d.cur.id], last = sets[sets.length - 1]; sets.push({ kg: last.kg, reps: last.reps, done: false }); d.cur.i = sets.length - 1; saveDrafts(); render(); toast(`Serie ${sets.length} aggiunta`); }
+  else if (act === "addset") { const d = draft(activeDay()), sets = d.sets[d.cur.id], last = sets[sets.length - 1]; sets.push({ kg: last.kg, reps: last.reps, done: false }); { const f = sets.findIndex(x => !x.done); d.cur.i = f >= 0 ? f : sets.length - 1; } /* test 30/10: «Serie fatta» resta sulla prima serie da fare */ saveDrafts(); render(); toast(`Serie ${sets.length} aggiunta`); }
   else if (act === "delset") { const d = draft(activeDay()), sets = d.sets[d.cur.id]; if (sets.length > 1 && !sets[d.cur.i].done) { const gone = d.cur.i + 1; sets.splice(d.cur.i, 1); const nx = sets.findIndex(x => !x.done); d.cur.i = nx >= 0 ? nx : sets.length - 1; saveDrafts(); render(); toast(`Serie ${gone} tolta`); } }
   else if (act === "done") markDone();
   else if (act === "cd-run") cardioRun();
@@ -1708,8 +1708,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610300200"></script>
-<script src="ux.js?v=202610300200"></script>
-<script src="hub.js?v=202610300200"></script><script src="board.js?v=202610300200"></script><script src="timer.js?v=202610300200"></script><script src="nutri.js?v=202610300200"></script><script src="photos.js?v=202610300200"></script><script src="coachui.js?v=202610300200"></script><script src="settings.js?v=202610300200"></script><script src="aikey.js?v=202610300200"></script><script src="tour.js?v=202610300200"></script><script src="gesture.js?v=202610300200"></script><script src="ds.js?v=202610300200"></script><script src="v3.js?v=202610300200"></script><script src="quiz.js?v=202610300200"></script><script src="cibo-base.js?v=202610300200"></script><script src="alimenti.js?v=202610300200"></script><script src="giorni.js?v=202610300200"></script><script src="sec-oggi.js?v=202610300200"></script><script src="sec-palestra.js?v=202610300200"></script><script src="seduta.js?v=202610300200"></script><script src="piatti.js?v=202610300200"></script><script src="sec-cibo.js?v=202610300200"></script><script src="storico.js?v=202610300200"></script><script src="report.js?v=202610300200"></script><script src="sec-progressi.js?v=202610300200"></script>
+<script src="exdb.js?v=202610300300"></script>
+<script src="ux.js?v=202610300300"></script>
+<script src="hub.js?v=202610300300"></script><script src="board.js?v=202610300300"></script><script src="timer.js?v=202610300300"></script><script src="nutri.js?v=202610300300"></script><script src="photos.js?v=202610300300"></script><script src="coachui.js?v=202610300300"></script><script src="settings.js?v=202610300300"></script><script src="aikey.js?v=202610300300"></script><script src="tour.js?v=202610300300"></script><script src="gesture.js?v=202610300300"></script><script src="ds.js?v=202610300300"></script><script src="v3.js?v=202610300300"></script><script src="quiz.js?v=202610300300"></script><script src="cibo-base.js?v=202610300300"></script><script src="alimenti.js?v=202610300300"></script><script src="giorni.js?v=202610300300"></script><script src="sec-oggi.js?v=202610300300"></script><script src="sec-palestra.js?v=202610300300"></script><script src="seduta.js?v=202610300300"></script><script src="piatti.js?v=202610300300"></script><script src="sec-cibo.js?v=202610300300"></script><script src="storico.js?v=202610300300"></script><script src="report.js?v=202610300300"></script><script src="sec-progressi.js?v=202610300300"></script>
 
 </body></html>

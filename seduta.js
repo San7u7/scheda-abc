@@ -35,6 +35,8 @@
     const left = Math.max(0, T.dur - el);
     return { left, el, txt: mmss(Math.ceil(left)), lab: "mancano su " + mmss(T.dur), frac: T.dur ? left / T.dur : 0 };
   }
+  /* ferma il recupero come «fine pausa» di timer.js: il recupero si ricalcola dall'ultimo evento «done» */
+  function stopRest(d) { const ev = d.ev || (d.ev = []), l = ev[ev.length - 1]; if (l && l.type === "done") ev.push({ type: "go", t: Date.now() }); S.timer = null; }
   function tDone(sec, full) {
     const a = activeDay(), d = draft(a), T = d.tmr; if (!T) return;
     delete d.tmr;
@@ -133,7 +135,7 @@
     const sh = V3.sheet(`<h2 class="v3-sh1">Vuoi uscire ${tv("dalla seduta", "dall'allenamento")}?</h2><p class="v3-shp">Quello che hai fatto finora è già salvato sul telefono.</p>
       <div class="sx-shb"><button class="v3-apri wide" data-v3act="fine">${tv("Concludi la seduta", "Concludi l'allenamento")}</button><button class="v3-b2" data-v3act="pausa">Metti in pausa</button><button class="v3-b2" data-v3act="close">${tv("Continua la seduta", "Continua l'allenamento")}</button></div>`, { on: {
       fine() { sh.close(); setTimeout(() => { S.fat = null; S.pain = !!draft(activeDay()).male; S.confirmDiscard = false; openSheet("finish"); }, 60); },
-      pausa() { sh.close(); setTimeout(() => { V3.go("oggi"); toast(tv("Seduta in pausa", "Allenamento in pausa"), { sub: "La riprendi da Palestra" }); }, 60); }
+      pausa() { sh.close(); const d = draft(activeDay()); delete d.tmr; stopRest(d); saveDrafts(); setTimeout(() => { V3.go("oggi"); toast(tv("Seduta in pausa", "Allenamento in pausa"), { sub: "La riprendi da Palestra" }); }, 60); }
     } });
   }
   function male() {
@@ -175,8 +177,8 @@
     else if (act === "sx-annulla") {
       e.stopPropagation();
       const d = draft(activeDay()), sets = d.sets[d.cur.id], j = +b.dataset.v, x = sets[j]; if (!x || !x.done) return;
-      const n = cap(setName(sets, x, kid()).replace(/^(la|il) /, "")); x.done = false; d.cur.i = j; saveDrafts(); render();
-      toast(`${n} annullat${/^Serie/.test(n) ? "a" : "o"}`, { sub: "Puoi rifarla", undo: () => { x.done = true; saveDrafts(); render(); } });
+      const n = cap(setName(sets, x, kid()).replace(/^(la|il) /, "")); x.done = false; stopRest(d); // il recupero di una serie annullata non serve d.cur.i = j; saveDrafts(); render();
+      toast(`${n} annullat${/^Serie/.test(n) ? "a" : "o"}`, { sub: "Torna da fare", undo: () => { x.done = true; saveDrafts(); render(); } });
     }
   }, true);
   /* «Prova un'alternativa» riusa il pulsante Sostituisci della vista (stessa logica di index.html) */
@@ -187,8 +189,8 @@
   body:has(.sx) #top { display: none; } /* «‹ Esci» sostituisce il ritorno a Oggi */
   .sx { display: flex; flex-direction: column; gap: 28px; padding-bottom: 24px; }
   .sx-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .sx-top span { font-size: 15px; color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
-  .sx-out { min-height: 48px; padding: 0 18px; border: 0; border-radius: 24px; background: transparent; color: var(--text); box-shadow: inset 0 0 0 2px var(--accent); font-size: 15px; font-weight: 600; }
+  .sx-top span { font-size: 16px; color: rgba(255,255,255,.8); font-variant-numeric: tabular-nums; }
+  .sx-out { min-height: 48px; padding: 0 18px; border: 0; border-radius: 24px; background: transparent; color: var(--text); box-shadow: inset 0 0 0 2px var(--accent); font-size: 17px; font-weight: 600; }
   .sx-hd { padding-left: 16px; display: flex; flex-direction: column; align-items: flex-start; }
   .sx-hd h1 { margin: 0; font-size: 28px; font-weight: 800; line-height: 1.15; }
   .sx-hd p { margin: 4px 0 0; font-size: 16px; color: rgba(255,255,255,.8); }
@@ -205,22 +207,22 @@
   .sx-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .sx-two.one { grid-template-columns: 1fr; }
   .sx-f { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-  .sx-l { padding-left: 4px; font-size: 15px; font-weight: 600; color: rgba(255,255,255,.8); }
+  .sx-l { padding-left: 4px; font-size: 16px; font-weight: 600; color: rgba(255,255,255,.8); }
   .sx-st { display: grid; grid-template-columns: 52px minmax(0, 1fr) 52px; align-items: center; height: 60px; border-radius: 16px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
   .sx-st button { height: 60px; border: 0; background: transparent; color: var(--accent); font-size: 24px; font-weight: 700; touch-action: manipulation; }
   .sx-st b, .sx-st input { height: 60px; box-sizing: border-box; text-align: center; font-size: 28px; font-weight: 600; line-height: 60px; border: 0; border-left: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-right: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); font-variant-numeric: tabular-nums; color: var(--text); background: transparent; width: 100%; min-width: 0; padding: 0; border-radius: 0; font-family: inherit; }
-  .sx-pri { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); font-size: 15px; font-weight: 700; }
+  .sx-pri { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); font-size: 17px; font-weight: 700; }
   .sx-chips { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; }
-  .sx-chips button { min-height: 44px; border: 0; border-radius: 999px; font-size: 14px; font-weight: 600; white-space: nowrap; background: var(--surface); color: rgba(255,255,255,.8); box-shadow: inset 0 0 0 1px var(--raised); display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-variant-numeric: tabular-nums; }
+  .sx-chips button { min-height: 48px; border: 0; border-radius: 999px; font-size: 16px; font-weight: 600; white-space: nowrap; background: var(--surface); color: rgba(255,255,255,.85); box-shadow: inset 0 0 0 1px var(--raised); display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-variant-numeric: tabular-nums; }
   .sx-chips button.w { box-shadow: inset 0 0 0 1px var(--raised); border: 1px dashed rgba(255,255,255,.35); }
   .sx-chips button.d { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); box-shadow: none; }
   .sx-chips button[aria-current="true"] { background: transparent; color: var(--text); box-shadow: inset 0 0 0 2px var(--text); }
   .sx-box { display: grid; grid-template-columns: 1fr 1fr; min-height: 48px; border-radius: 16px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); overflow: hidden; }
   .sx-box.one { grid-template-columns: 1fr; }
-  .sx-box button { border: 0; background: transparent; color: var(--accent); font-size: 15px; font-weight: 700; min-height: 48px; padding: 0 8px; }
+  .sx-box button { border: 0; background: transparent; color: var(--accent); font-size: 17px; font-weight: 700; min-height: 48px; padding: 0 8px; }
   .sx-box button + button { border-left: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
   .sx-tools { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; }
-  .sx-tools button { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-size: 15px; font-weight: 600; padding: 0 10px; }
+  .sx-tools button { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-size: 17px; font-weight: 600; padding: 0 10px; }
   .sx-ring { position: relative; width: 232px; max-width: 62vw; aspect-ratio: 1; align-self: center; }
   .sx-ring.big { width: 280px; max-width: 74vw; }
   .sx-ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
@@ -232,7 +234,7 @@
   @media (prefers-reduced-motion: reduce) { .sx-ring .arc { transition: none; } }
   .sx-run .sx-sec { margin-top: 8px; }
   .sx-hint { margin: 0; text-align: center; font-size: 16px; color: rgba(255,255,255,.8); }
-  .sx-hint.small { font-size: 15px; }
+  .sx-hint.small { font-size: 16px; }
   .sx-sec2 { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-size: 15px; font-weight: 600; }
   .sx-note { margin: 0; padding-left: 16px; font-size: 16px; color: rgba(255,255,255,.8); }
   .sx-fine { border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }

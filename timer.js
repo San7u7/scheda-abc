@@ -198,7 +198,7 @@
   .sbar.tm > div { display: flex; align-items: center; gap: 8px; }
   .tm-ph { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 8px; border: 0; border-radius: 16px; padding: 8px 12px 10px; background: var(--raised); color: var(--text); text-align: left; position: relative; overflow: hidden; }
   .tm-ph b { font-size: 22px; font-variant-numeric: tabular-nums; justify-self: end; }
-  .tm-k { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .tm-k { font-size: 15px; font-weight: 700; color: var(--muted); }
   .tm-go { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
   .tm-track { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: transparent; } .tm-track i { display: block; height: 100%; background: var(--accent); }
   .tm-ph.rest { background: var(--surface-2); } .tm-ph.rest .tm-k { color: var(--accent); }
@@ -212,7 +212,7 @@
   body.no-glass #tm-mini { background: #161616; -webkit-backdrop-filter: none; backdrop-filter: none; }
   .tmm-l { display: flex; flex-direction: column; gap: 4px; }
   .tmm-k { font-size: 14px; font-weight: 700; color: var(--accent); line-height: 1.15; max-width: 8.5em; }
-  .tmm-n { font-size: 13px; line-height: 18px; color: var(--muted); padding-left: 16px; border-left: 1px solid rgba(255,255,255,.12); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tmm-n { font-size: 15px; line-height: 20px; color: var(--muted); padding-left: 16px; border-left: 1px solid rgba(255,255,255,.12); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .tmm-n span { color: var(--text); font-weight: 600; font-size: 14px; }
   #tm-mini b { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; min-width: 3.3ch; }
   .tmm-apri { min-height: 44px; display: flex; align-items: center; padding: 0 16px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); font-weight: 700; font-size: 15px; }
@@ -225,7 +225,7 @@
   .sbar.tm .clock { flex: none; min-width: 0; }
   @media (max-width: 400px) {
     .sbar.tm > div { gap: 6px; } .sbar.tm .clock .small { display: none; } .sbar.tm .clock b { font-size: 16px; }
-    .tm-ph { padding: 6px 10px 8px; } .tm-ph b { font-size: 18px; } .tm-k { font-size: 12px; } .tm-go { display: none; }
+    .tm-ph { padding: 6px 10px 8px; } .tm-ph b { font-size: 18px; } .tm-k { font-size: 14px; } .tm-go { display: none; }
     .sbar.tm .fine { padding: 0 14px; font-size: 15px; }
   }
   @media (max-width: 340px) { .sbar.tm .clock { display: none; } }
