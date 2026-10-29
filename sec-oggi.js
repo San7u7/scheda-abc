@@ -168,7 +168,7 @@
         `<div class="v3-wk-c" role="img" aria-label="${ui.esc(aria)}">${bars}</div><div class="v3-wk-d" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>` +
         `<p class="v3-bd">Barra piena: proteine raggiunte quel giorno</p>`) +
       `<div class="v3-oggi-tl">${ui.row({ title: "Proteine raggiunte", sub: w.gym ? `${w.proGym} ${kw ? (w.proGym === 1 ? "allenamento" : "allenamenti") : (w.proGym === 1 ? "seduta" : "sedute")} su ${w.gym}` : (kw ? "Nessun allenamento ancora" : "Nessuna seduta ancora"), act: "go", arg: "cibo" })}` +
-      ui.row(kid ? { title: "Prossimo allenamento", sub: nxName, act: "go", arg: "palestra" } : { title: w.fat != null ? `Fatica media: ${w.fat} su 10` : "Fatica non segnata", sub: ups ? `${ups} ${ups === 1 ? "carico pronto" : "carichi pronti"} a salire` : "Carichi stabili", act: "go", arg: "palestra" }) + `</div>` +
+      ui.row(kid ? { title: "Prossimo allenamento", sub: nxName, act: "go", arg: "palestra" } : { title: w.fat != null ? `Fatica media: ${fatWord(w.fat).toLowerCase()}` : "Fatica non segnata", sub: ups ? `${ups} ${ups === 1 ? "carico nuovo" : "carichi nuovi"} questa settimana` : "Carichi stabili", act: "go", arg: "palestra" }) + `</div>` +
       ui.end("Il muscolo cresce a riposo, se mangi proteine.", { act: "sap", arg: "pro", leoQ: "Perché le proteine contano nei giorni di palestra?" });
   }
   if (!document.getElementById("v3-sec-oggi-wk")) { const st = document.createElement("style"); st.id = "v3-sec-oggi-wk"; st.textContent = `

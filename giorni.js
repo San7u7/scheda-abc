@@ -170,6 +170,7 @@
       const its = DAYS.flatMap(k => P[k].items).filter(it => !isCardio(it) && exName(it) === name);
       for (const it of its) {
         const key = exKey(it), st = S.state.ex[key];
+        if (st && st.upAt && L && st.upAt > L.date) continue; // aumento accettato dopo quella seduta (modifica 4): il carico nuovo resta
         if (!L) { if (st) { delete S.state.ex[key]; ch = true; } continue; }
         const x = L.items.find(y => y.name === name), wk = x.sets.filter(z => !z.dr), kgs = wk.map(z => z.kg).filter(v => v != null);
         const kg = it.unit === "none" || !kgs.length ? null : Math.max(...kgs), ls = wk.map(z => +z.reps || 0), date = localISO(new Date(L.date));

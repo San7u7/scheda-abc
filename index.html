@@ -242,6 +242,18 @@ ul.plain { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column
 .fat { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .fat button { height: 44px; border-radius: 12px; border: 0; background: var(--raised); color: var(--muted); font-variant-numeric: tabular-nums; }
 .fat button[aria-pressed="true"] { background: var(--text); color: #000; font-weight: 600; }
+/* modifica 4: fatica a parole e proposta di aumento */
+.fatw { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .fatw.one { grid-template-columns: 1fr; }
+.fatw button { min-height: 76px; border-radius: 18px; border: 0; background: var(--raised); color: var(--text); text-align: left; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; gap: 2px; font: inherit; }
+.fatw.one button { min-height: 64px; }
+.fatw button b { font-size: 17px; } .fatw button span { font-size: 14px; color: var(--muted); }
+.fatw button[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); } .fatw button[aria-checked="true"] b { color: var(--accent); }
+.painrow { min-height: 72px; border-radius: 18px; border: 0; background: var(--raised); color: var(--text); text-align: left; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center; gap: 2px; font: inherit; width: 100%; }
+.painrow b { font-size: 16px; } button.painrow b { color: #ffb340; } .painrow span { font-size: 15px; color: var(--muted); }
+.ups { display: flex; flex-direction: column; gap: 12px; } .ups h3 { margin: 0; font-size: 20px; }
+.upc { border-radius: 24px; background: var(--raised); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.upc-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; } .upc-h b { font-size: 17px; } .upc-h span { color: var(--accent); font-weight: 700; white-space: nowrap; }
+.upc-s button[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 28%, transparent) !important; color: var(--text) !important; }
 textarea { flex-shrink: 0; min-height: 76px; box-sizing: border-box; font-size: 16px; width: 100%; border: 0; border-radius: 14px; background: var(--raised); color: var(--text); padding: 12px 14px; resize: vertical; }
 textarea::placeholder { color: var(--faint); }
 .thread { display: flex; flex-direction: column; gap: 10px; flex: 1; }
@@ -444,10 +456,10 @@ body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; 
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610291500"></script>
-<script src="lib.js?v=202610291500"></script>
-<script src="ai.js?v=202610291500"></script>
-<script src="coach.js?v=202610291500"></script>
+<script src="seed-abc.js?v=202610291800"></script>
+<script src="lib.js?v=202610291800"></script>
+<script src="ai.js?v=202610291800"></script>
+<script src="coach.js?v=202610291800"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -621,19 +633,21 @@ function baseline(it) {
   if (name === it.name) return { kg: it.kg, lastSets: it.last != null ? Array(it.sets).fill(it.last) : null, from: "scheda" };
   return { kg: null, lastSets: null };
 }
+/* modifica 4 (29/10): il carico non sale più da solo. plan() dice se le serie sono chiuse (ready); l'aumento lo propone finish() e lo conferma l'utente.
+   up = carico nuovo accettato negli ultimi 7 giorni (segno lime «Nuovo carico»): b.kg diventa il carico di prima, così kg − b.kg = aumento */
+const NEW_MS = 7 * 864e5;
+function withNew(r, st) { if (st && st.upAt && st.upFrom != null && Date.now() - new Date(st.upAt) < NEW_MS && r.kg != null && r.kg > st.upFrom) { r.up = true; r.b = { ...r.b, kg: st.upFrom }; } return r; }
 function plan(it) {
   if (tipoOf(it) !== "uguali" && exName(it) === it.name) { // schemi: si parte da kg1; dopo una seduta con lo schema, +salto se tutte le serie di lavoro hanno fatto le ripetizioni previste
     const sc = it.schema, st = S.state.ex[exKey(it)], fresh = st && st.kg1 != null && st.tipo === sc.tipo && (!sc.da || (st.at || "") > sc.da);
     const kg1 = it.unit === "none" ? null : fresh ? st.kg1 : (sc.kg1 != null ? +sc.kg1 : it.kg);
     const closed = !!fresh && Array.isArray(st.tgt) && st.tgt.length > 0 && st.lastSets.length >= st.tgt.length && st.tgt.every((r, i) => st.lastSets[i] >= r);
     const b = fresh ? { kg: st.kg1, lastSets: st.lastSets, from: "seduta" } : { kg: kg1, lastSets: null, from: "scheda" };
-    if (closed && kg1 != null) return { kg: +(kg1 + (+it.salto || stepFor(it))).toFixed(2), up: true, closed, b };
-    return { kg: kg1, up: false, closed, b };
+    return withNew({ kg: kg1, up: false, closed, ready: closed && kg1 != null, b }, fresh ? st : null);
   }
   const b = baseline(it), ls = b.lastSets;
   const closed = !!ls && ls.length >= it.sets && ls.slice(0, it.sets).every(r => r >= it.max);
-  if (closed && b.kg != null && it.unit !== "none") return { kg: +(b.kg + stepFor(it)).toFixed(2), up: true, closed, b };
-  return { kg: b.kg, up: false, closed, b };
+  return withNew({ kg: b.kg, up: false, closed, ready: closed && b.kg != null && it.unit !== "none", b }, S.state.ex[exKey(it)] || null);
 }
 function activeDay() { return DAYS.find(k => S.drafts[k] && S.drafts[k].started) || null; }
 function nextDay() {
@@ -665,7 +679,7 @@ function draftSets(it, d) {
   const x = itOf(it, d), td = d && d.sch && d.sch[it.id] && d.sch[it.id].schema;
   const pl = plan(x), ls = pl.b.lastSets, uq = tipoOf(x) === "uguali";
   const kg1 = x.unit === "none" ? null : td && td.kg1 != null ? +td.kg1 : pl.kg;
-  const reps = uq ? Array.from({ length: x.sets }, (_, i) => pl.up ? x.min : (ls ? (ls[i] ?? ls[0]) : x.min)) : null;
+  const reps = uq ? Array.from({ length: x.sets }, (_, i) => ls && ls.length ? (ls[i] ?? ls[0]) : x.min) : null;
   return targetSets(x, { kg1, reps }).map(s => ({ kg: s.kg, reps: s.reps, done: false, ...(uq && !s.w && !s.dr ? {} : { t: [s.kg, s.reps] }), ...(s.w ? { w: 1 } : {}), ...(s.dr ? { dr: 1 } : {}) }));
 }
 const itOf = (it, d) => { const o = d && d.sch && d.sch[it.id]; if (!o) return it; const x = { ...it, ...o }; if (o.schema) x.sets = o.schema.tipo === "5x5" ? 5 : +o.schema.serie || it.sets; return x; };
@@ -838,7 +852,7 @@ function viewAllenamento() {
     return `<h1>Il tuo <span class="hl">allenamento</span></h1><p class="muted" style="margin-top:4px">Scegli la seduta e inizia: i carichi sono già quelli della volta scorsa.</p>
       <div class="seg" style="margin-top:16px" role="group" aria-label="Seduta">${DAYS.map(k => `<button data-act="pick-day" data-v="${k}" aria-pressed="${k === day}">${k} · ${P[k].day.slice(0, 3)}</button>`).join("")}</div>
       <div class="block"><div class="card photo"><div class="ph-img" style="background-image:url(img/rack.jpg)"><span class="ph-tag">${p.items.length} ${p.items.length === 1 ? "esercizio" : "esercizi"}</span><div class="ph-title">Seduta <span class="hl">${day}</span></div></div><div class="ph-body"><p class="muted">${esc(p.focus)}</p>
-        <ul class="daylist">${p.items.map(it => { const pl = plan(it); return `<li><span>${esc(short(exName(it)))}${pl.up ? ' <span class="up small">· sale</span>' : ""}</span><span>${it.sets} × ${it.min}–${it.max}</span></li>`; }).join("")}</ul>
+        <ul class="daylist">${p.items.map(it => { const pl = plan(it); return `<li><span>${esc(short(exName(it)))}${pl.up ? ' <span class="up small">· carico nuovo</span>' : ""}</span><span>${it.sets} × ${it.min}–${it.max}</span></li>`; }).join("")}</ul>
         <button class="primary go" data-act="start" data-v="${day}">Inizia seduta ${day}</button></div></div></div>`;
   }
   const d = draft(a), items = P[a].items, all = items.flatMap(it => d.sets[it.id]);
@@ -944,7 +958,7 @@ function activeCard(it, d) {
   return `<section class="active" aria-label="Esercizio in corso">
     <div class="a-head"><div><div class="a-name">${esc(short(exName(it)))}</div>
       <div class="small muted num">${sch || X.risc || (X.schema && X.schema.calo) ? esc(schLabel(X)) : `${it.sets} × ${it.min}–${it.max} · ${lastTxt}`}</div>
-      ${pl.up ? `<div class="small up">Oggi aumenta il carico: ${fmt(pl.kg)} kg</div><div class="small muted">Riparti da ${it.min} ripetizioni</div>` : ""}
+      ${pl.up && groupNow() !== "bambino" ? `<div class="small up">Nuovo carico · +${fmt(+(pl.kg - (b.kg || 0)).toFixed(2))} kg</div>` : ""}
       ${sub ? `<div class="small faint">Al posto di ${esc(short(it.name))}</div>` : ""}</div>
       <button class="icon-btn" data-act="sheet" data-v="ex" aria-label="Tecnica, note e sostituzione"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button></div>
     ${it.warm && !X.risc && i === 0 && !s.done ? `<p class="small muted">Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.</p>` : ""}
@@ -1311,7 +1325,7 @@ function renderSheet() {
     const nDone = P[a].items.reduce((s, it) => s + d.sets[it.id].filter(x => x.done).length, 0);
     html = `<h2>Concludi ${laSed()} ${a}</h2><p class="small muted">${nDone} serie fatte. Si salvano solo quelle segnate come fatte.</p>
       <label class="small muted" for="durata">Durata in minuti</label><div class="stepper"><button data-act="dstep" data-v="-5" aria-label="Meno 5 minuti">−</button><input id="durata" inputmode="numeric" type="text" autocomplete="off" value="${mins < 240 ? Math.max(1, mins) : 70}"><button data-act="dstep" data-v="5" aria-label="Più 5 minuti">+</button></div>
-      <span class="small muted">Quanto è stata dura? 1 = facile, 10 = non ne facevo un'altra</span><div class="fat" role="group" aria-label="Fatica da 1 a 10">${Array.from({ length: 10 }, (_, i) => `<button data-act="fat" data-v="${i + 1}" aria-label="Fatica ${i + 1} su 10" aria-pressed="${S.fat === i + 1}">${i + 1}</button>`).join("")}</div>
+      ${fatHtml()}
       <label class="small muted" for="snote">Note</label><textarea id="snote" rows="3" placeholder="Dolori, macchine occupate, sensazioni"></textarea>
       <button class="primary" data-act="savefinish" ${nDone ? "" : "disabled"}>Salva ${laSed()} nei progressi</button><button class="ghost" data-act="close">Torna ${allenW() ? "all'allenamento" : "alla seduta"}</button>
       <button class="link small" data-act="discard" style="align-self:center">${S.confirmDiscard ? `Sì, cancella ${laSed()} di oggi` : `Cancella ${laSed()} senza salvare`}</button>`;
@@ -1346,7 +1360,7 @@ function renderSheet() {
       <p class="small faint">${S.site ? "I dati restano solo su questo telefono: se cancelli i dati del browser li perdi." : "I dati sono salvati nel tuo account e li vedi solo tu."} Le calorie sono stime; Leo non sostituisce medico, dietista o allenatore.</p>
       <p class="credits">Foto: «Fitness Photography – Male Black Fitness Model Strength» di vanitystudiosphotography (CC BY 2.0, Flickr); «10TH MDSB Command Mentorship PT», U.S. Army (CC0, rawpixel); «Dumbbells rack gym» (CC0, rawpixel); «Reach» di Matt Hecht (pubblico dominio, Flickr). Elaborate in bianco e nero.</p>`;
   } else if (sh === "saved") {
-    html = S.savedHtml + `<button class="primary" data-act="close">Fatto</button>`;
+    html = S.savedHtml + upsHtml() + (S.ups ? `<button class="primary" data-act="upsave">${S.ups.ragazzo ? "L'istruttore è d'accordo, salva" : "Salva le scelte"}</button><button class="ghost" data-act="upnot">Non ora, tengo questi</button>` : `<button class="primary" data-act="close">Fatto</button>`);
   } else if (sh === "chat") {
     const msgs = S.chat.msgs;
     html = `<div class="block-h"><h2>Coach</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
@@ -1411,22 +1425,81 @@ async function finish(meta) {
     if (!done.length) continue;
     const name = exName(it); items.push({ id: it.id, name, sets: done });
     const wk = raw.filter(s => !s.dr), kgs = wk.map(kgOf).filter(x => x != null);
+    const key = exKey(it), old = S.state.ex[key];
     if (tipoOf(X) !== "uguali" && !(d.sch && d.sch[it.id]) && name === it.name) { // schema della scheda: ricorda kg1, ripetizioni fatte e previste
-      const tg = d.sets[it.id].filter(s => !s.w && !s.dr).map(s => s.t ? s.t[1] : +s.reps);
-      S.state.ex[exKey(it)] = { kg: kgs.length ? Math.max(...kgs) : null, kg1: wk.length && kgOf(wk[0]) != null ? kgOf(wk[0]) : null, tipo: X.schema.tipo, lastSets: wk.map(s => +s.reps || 0), tgt: tg, date: localISO(), at: new Date().toISOString() };
-      if (wk.length >= tg.length && tg.every((r, i) => (+wk[i].reps || 0) >= r) && it.unit !== "none") ups.push(short(name));
+      const tg = d.sets[it.id].filter(s => !s.w && !s.dr).map(s => s.t ? s.t[1] : +s.reps), kg1 = wk.length && kgOf(wk[0]) != null ? kgOf(wk[0]) : null;
+      const closed = wk.length >= tg.length && tg.every((r, i) => (+wk[i].reps || 0) >= r);
+      S.state.ex[key] = { kg: kgs.length ? Math.max(...kgs) : null, kg1, tipo: X.schema.tipo, lastSets: wk.map(s => +s.reps || 0), tgt: tg, date: localISO(), at: new Date().toISOString(), closedLast: closed ? localISO() : null, ...keepUp(old) };
+      ups.push({ it, key, name: short(name), closed, prev: !!(old && old.closedLast), from: kg1, f: "kg1" });
     } else if (tipoOf(X) === "uguali" && wk.length) {
-      S.state.ex[exKey(it)] = { kg: it.unit === "none" || !kgs.length ? null : Math.max(...kgs), lastSets: wk.map(s => +s.reps || 0), date: localISO() };
-      if (wk.length >= it.sets && wk.every(s => +s.reps >= it.max) && it.unit !== "none") ups.push(short(name));
+      const closed = wk.length >= it.sets && wk.every(s => +s.reps >= it.max), kg = it.unit === "none" || !kgs.length ? null : Math.max(...kgs);
+      S.state.ex[key] = { kg, lastSets: wk.map(s => +s.reps || 0), date: localISO(), closedLast: closed ? localISO() : null, ...keepUp(old) };
+      ups.push({ it, key, name: short(name), closed, prev: !!(old && old.closedLast), from: kg, f: "kg" });
     }
   }
   await persistSession({ id: "s" + Date.now(), date: new Date().toISOString(), day, items, ...meta });
   await persistState();
+  const pr = proposeUps(ups, meta);
   delete S.drafts[day]; saveDrafts(); S.timer = null; S.day = null; S.tab = "oggi"; lsSet("tab2", S.tab);
   S.savedHtml = `<h2>${allenW() ? `Allenamento ${day} salvato` : `Seduta ${day} salvata`}</h2><p class="muted">${items.length === 1 ? "1 esercizio" : items.length + " esercizi"}, ${items.reduce((a, e) => a + e.sets.length, 0)} serie${items.filter(e => e.cardio).map(e => `, ${e.cardio.min} minuti di cardio`).join("")}.</p>` +
-    (ups.length ? `<div class="card" style="background:var(--raised)"><b>La prossima volta aumenta il carico:</b><ul class="plain muted">${ups.map(u => `<li>${esc(u)}</li>`).join("")}</ul></div>` : `<p>Carichi invariati: punta a 1 ripetizione in più.</p>`) +
+    (pr.list.length ? "" : `<p>${esc(pr.why || "Carichi invariati: punta a 1 ripetizione in più.")}</p>`) +
     `<p class="small muted">Prossima: ${allenW() ? "allenamento" : "seduta"} ${nextDay()}.</p>`;
+  S.ups = pr.list.length ? { list: pr.list, ragazzo: pr.g === "ragazzo" } : null;
   S.sheet = "saved"; window.scrollTo(0, 0); render();
+}
+/* ---------- modifica 4: proposta di aumento (tavole 58-62, askesis-ux/Fatica_PROPOSTA.md) ---------- */
+const keepUp = o => o && o.upAt ? { upAt: o.upAt, upFrom: o.upFrom, upTo: o.upTo } : {};
+const groupNow = () => { try { return window.V3 ? V3.data.profile().group : "adulto"; } catch (_) { return "adulto"; } };
+/* fermo da 3 settimane: lo stesso carico (o più) era già stato fatto almeno 21 giorni fa (storico Progressi) */
+function stalled(name, kg) { const h = exHistory()[name] || [], lim = Date.now() - 21 * 864e5; return kg != null && h.some(x => new Date(x.date) <= lim && (x.kg ?? 0) >= kg); }
+/* di quanto: salto della scheda o 2,5 (2 manubri), mai oltre il 10% del carico; over 65 sempre il salto piccolo */
+function jumpFor(it, kg, g) {
+  if (g === "over65") return kg < 10 ? 0.5 : 1;
+  const j = +it.salto || stepFor(it), cap = Math.max(0.5, Math.floor(kg * 0.1 * 2) / 2);
+  return Math.min(j, cap);
+}
+function proposeUps(c, meta) {
+  const g = groupNow(), fat = meta.fatica, list = [];
+  if (g === "bambino") return { g, list, why: "La prossima volta prova una ripetizione in più." };
+  const closed = c.filter(x => x.closed && x.from != null && x.it.unit !== "none");
+  if (!closed.length) return { g, list, why: c.some(x => x.closed) ? "" : "Resta così: chiudi tutte le serie al massimo per salire." };
+  if (fat >= 10) return { g, list, why: "Fatica al limite: riproviamo lo stesso carico." };
+  if (meta.dolore) return { g, list, why: "Hai segnalato dolore o capogiro: il carico resta com'è." };
+  if (fatigueAlert()) return { g, list, why: "Ultime sedute molto dure: questa settimana il carico resta com'è." };
+  const two = g === "over65" || fat === 8;
+  for (const x of closed) {
+    if (two && !x.prev && !stalled(x.it.name, x.from)) continue; // serve una seconda seduta chiusa di fila
+    list.push({ key: x.key, name: x.name, from: x.from, to: +(x.from + jumpFor(x.it, x.from, g)).toFixed(2), f: x.f, pick: true });
+  }
+  return { g, list, why: list.length ? "" : "Serie chiuse: alla prossima seduta chiusa puoi salire." };
+}
+/* fatica a parole (le ripetizioni rimaste), valori sulla scala 1-10 di sempre: storico, fatigueAlert ed export non cambiano */
+const FAT = {
+  adulto: ["Quanto è stata dura?", [[3, "Facile", "Ne avevo tante"], [6, "Giusta", "Ne avevo 2 o 3"], [8, "Dura", "Ne avevo una"], [10, "Al limite", "Nessuna in più"]]],
+  over65: ["Quanto è stato faticoso?", [[3, "Facile", "Potevo continuare a lungo"], [6, "Giusto", "Stanco, ma bene"], [8, "Pesante", "Ho fatto fatica a finire"], [10, "Troppo", "Non ce la facevo più"]]],
+  bambino: ["Com'è andata?", [[3, "Facile", "Potevo fare di più"], [6, "Giusto", "Stanco il giusto"], [9, "Faticoso", "Ero molto stanco"]]]
+};
+/* la parola più vicina a un valore 1-10 (anche le sedute vecchie e le medie) */
+function fatWord(v) { const o = (FAT[groupNow()] || FAT.adulto)[1]; return v == null ? "" : o.reduce((a, x) => Math.abs(x[0] - v) < Math.abs(a[0] - v) ? x : a)[1]; }
+function fatHtml() {
+  const g = groupNow(), [q, opts] = FAT[g] || FAT.adulto, one = g !== "adulto" && g !== "ragazzo";
+  return `<span class="small muted">${q}</span><div class="fatw${one ? " one" : ""}" role="radiogroup" aria-label="${q}">${opts.map(([v, t, d]) => `<button role="radio" aria-checked="${S.fat === v}" data-act="fat" data-v="${v}" aria-label="Fatica: ${t}, ${d.toLowerCase()}"><b>${t}</b><span>${d}</span></button>`).join("")}</div>` +
+    (g === "over65" ? `<button class="painrow${S.pain ? " on" : ""}" data-act="pain" aria-pressed="${!!S.pain}"><b>Ho sentito dolore o capogiro</b><span>${S.pain ? "Fermati e riposa. Se il dolore è al petto o il capogiro non passa, chiama il 112. Parlane con il medico prima della prossima seduta." : "Tocca qui: ti dico cosa fare"}</span></button>` : "") +
+    (g === "bambino" ? `<div class="painrow"><b>Qualcosa ti ha fatto male?</b><span>Dillo subito all'adulto con te</span></div>` : "");
+}
+function upsHtml() {
+  const u = S.ups; if (!u) return "";
+  return `<div class="ups"><h3>La prossima volta</h3><p class="small muted">Hai chiuso tutte le serie: puoi salire</p>${u.list.map((x, i) => `<div class="upc"><div class="upc-h"><b>${esc(x.name)}</b><span>+${fmt(+(x.to - x.from).toFixed(2))} kg</span></div>
+    <div class="v3-pm2 upc-s" role="radiogroup" aria-label="${esc(x.name)}"><button role="radio" aria-checked="${!x.pick}" data-act="uppick" data-v="${i}:0">Tengo ${fmt(x.from)} kg</button><button role="radio" aria-checked="${x.pick}" data-act="uppick" data-v="${i}:1">Passo a ${fmt(x.to)} kg</button></div></div>`).join("")}
+    ${u.ragazzo ? `<p class="small muted">Prima di aumentare il carico, chiedi all'istruttore.</p>` : `<p class="small muted">Il nuovo carico lo vedi in lime nella scheda.</p>`}</div>`;
+}
+function saveUps() {
+  const u = S.ups; if (!u) return; const at = new Date().toISOString(), undo = [];
+  for (const x of u.list) { if (!x.pick) continue; const st = S.state.ex[x.key]; if (!st) continue; undo.push([x.key, JSON.parse(JSON.stringify(st))]);
+    Object.assign(st, { [x.f]: x.to, upAt: at, upFrom: x.from, upTo: x.to, closedLast: null }); if (x.f === "kg1") { st.kg = Math.max(st.kg || 0, x.to); st.lastSets = []; } else st.lastSets = null; }
+  S.ups = null; S.sheet = null; render();
+  if (!undo.length) { toast("Carichi invariati", { sub: "Riprovi gli stessi alla prossima seduta" }); return; }
+  persistState(); toast(undo.length === 1 ? "1 carico aggiornato nella scheda" : `${undo.length} carichi aggiornati nella scheda`, { undo: () => { for (const [k, st] of undo) S.state.ex[k] = st; persistState(); render(); } });
 }
 
 function blurAll() { try { document.activeElement && document.activeElement.blur && document.activeElement.blur(); } catch (_) {} }
@@ -1482,7 +1555,7 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const act = b.dataset.act, v = b.dataset.v;
   if (act === "close" && b.classList.contains("scrim") && (e.target !== b || ["food", "peso", "finish"].includes(S.sheet))) return;
-  if (act === "close") { if (S.sheet === "chat") S.chatOpen = false; closeSheet(); return; }
+  if (act === "close") { if (S.sheet === "chat") S.chatOpen = false; if (S.sheet === "saved") S.ups = null; closeSheet(); return; }
   if (act === "ob-next") { const o = S.ob; if (o.step === 1) { const e2 = readProfile(); if (e2) { o.err = e2; render(); return; } o.err = null; if (o.redo === "profile") { if (!S.diet || S.diet.fonte === "calcolato") o.diet = { ...calcDiet(o.pr), testo: S.diet && S.diet.testo }; return obFinish(); } if (window.APP && APP.seed && !o.redo) return obFinish(); } o.step++; o.text = ""; window.scrollTo(0, 0); render(); return; }
   else if (act === "ob-back") { S.ob.step = Math.max(0, S.ob.step - 1); S.ob.err = null; render(); return; }
   else if (act === "ob-cancel") { S.ob = null; syncPlan(); render(); return; }
@@ -1527,10 +1600,14 @@ document.addEventListener("click", e => {
   else if (act === "undo") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.done = false; saveDrafts(); render(); if (s.c) toast("Cardio da rifare", { sub: s.min + " minuti previsti" }); }
   else if (act === "t15") { if (S.timer) { S.timer.end = Math.max(Date.now(), S.timer.end) + 15000; S.timer.total += 15; renderBar(); } }
   else if (act === "tstop") { S.timer = null; renderBar(); }
-  else if (act === "finish") { S.fat = null; S.confirmDiscard = false; openSheet("finish"); }
-  else if (act === "fat") { S.fat = +v; document.querySelectorAll(".fat button").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.v === S.fat))); }
+  else if (act === "finish") { S.fat = null; S.pain = false; S.confirmDiscard = false; openSheet("finish"); }
+  else if (act === "uppick") { const [i, on] = v.split(":"); if (S.ups && S.ups.list[+i]) { S.ups.list[+i].pick = on === "1"; renderSheet(); } }
+  else if (act === "upsave") saveUps();
+  else if (act === "upnot") { S.ups = null; S.sheet = null; render(); toast("Carichi invariati", { sub: "Riprovi gli stessi alla prossima seduta" }); }
+  else if (act === "pain") { S.pain = !S.pain; renderSheet(); }
+  else if (act === "fat") { S.fat = +v; document.querySelectorAll(".fatw [role=radio]").forEach(x => x.setAttribute("aria-checked", String(+x.dataset.v === S.fat))); }
   else if (act === "dstep") { const el = $("#durata"); el.value = Math.max(0, Math.round(num(el.value)) + (+v)); }
-  else if (act === "savefinish") { const du = Math.round(num(($("#durata") || {}).value)) || null, no = (($("#snote") || {}).value || "").trim(); S.sheet = null; finish({ durata: du, fatica: S.fat, note: no }); }
+  else if (act === "savefinish") { const du = Math.round(num(($("#durata") || {}).value)) || null, no = (($("#snote") || {}).value || "").trim(); S.sheet = null; finish({ durata: du, fatica: S.fat, note: no, ...(S.pain ? { dolore: true } : {}) }); }
   else if (act === "sheet") openSheet(v);
   else if (act === "sch-oggi") { S.sheet = null; renderSheet(); if (window.PalSchema) setTimeout(() => PalSchema.oggi(), 0); }
   else if (act === "sub") doSub(b.dataset.k, v);
@@ -1631,8 +1708,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610291500"></script>
-<script src="ux.js?v=202610291500"></script>
-<script src="hub.js?v=202610291500"></script><script src="board.js?v=202610291500"></script><script src="timer.js?v=202610291500"></script><script src="nutri.js?v=202610291500"></script><script src="photos.js?v=202610291500"></script><script src="coachui.js?v=202610291500"></script><script src="settings.js?v=202610291500"></script><script src="aikey.js?v=202610291500"></script><script src="tour.js?v=202610291500"></script><script src="gesture.js?v=202610291500"></script><script src="ds.js?v=202610291500"></script><script src="v3.js?v=202610291500"></script><script src="quiz.js?v=202610291500"></script><script src="cibo-base.js?v=202610291500"></script><script src="alimenti.js?v=202610291500"></script><script src="giorni.js?v=202610291500"></script><script src="sec-oggi.js?v=202610291500"></script><script src="sec-palestra.js?v=202610291500"></script><script src="sec-cibo.js?v=202610291500"></script><script src="sec-progressi.js?v=202610291500"></script>
+<script src="exdb.js?v=202610291800"></script>
+<script src="ux.js?v=202610291800"></script>
+<script src="hub.js?v=202610291800"></script><script src="board.js?v=202610291800"></script><script src="timer.js?v=202610291800"></script><script src="nutri.js?v=202610291800"></script><script src="photos.js?v=202610291800"></script><script src="coachui.js?v=202610291800"></script><script src="settings.js?v=202610291800"></script><script src="aikey.js?v=202610291800"></script><script src="tour.js?v=202610291800"></script><script src="gesture.js?v=202610291800"></script><script src="ds.js?v=202610291800"></script><script src="v3.js?v=202610291800"></script><script src="quiz.js?v=202610291800"></script><script src="cibo-base.js?v=202610291800"></script><script src="alimenti.js?v=202610291800"></script><script src="giorni.js?v=202610291800"></script><script src="sec-oggi.js?v=202610291800"></script><script src="sec-palestra.js?v=202610291800"></script><script src="sec-cibo.js?v=202610291800"></script><script src="sec-progressi.js?v=202610291800"></script>
 
 </body></html>

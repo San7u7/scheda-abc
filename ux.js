@@ -42,7 +42,7 @@
     let sess;
     if (!p) sess = `<div class="card"><h2>Nessuna scheda di allenamento</h2><p class="muted">Caricala come testo, foto o PDF, oppure fattene creare una di base.</p><button class="primary go" data-act="redo" data-v="2">Carica la scheda</button></div>`;
     else if (dt0) sess = `<div class="pcard done" style="background-image:url(${photoFor(dt0.day)})"><div class="pc-top"><span class="ph-tag">Fatta oggi</span></div><div class="pc-bot"><div class="pc-title">Seduta <span class="hl">${dt0.day}</span></div>
-        <div class="srow"><span><b>${dt0.items.length}</b>esercizi</span><span><b>${dt0.durata || "–"}</b>minuti</span><span><b>${dt0.fatica != null ? dt0.fatica + "/10" : "–"}</b>fatica</span></div>
+        <div class="srow"><span><b>${dt0.items.length}</b>esercizi</span><span><b>${dt0.durata || "–"}</b>minuti</span><span><b>${dt0.fatica != null ? fatWord(dt0.fatica) : "–"}</b>fatica</span></div>
         <button class="primary go" data-act="tab" data-v="progressi">Vedi i progressi</button></div></div>`;
     else { const ups = p.items.filter(x => plan(x).up).length, d = a ? S.drafts[a] : null, all = d ? P[a].items.flatMap(x => d.sets[x.id]) : [];
       sess = `<div class="pcard" style="background-image:url(${photoFor(nd)})"><div class="pc-top"><span class="ph-tag">${a ? "In corso" : p.day || "Prossima"}</span>${a ? `<span class="pc-ring">${ring(all.filter(s => s.done).length, all.length, 46)}</span>` : ""}</div><div class="pc-bot">
@@ -133,7 +133,7 @@
       ${statTile(I.kcal, kd.length ? `${fmt(Math.round(kd.reduce((a2, b2) => a2 + b2, 0) / kd.length / 10) * 10)}` : "–", "Kcal medie al giorno", null, "psub", "calorie")}
       ${statTile(I.peso, wch != null ? `${wch >= 0 ? "+" : ""}${fmt(+wch.toFixed(1))}<small> kg</small>` : "–", "Peso nel periodo", null, "psub", "peso")}</div>`;
     const recent = ses.slice(0, 4).map(s => { const nSets = s.items.reduce((m, e) => m + e.sets.length, 0);
-      return `<button class="rcard" data-act="sess-open" data-v="${esc(s.id)}"><span class="rc-day">${s.day}</span><span class="rc-body"><b>Seduta ${s.day}</b><span class="small muted">${dt(s.date)} · ${plural(nSets, "serie", "serie")}${s.durata ? ` · ${s.durata} min` : ""}${s.fatica != null ? ` · fatica ${s.fatica}/10` : ""}</span></span><span class="dc-go">${ARROW}</span></button>`; }).join("");
+      return `<button class="rcard" data-act="sess-open" data-v="${esc(s.id)}"><span class="rc-day">${s.day}</span><span class="rc-body"><b>Seduta ${s.day}</b><span class="small muted">${dt(s.date)} · ${plural(nSets, "serie", "serie")}${s.durata ? ` · ${s.durata} min` : ""}${s.fatica != null ? ` · fatica: ${fatWord(s.fatica).toLowerCase()}` : ""}</span></span><span class="dc-go">${ARROW}</span></button>`; }).join("");
     const base = baseProgress().replace(/^<h1>[\s\S]*?<\/h1>/, "");
     const segPeriod = periodSeg();
     return `<h1>I tuoi <span class="hl">progressi</span></h1>${segPeriod}<div class="block">${tiles}</div>
@@ -168,7 +168,7 @@
       const s = S.sessions.find(x => x.id === S.sessId);
       if (!s) { S.sheet = null; return baseSheet(); }
       html = `<div class="block-h"><h2>Seduta <span class="hl">${s.day}</span> · ${dt(s.date)}</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
-        <div class="srow boxed"><span><b>${s.items.length}</b>esercizi</span><span><b>${s.items.reduce((m, e) => m + e.sets.length, 0)}</b>serie</span><span><b>${s.durata || "–"}</b>minuti</span><span><b>${s.fatica != null ? s.fatica : "–"}</b>fatica</span></div>
+        <div class="srow boxed"><span><b>${s.items.length}</b>esercizi</span><span><b>${s.items.reduce((m, e) => m + e.sets.length, 0)}</b>serie</span><span><b>${s.durata || "–"}</b>minuti</span><span><b>${s.fatica != null ? fatWord(s.fatica) : "–"}</b>fatica</span></div>
         <div class="list">${s.items.map(e => `<div class="lrow"><span>${esc(short(e.name))}</span><span class="r small">${e.cardio ? `${e.cardio.min != null ? e.cardio.min + " minuti" : "Cardio"}${e.cardio.km ? " · " + fmt(e.cardio.km) + " km" : ""}` : e.sets.map(x => x.kg != null ? `${fmt(x.kg)}×${x.reps}` : x.reps).join(" · ")}</span></div>`).join("")}</div>
         ${s.note ? `<p class="muted">Note: ${esc(s.note)}</p>` : ""}`;
     }

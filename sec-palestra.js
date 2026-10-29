@@ -34,6 +34,7 @@
     #view.v3 .v3-palestra-im img { width: 100%; height: 100%; object-fit: cover; display: block; }
     #view.v3 .v3-palestra-im span { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--v3-t3); }
     #view.v3 .v3-palestra-im.noimg img { display: none; } #view.v3 .v3-palestra-im.noimg span { display: flex; }
+    #view.v3 .v3-palestra-ex.nw { background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
     #view.v3 .v3-palestra-up { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 700; color: var(--v3-lime); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 10px; padding: 2px 8px; }
     #view.v3 .v3-palestra-wtop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     #view.v3 .v3-palestra-wc { font-size: 16px; color: var(--v3-t2); text-align: right; }
@@ -292,7 +293,7 @@
   function hero(k, label, extra) {
     const p = P[k], it = pesiOf(p)[0] || p.items[0], ups = upsOf(p);
     const meta = pl(p.items.length, "esercizio", "esercizi") + " · circa " + minsOf(p) + " minuti";
-    return `<div class="v3-palestra-hero"><div class="v3-hf"><div><p class="v3-palestra-ht">${e(dname(k))}</p>${p.focus ? `<p class="v3-palestra-hs">${e(p.focus)}</p>` : ""}<p class="v3-palestra-hm">${e(meta)}</p>${ups && !kid() ? `<span class="v3-palestra-up">${e(ups + " con carico in aumento")}</span>` : ""}</div>${it && imgOf(it) ? ui.fig(imgOf(it), nameOf(it), nameOf(it)) : ""}</div>
+    return `<div class="v3-palestra-hero"><div class="v3-hf"><div><p class="v3-palestra-ht">${e(dname(k))}</p>${p.focus ? `<p class="v3-palestra-hs">${e(p.focus)}</p>` : ""}<p class="v3-palestra-hm">${e(meta)}</p>${ups && !kid() ? `<span class="v3-palestra-up">${e(ups === 1 ? "1 carico nuovo" : ups + " carichi nuovi")}</span>` : ""}</div>${it && imgOf(it) ? ui.fig(imgOf(it), nameOf(it), nameOf(it)) : ""}</div>
       ${extra ? `<p class="v3-palestra-note">${e(extra)}</p>` : ""}${primary(label, `data-v3act="inizia" data-v3arg="${e(k)}"`)}</div>`;
   }
   function home() {
@@ -305,7 +306,7 @@
     let today;
     if (ts.state === "fatta") {
       const d0 = doneToday(), nd = ts.next && P[ts.next] ? ts.next : null;
-      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica " + d0.fatica + " su 10" : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
+      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica: " + fatWord(d0.fatica).toLowerCase() : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
         (strPost() ? ui.row({ title: "Stretching finale", sub: stretchDone() ? "Fatto oggi ✓" : pl(STAT.length, "posizione", "posizioni") + ", circa " + stretchMin() + " minuti", act: "stretch", apri: stretchDone() ? "Rifai" : "Inizia" }) : "") +
         (nd ? ui.row({ title: tv("Prossima seduta: ", "Prossimo allenamento: ") + (P[nd].nome || nd), sub: "Domani, dopo il riposo", act: "apri-seduta", arg: nd }) : "") + ageRow());
     } else {
@@ -335,8 +336,8 @@
     const g = group(), dn = doneWeek(k);
     const list = flowOrder(p.items).map((it, j) => { const x = planOf(it), kg = it.unit === "none" ? null : x.kg;
       const det = isC(it) ? "Cardio · " + cardTxt(it) : tipoOf(it) !== "uguali" ? SCH[tipoOf(it)][0] + " · " + it.sets + " serie" + (kg != null ? " · da " + kgTxt(kg) + " kg" : "") : it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
-      const up = !isC(it) && x.up && g !== "bambino" ? `<span class="v3-palestra-up">${g === "adulto" ? "+" + kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2)) + " kg oggi" : "Carico in aumento"}</span>` : "";
-      return `<div class="v3-palestra-ex">${thumb(it, String(j + 1))}<span class="v3-rx"><span class="v3-rt" style="display:block">${e(nameOf(it))}</span><span class="v3-rs" style="display:block">${e(det)}</span>${up}</span></div>`; }).join("");
+      const nw = !isC(it) && x.up && g !== "bambino", up = nw ? `<span class="v3-palestra-up">Nuovo carico · +${kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2))} kg</span>` : "";
+      return `<div class="v3-palestra-ex${nw ? " nw" : ""}">${thumb(it, String(j + 1))}<span class="v3-rx"><span class="v3-rt" style="display:block">${e(nameOf(it))}</span><span class="v3-rs" style="display:block">${e(det)}</span>${up}</span></div>`; }).join("");
     const label = activeDay() === k ? tv("Riprendi la seduta", "Riprendi l'allenamento") : tv("Inizia la seduta", "Inizia l'allenamento");
     /* tavola CardioTreTempi: Prima (riscaldamento) · Pesi · Dopo (cardio della scheda, stretching) */
     const wm = warmMin(), pm = pesiMin(p), sm = strPost() ? stretchMin() : 0, pe = pesiOf(p);
