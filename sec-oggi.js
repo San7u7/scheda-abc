@@ -141,45 +141,10 @@
       ui.end("Segnare i pasti ti fa vedere cosa mangi davvero", { act: "sap", arg: "pro", leoQ: "Perché segnare i pasti?" });
   }
 
-  /* ---------- riepilogo settimana (28/10, tela tavola 13): kg mossi per giorno incrociati con le proteine ---------- */
-  let wOff = 0;
-  function weekData(off) {
-    const from = addDays(localISO(mondayOf(new Date())), -7 * off), days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
-    const ss = S.sessions.filter(x => { const d = localISO(new Date(x.date)); return d >= from && d <= days[6]; });
-    const kgOf = x => (x.items || []).reduce((m, it) => m + (it.sets || []).reduce((a, z) => a + (+z.kg || 0) * (+z.reps || 0), 0), 0);
-    const per = days.map(iso => { const di = data.day(iso), l = ss.filter(x => localISO(new Date(x.date)) === iso);
-      return { iso, n: l.length, kg: l.reduce((m, x) => m + kgOf(x), 0), proOk: !!(di.logged && di.proT && di.pro >= di.proT * .9) }; });
-    const fat = ss.filter(x => x.fatica != null).map(x => +x.fatica), gym = per.filter(d => d.n);
-    return { per, done: ss.length, planned: DAYS.length, kg: Math.round(per.reduce((m, d) => m + d.kg, 0)), fat: fat.length ? Math.round(fat.reduce((a, b) => a + b, 0) / fat.length) : null, gym: gym.length, proGym: gym.filter(d => d.proOk).length };
-  }
-  function weekPage() {
-    const w = weekData(wOff), kid = data.profile().group === "bambino", kw = kidWords(), full = w.planned && w.done >= w.planned;
-    const nx = P[nextDay()], nxName = nx ? sessName(nx.nome || "Seduta " + nextDay()) : "";
-    const verdict = full ? (wOff === 0 && !kid && w.kg > weekData(1).kg ? "Settimana piena, carichi in aumento" : "Settimana piena")
-      : wOff === 0 ? (w.done ? `${kw ? "Fatti" : "Fatte"} ${w.done} di ${w.planned}: resta ${nxName}` : "Settimana da iniziare") : `${w.done} di ${w.planned} ${kw ? "allenamenti fatti" : "sedute fatte"}`;
-    const max = Math.max(1, ...w.per.map(d => kid ? d.n : d.kg));
-    const bars = w.per.map((d, i) => { const v = kid ? d.n : d.kg; return `<span class="v3-wk-b${v ? (d.proOk ? " ok" : " lo") : ""}" style="height:${v ? Math.max(8, v / max * 100) : 3}%" title="${"LMMGVSD"[i]}"></span>`; }).join("");
-    const aria = w.per.filter(d => d.n).map(d => `${["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"][new Date(d.iso + "T12:00:00").getDay()]} ${kid ? d.n + " allenamento" : ui.nf(Math.round(d.kg)) + " kg"}${d.proOk ? ", proteine raggiunte" : ", proteine sotto"}`).join("; ") || (kw ? "Nessun allenamento" : "Nessuna seduta");
-    const ups = DAYS.reduce((m, k) => m + (P[k] ? P[k].items.filter(it => plan(it).up).length : 0), 0);
-    return ui.back() + `<div class="v3-oggi-ttl"><h1 class="v3-t1">La tua settimana</h1><p class="v3-sub v3-wk-v">${ui.esc(verdict)}</p></div>` +
-      ui.seg(["Questa settimana", "Settimana scorsa"], wOff, "wsel", "Settimana") +
-      ui.card(`<div class="v3-wk-h"><span>${kid ? "Allenamenti" : "Peso sollevato"}</span><b>${w.done} di ${w.planned} ${kw ? "allenamenti" : "sedute"}</b></div>` +
-        `<p class="v3-bn">${kid ? w.done : ui.nf(w.kg) + ' <span class="v3-of">kg</span>'}</p>` +
-        `<div class="v3-wk-c" role="img" aria-label="${ui.esc(aria)}">${bars}</div><div class="v3-wk-d" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>` +
-        `<p class="v3-bd">Barra piena: proteine raggiunte quel giorno</p>`) +
-      `<div class="v3-oggi-tl">${ui.row({ title: "Proteine raggiunte", sub: w.gym ? `${w.proGym} ${kw ? (w.proGym === 1 ? "allenamento" : "allenamenti") : (w.proGym === 1 ? "seduta" : "sedute")} su ${w.gym}` : (kw ? "Nessun allenamento ancora" : "Nessuna seduta ancora"), act: "go", arg: "cibo" })}` +
-      ui.row(kid ? { title: "Prossimo allenamento", sub: nxName, act: "go", arg: "palestra" } : { title: w.fat != null ? `Fatica media: ${fatWord(w.fat).toLowerCase()}` : "Fatica non segnata", sub: ups ? `${ups} ${ups === 1 ? "carico nuovo" : "carichi nuovi"} questa settimana` : "Carichi stabili", act: "go", arg: "palestra" }) + `</div>` +
-      ui.end("Il muscolo cresce a riposo, se mangi proteine.", { act: "sap", arg: "pro", leoQ: "Perché le proteine contano nei giorni di palestra?" });
-  }
-  if (!document.getElementById("v3-sec-oggi-wk")) { const st = document.createElement("style"); st.id = "v3-sec-oggi-wk"; st.textContent = `
-    #view.v3 .v3-wk-v { color: var(--v3-lime); font-weight: 600; }
-    #view.v3 .v3-wk-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; } #view.v3 .v3-wk-h span { font-size: 15px; font-weight: 600; color: var(--v3-t2); } #view.v3 .v3-wk-h b { font-size: 15px; color: var(--v3-lime); }
-    #view.v3 .v3-wk-c { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 120px; border-bottom: 1px solid var(--v3-s3); }
-    #view.v3 .v3-wk-b { display: block; background: var(--v3-s3); border-radius: 6px 6px 0 0; } #view.v3 .v3-wk-b.ok { background: #fff; } #view.v3 .v3-wk-b.lo { background: rgba(255,255,255,.4); }
-    #view.v3 .v3-wk-d { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; text-align: center; font-size: 13px; color: var(--v3-t3); }`; document.head.appendChild(st); }
+  /* 29/10: «La tua settimana» tolta (coerenza): la settimana ha una casa sola, Palestra › La mia settimana */
 
   /* ---------- azioni ---------- */
-  function openMeal(k) { V3.go("cibo", { meal: k }); } // apre Cibo direttamente sulla pagina del pasto k
+  function openMeal(k) { V3.open("cibo", { meal: k }); } // apre il pasto k in Cibo; Indietro torna a Oggi
   function waterSheet() {
     const w = water(), body = () => ui.big(`${ui.nf(w.l, 2)} <span class="v3-of">/${ui.nf(w.t, 2)} L</span>`, "Un bicchiere = 250 ml");
     const s = V3.sheet(`<h2 class="v3-sh1">Acqua di oggi</h2><div class="v3-oggi-w"><div data-oggi-w>${body()}</div>
@@ -206,15 +171,14 @@
   V3.register("oggi", {
     enter(o) { if (o && o.day && window.V3Giorni) { V3Giorni.reset(o.day); sub = "giornata"; V3.page(() => { sub = null; }); } }, // da Palestra › La mia settimana
     render(el) {
-      el.innerHTML = sub === "giornata" ? dayPage() : sub === "settimana" ? weekPage() : mainPage();
+      el.innerHTML = sub === "giornata" ? dayPage() : mainPage();
     },
     on: {
       pasto(k) { openMeal(k); },
-      seduta() { V3.go("palestra"); },
+      seduta() { V3.open("palestra"); },
       giornata() { if (window.V3Giorni) V3Giorni.reset(); sub = "giornata"; V3.page(() => { sub = null; }); },
       ...(window.V3Giorni ? V3Giorni.on : {}),
-      riepilogo() { const prev = sub; sub = "settimana"; wOff = 0; V3.page(() => { sub = prev; }); },
-      wsel(i) { wOff = +i; V3.refresh(); },
+      riepilogo() { V3.open("palestra", { settimana: true }); },
       acqua() { waterSheet(); },
       riquadri() { tilesSheet(); },
       sap(k) {

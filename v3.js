@@ -440,7 +440,8 @@
   const navSnap = () => NAV.reduce((o, k) => (o[k] = S[k], o), {});
   const sameNav = o => NAV.every(k => (S[k] || null) === (o[k] || null));
   function navRestore(o) { let ch = false; for (const k of NAV) if ((S[k] || null) !== (o[k] || null)) { S[k] = o[k]; ch = true; } if (ch) lsSet("tab2", S.tab); return ch; }
-  function push(close, sec, page, legacy) { const nav = navSnap(); stack.push({ close, sec, page: !!page, legacy: !!legacy, nav, exp: nav }); try { history.pushState({ v3d: stack.length }, ""); } catch (_) {} }
+  let carry = null; // V3.open: la prima voce dopo il salto ricorda la sezione di partenza, non quella di arrivo
+  function push(close, sec, page, legacy) { const nav = carry || navSnap(); carry = null; stack.push({ close, sec, page: !!page, legacy: !!legacy, nav, exp: navSnap() }); try { history.pushState({ v3d: stack.length }, ""); } catch (_) {} }
   const owns = ev => !!pending || stack.length > ((ev && ev.state && ev.state.v3d) || 0);
   window.addEventListener("popstate", ev => {
     if (pending) { const fn = pending; pending = null; ev.stopImmediatePropagation(); while (stack.length) { try { stack.pop().close(true); } catch (_) {} } fn(); return; }
@@ -481,6 +482,21 @@
     if (opts && def && typeof def.enter === "function" && current === id) { try { def.enter(opts); } catch (err) { console.error("[V3] enter " + id, err); } }
   }
   function go(id, opts) { if (!SECS.some(s => s[0] === id)) return; unwind(() => navTo(id, opts)); }
+  /* 29/10 rimando tra sezioni CON ritorno (COERENZA_RIMANDI_29-10.md): non svuota la pila; un solo «Indietro» rimette la sezione di partenza.
+     enter(opts) della sezione di arrivo può aprire una sua pagina interna (V3.page): quella voce eredita la partenza, niente doppio indietro. */
+  function open(id, opts) {
+    if (!SECS.some(s => s[0] === id)) return;
+    const src = navSnap(), n0 = stack.length;
+    S.settings = null; S.hub = ""; S.macro = null; S.boardEdit = false; S.detail = null;
+    S.tab = id === "palestra" ? "allenamento" : id === "progressi" ? "progressi" : "oggi";
+    if (id === "cibo") S.macro = "food";
+    lsSet("tab2", S.tab); lsSet("v3tab", id);
+    carry = src; window.scrollTo(0, 0); render();
+    const def = sections[id];
+    if (opts && def && typeof def.enter === "function" && current === id) { try { def.enter(opts); } catch (err) { console.error("[V3] enter " + id, err); } }
+    if (stack.length === n0) push(() => {}, id, true);
+    carry = null;
+  }
 
   /* ---------- barra in basso ---------- */
   const bar = document.createElement("nav");
@@ -546,7 +562,7 @@
     const handlers = inSheet ? inSheet._v3.on : (current && sections[current] && sections[current].on) || {};
     if (typeof handlers[act] === "function") { handlers[act](arg, b, ev); return; }
     if (act === "back" || act === "close") { history.back(); return; }
-    if (act === "go") { go(arg); return; }
+    if (act === "go") { open(arg); return; } // dentro le pagine «go» è un rimando: torna indietro alla partenza (la barra usa go())
     if (act === "sap" && !inSheet) { sheet(`<h2 class="v3-sh1">Lo sapevi?</h2><p class="v3-shp">${e(b.querySelector(".v3-sx") ? b.querySelector(".v3-sx").textContent.replace(/\s*›\s*$/, "") : "")}</p>${ui.leo()}<button class="v3-b2" data-v3act="close">Chiudi</button>`); }
   });
   document.addEventListener("keydown", ev => { if (ev.key === "Escape" && ov.lastElementChild) { ev.stopPropagation(); ov.lastElementChild._v3.close(); } }, true);
@@ -558,7 +574,7 @@
       if (!SECS.some(s => s[0] === id) || !def || typeof def.render !== "function") { console.error("[V3] register: id o render non validi", id); return; }
       sections[id] = def; if (current === id) render();
     },
-    go, sheet, refresh: () => render(),
+    go, open, sheet, refresh: () => render(),
     current: () => current,
     /* pagina interna di una sezione: la sezione cambia il suo stato e chiama V3.page(onBack); indietro (pulsante, Android, swipe) chiama onBack */
     page(onBack) { push(() => onBack(), current, true); window.scrollTo(0, 0); render(); },

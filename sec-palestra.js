@@ -588,6 +588,7 @@
   const rG = window.render;
   window.render = function () { const r = rG.apply(this, arguments); document.body.classList.toggle("v3-guided", !!(window.V3 && V3.current() === "palestra" && sub === "warm" && W && W.kind === "stretch" && !activeDay())); return r; };
   V3.register("palestra", {
+    enter(o) { if (o && o.settimana && !activeDay()) open("settimana"); }, // rimando da Oggi e Progressi
     render(el) {
       if (activeDay()) { sub = null; stackSubs.length = 0; return false; } // seduta in corso: vista vecchia (serie, recupero a tutto schermo, fine)
       if (sub === "warm" && W) { el.innerHTML = warmPage(); return; }
@@ -605,7 +606,7 @@
       "q-seduta"() { if (window.V3Quiz) open("quiz", () => V3Quiz.start(V3Quiz.cfg.seduta())); },
       "apri-seduta"(k) { if (P[k]) open("seduta", () => { selDay = k; }); },
       settimana() { open("settimana"); },
-      giorno(iso) { V3.go("oggi", { day: iso }); }, // 29/10: giorno della settimana → diario in Oggi
+      giorno(iso) { V3.open("oggi", { day: iso }); }, // 29/10: giorno della settimana → diario in Oggi, Indietro torna qui
       "cardio-fuori"() { if (typeof cardioFuori === "function") cardioFuori(); },
       routine() { open("routine"); },
       modifica() { if (!DAYS.length) return V3.legacy({ tab: "piano", hub: "train" }); const ts = data.todaySession(); open("scheda", () => { selDay = ts.day && P[ts.day] ? ts.day : DAYS[0]; }); },
