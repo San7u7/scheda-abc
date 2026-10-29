@@ -67,7 +67,8 @@
 
   /* ---------- riquadri «I numeri di oggi» ---------- */
   const FV = /(frutt[aoi](?!\s+secc)|verdur|vegetal|insalat|ortagg|spremut|\bmel[ae]\b|banan|aranc|\bper[ae]\b|kiwi|pomodor|zucchin|spinac|broccol|carot|finocch|cavol|fagiolin|bietol|peperon|melanzan|frutti di bosco)/i;
-  function fruitVeg() { // porzioni dai pasti del piano segnati come fatti oggi
+  function fruitVeg() { // porzioni di oggi: stesso calcolo dello storico e dei report (V3Stats), così i numeri coincidono ovunque
+    if (window.V3Stats) { V3Stats.clear(); const d = V3Stats.day(localISO()); return d.fv == null ? 0 : d.fv; }
     if (!hasMealPlan()) return null;
     const dw = new Date().getDay(); let n = 0;
     for (const [k] of MEALS) if (mstate(k) === "plan") { const m = mealOf(dw, k); if (m) n += (m.i || []).filter(t => FV.test(t)).length; }
@@ -91,18 +92,20 @@
       if (!w.planned) return ({ label: weekLab(), value: "–", miss: "Crea la scheda", act: "go", arg: "palestra" });
       return ({ label: weekLab(), value: w.done, of: w.planned, pct: ui.pct(w.done, w.planned), act: "riepilogo" });
     }
-    if (k === "pro") return ({ label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), act: "go", arg: "cibo" });
-    if (k === "kcal") return ({ label: "Calorie", value: d.kcal, of: d.kcalT, pct: ui.pct(d.kcal, d.kcalT), act: "go", arg: "cibo" });
-    if (k === "carb") return ({ label: "Carboidrati", value: d.cho, of: d.choT || null, unit: "g", pct: d.choT ? ui.pct(d.cho, d.choT) : null, act: "go", arg: "cibo" });
-    if (k === "fat") return ({ label: "Grassi", value: d.fat, of: d.fatT || null, unit: "g", pct: d.fatT ? ui.pct(d.fat, d.fatT) : null, act: "go", arg: "cibo" });
-    if (k === "water") { const w = water(); return ({ label: "Acqua", value: ui.nf(w.l, 2), of: ui.nf(w.t, 2), unit: "L", pct: ui.pct(w.l, w.t), act: "acqua" }); }
+    if (k === "pro") return ({ label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), act: "numeri" });
+    if (k === "kcal") return ({ label: "Calorie", value: d.kcal, of: d.kcalT, pct: ui.pct(d.kcal, d.kcalT), act: "numeri" });
+    if (k === "carb") return ({ label: "Carboidrati", value: d.cho, of: d.choT || null, unit: "g", pct: d.choT ? ui.pct(d.cho, d.choT) : null, act: "numeri" });
+    if (k === "fat") return ({ label: "Grassi", value: d.fat, of: d.fatT || null, unit: "g", pct: d.fatT ? ui.pct(d.fat, d.fatT) : null, act: "numeri" });
+    if (k === "water") { const w = water(); return ({ label: "Acqua", value: ui.nf(w.l, 2), of: ui.nf(w.t, 2), unit: "L", pct: ui.pct(w.l, w.t), act: "numeri" }); }
     if (k === "mov") { const m = moveMin(); return ({ label: "Movimento", value: m, of: 60, unit: "min", pct: ui.pct(m, 60), act: "go", arg: "palestra" }); }
-    if (k === "fv") { const n = fruitVeg(); return n == null ? ({ label: "Frutta e verdura", value: "–", miss: "Serve il piano dei pasti", act: "go", arg: "cibo" })
-      : ({ label: "Frutta e verdura", value: n, of: 5, unit: "porzioni", pct: ui.pct(n, 5), act: "go", arg: "cibo" }); }
-    if (k === "peso") { const w = data.weight().last; return ({ label: "Peso", value: w ? ui.nf(w.kg) : "–", unit: w ? "kg" : null, miss: w ? null : "Nessuna pesata", act: "go", arg: "progressi" }); }
+    if (k === "fv") { const n = fruitVeg(); return n == null ? ({ label: "Frutta e verdura", value: "–", miss: "Serve il piano dei pasti", act: "numeri" })
+      : ({ label: "Frutta e verdura", value: n, of: 5, unit: "porzioni", pct: ui.pct(n, 5), act: "numeri" }); }
+    if (k === "peso") { const w = data.weight().last; return ({ label: "Peso", value: w ? ui.nf(w.kg) : "–", unit: w ? "kg" : null, miss: w ? null : "Nessuna pesata", act: "peso" }); }
     return null;
   }
   const water = () => { const v = dayRaw(); return { l: (v && v.water || 0) * 0.25, t: planTargets().waterL || 2 }; };
+  /* 29/10: stessi conti per Cibo › «I numeri di oggi» (sec-cibo.js), così i numeri sono identici a questi riquadri */
+  window.V3Num = { fruitVeg, water };
 
   /* ---------- «Lo sapevi?» legato alla giornata e all'età ---------- */
   const FACTS = {
@@ -146,10 +149,10 @@
   /* ---------- azioni ---------- */
   function openMeal(k) { V3.open("cibo", { meal: k }); } // apre il pasto k in Cibo; Indietro torna a Oggi
   function waterSheet() {
-    const w = water(), body = () => ui.big(`${ui.nf(w.l, 2)} <span class="v3-of">/${ui.nf(w.t, 2)} L</span>`, "Un bicchiere = 250 ml");
+    const w = water(), body = () => ui.big(`${ui.nf(w.l, 2)} <span class="v3-of">/${ui.nf(w.t, 2)} L</span>`, "Si segna a passi di 0,25 L");
     const s = V3.sheet(`<h2 class="v3-sh1">Acqua di oggi</h2><div class="v3-oggi-w"><div data-oggi-w>${body()}</div>
-      <div class="v3-pm2"><button data-act="water" data-v="-1" data-v3act="wupd">Togli bicchiere</button><button data-act="water" data-v="1" data-v3act="wupd">Aggiungi bicchiere</button></div></div>${ui.secondary("Chiudi", "close")}`,
-    { label: "Acqua di oggi", on: { wupd(a, btn) { const x = water(); toast(btn && btn.dataset.v === "-1" ? "Bicchiere tolto" : "Bicchiere aggiunto", { sub: `${ui.nf(x.l, 2)} di ${ui.nf(x.t, 2)} L oggi` }); w.l = x.l; const b = s.el.querySelector("[data-oggi-w]"); if (b) b.innerHTML = body(); } } });
+      <div class="v3-pm2"><button data-act="water" data-v="-1" data-v3act="wupd">Togli 0,25 L</button><button data-act="water" data-v="1" data-v3act="wupd">Aggiungi 0,25 L</button></div></div>${ui.secondary("Chiudi", "close")}`,
+    { label: "Acqua di oggi", on: { wupd(a, btn) { const x = water(); toast(btn && btn.dataset.v === "-1" ? "Tolti 0,25 L" : "Aggiunti 0,25 L", { sub: `${ui.nf(x.l, 2)} di ${ui.nf(x.t, 2)} L oggi` }); w.l = x.l; const b = s.el.querySelector("[data-oggi-w]"); if (b) b.innerHTML = body(); } } });
   }
 
   /* «Personalizza sezione»: scegli 4 riquadri. Salva nella chiave esistente «tiles» di board.js (stesso formato: 4 chiavi) */
@@ -180,6 +183,8 @@
       ...(window.V3Giorni ? V3Giorni.on : {}),
       riepilogo() { V3.open("palestra", { settimana: true }); },
       acqua() { waterSheet(); },
+      numeri() { V3.open("cibo", { numeri: true }); }, // 29/10: riquadri → Cibo › «I numeri di oggi»
+      peso() { V3.open("progressi", { storico: { view: "settimana", param: "peso" } }); },
       riquadri() { tilesSheet(); },
       sap(k) {
         const f = FACTS[k] || FACTS.pro;

@@ -90,6 +90,35 @@
     });
   }
 
+  /* icona per categoria (tavole 68-71): foto del prodotto se c'è, altrimenti il disegno del suo gruppo; segno «codice a barre» se arriva da scansione */
+  const ICO = {
+    cer: '<path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M8 8c1-2 3-2 4 0M12 7c1-2 3-2 4 0"/>',
+    lat: '<path d="M7 8h10l-1 12H8z"/><path d="M6 5h12v3H6z"/>',
+    fru: '<circle cx="9" cy="14" r="3"/><circle cx="15" cy="14" r="3"/><circle cx="12" cy="9" r="3"/><path d="M12 6V4"/>',
+    ver: '<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l8-8"/>',
+    leg: '<path d="M5 15c0-5 4-9 9-9h2a3 3 0 0 1 0 6h-2c-2 0-3 1-3 3a4 4 0 0 1-6 0z"/>',
+    car: '<path d="M14 4a6 6 0 0 1 3 11l-4 1-2 3a2 2 0 1 1-3-2l1-2 1-4a6 6 0 0 1 4-7z"/>',
+    pes: '<path d="M3 12c3-4 7-5 11-5 3 0 5 2 6 5-1 3-3 5-6 5-4 0-8-1-11-5z"/><path d="M3 12l-1-3M3 12l-1 3"/><circle cx="16" cy="11" r=".6"/>',
+    uov: '<path d="M12 3c4 0 7 6 7 11a7 7 0 0 1-14 0c0-5 3-11 7-11z"/>',
+    sec: '<path d="M12 4c4 2 6 6 4 11-1 3-3 5-4 5s-3-2-4-5C6 10 8 6 12 4z"/><path d="M12 7v10"/>',
+    con: '<path d="M12 3c3 5 6 8 6 12a6 6 0 0 1-12 0c0-4 3-7 6-12z"/>',
+    dol: '<circle cx="12" cy="12" r="8"/><path d="M9 9h.01M14 10h.01M10 14h.01M15 15h.01"/>',
+    bev: '<path d="M7 4h10l-1.5 16h-7z"/><path d="M7.5 9h9"/>'
+  };
+  const RG = { m: "car", e: "cer", v: "ver", g: "con", d: "dol", b: "bev" };
+  function grOf(f) {
+    if (f.gr && ICO[f.gr]) return f.gr;
+    const n = f.nome + " " + (f.marca || "");
+    for (const [g, re] of [["lat", /yogurt|yoghurt|latte|kefir|skyr|formagg|mozzarell|ricotta|parmigian|grana/i], ["cer", /avena|fiocchi|muesli|granola|cereal|pasta|riso|pane|fette|cracker|grissin|farro|orzo|gallett/i],
+      ["fru", /mirtill|frutt|mela|pera|banana|arancia|kiwi|fragol|uva|pesca|lampon/i], ["ver", /insalat|verdur|lattuga|rucola|pomodor|zucchin|spinac|carot|broccol|minestr/i], ["leg", /legum|ceci|fagiol|lentic|piselli|soia|hummus/i],
+      ["pes", /tonno|salmone|pesce|merluzz|sgombr|gamber|alici|sardin/i], ["car", /pollo|tacchino|manzo|vitello|maiale|carne|prosciutt|bresaola|salam|wurstel/i], ["uov", /\buov/i], ["sec", /mandorl|noci|nocciol|arachid|pistacch|semi/i],
+      ["con", /\bolio|burro|maionese|pesto|salsa/i], ["dol", /biscott|cioccol|merendin|caramell|torta|gelato|marmellata|crema|wafer|barretta/i], ["bev", /acqua|succo|bevanda|tè|caffè|bibita|aranciata/i]]) if (re.test(n)) return g;
+    return RG[roleOf(f)] || "cer";
+  }
+  const svgI = (f, px) => `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[grOf(f)]}</svg>`;
+  const BAR = '<span class="v3-al-bc" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></span>';
+  const ico = (f, scan) => `<span class="v3-al-io"><span class="v3-al-ic" data-fph="${e(f.id || "")}" aria-hidden="true">${svgI(f, 26)}</span>${scan ? BAR : ""}</span>`;
+
   /* ---------- numeri e frasi ---------- */
   const kc = (f, g) => f.per100.kcal * g / 100, pr = (f, g) => f.per100.p * g / 100;
   function tot(items) { const t = { kcal: 0, p: 0, c: 0, f: 0 }; for (const x of items) { const f = byId(x.id); if (!f) continue; const k = x.g / 100; t.kcal += f.per100.kcal * k; t.p += f.per100.p * k; t.c += f.per100.c * k; t.f += f.per100.f * k; } return t; }
@@ -306,6 +335,31 @@
     .v3-sheet .v3-al-t { padding-left: 16px; } .v3-sheet .v3-shp.v3-al-t { color: var(--v3-t2); margin-top: -8px; }
     label.v3-al-lb { display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .v3-al-pm2 { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+    .v3-al-io { position: relative; flex: none; width: 44px; height: 44px; }
+    .v3-al-ic { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; overflow: hidden; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+    .v3-al-ic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; } .v3-al-ic.on svg { visibility: hidden; }
+    .v3-al-bc { position: absolute; right: -4px; bottom: -4px; z-index: 1; width: 20px; height: 20px; border-radius: 6px; background: var(--v3-bg); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); display: flex; align-items: center; justify-content: center; }
+    .v3-al-prow .v3-rt { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; line-height: 1.25; }
+    .v3-al-st.big { grid-template-columns: 44px minmax(60px, auto) 44px; height: 48px; }
+    .v3-al-st.big button { height: 48px; }
+    #al-sacts .v3-al-two > * { padding: 0 8px; white-space: nowrap; }
+    .v3-al-tots { display: block; margin-top: 4px; font-size: 16px; font-weight: 400; color: var(--v3-t2); font-variant-numeric: tabular-nums; }
+    .v3-al-cam.pk { aspect-ratio: auto; height: 300px; max-height: none; }
+    .v3-al-cam.pk .v3-al-hint { top: 14px; bottom: auto; }
+    .v3-al-cam.pk .v3-al-fr { top: 42%; }
+    .v3-al-cam.pk.miss .v3-al-fr { box-shadow: inset 0 0 0 3px var(--warn), 0 0 0 999px rgba(0,0,0,.25); }
+    .v3-al-say { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; border-radius: 16px; background: rgba(0,0,0,.72); padding: 10px 10px 10px 14px; display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box; }
+    .v3-al-say:empty { display: none; }
+    .v3-al-say > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .v3-al-say b { font-size: 16px; line-height: 1.25; } .v3-al-say span span { font-size: 15px; color: var(--v3-t2); }
+    .v3-al-say.miss b { color: var(--warn); }
+    .v3-al-say button { flex: none; min-height: 44px; padding: 0 14px; border: 0; border-radius: 22px; background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.35); color: var(--v3-t1); font: 600 14px var(--v3-font); }
+    #al-tray:empty { display: none; }
+    .v3-al-tray { display: flex; flex-wrap: wrap; gap: 8px; }
+    .v3-al-tc { min-height: 44px; max-width: 100%; padding: 0 0 0 12px; border-radius: 999px; background: var(--v3-s1); box-shadow: inset 0 0 0 1px var(--v3-s3); display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; box-sizing: border-box; }
+    .v3-al-tc svg { flex: none; color: var(--accent); } .v3-al-tc > span { min-width: 0; overflow-wrap: break-word; padding: 6px 0; line-height: 1.3; }
+    .v3-al-tc button { flex: none; width: 44px; height: 44px; border: 0; background: transparent; color: var(--v3-t1); font: 700 18px var(--v3-font); padding: 0; }
+    .v3-al-trs { margin: -4px 0 0; padding-left: 16px; font-size: 15px; color: var(--v3-t2); }
     @media (max-width: 360px) { .v3-al-st { grid-template-columns: 36px minmax(56px, auto) 36px; } .v3-al-ph { width: 48px; height: 48px; } #view.v3 .v3-al-lime .v3-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }`;
     document.head.appendChild(st);
   }
@@ -349,7 +403,7 @@
       <div class="v3-al-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Scrivi a mano</span><span class="v3-rs" style="display:block">Ti propongo i prodotti simili</span></span>${btn("Scrivi", "mano")}</div>
       <div class="v3-al-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Fotografa l'etichetta</span><span class="v3-rs" style="display:block">Se il codice non c'è: Leo legge i valori</span></span><label class="v3-apri">Foto<input type="file" accept="image/*" capture="environment" hidden data-alfile="label"${ctx.pick ? ` data-pick="${e(JSON.stringify(ctx.pick))}"` : ""}></label></div>
       ${ui.secondary("Chiudi", "close")}`, { label: "Aggiungi un alimento", on: {
-        scan() { go = { p: "al-scan", pick: ctx.pick || null }; sh.close(); }, mano() { go = { p: "al-mano", pick: ctx.pick || null }; sh.close(); } },
+        scan() { go = { p: "al-scan", pick: ctx.pick || null, host: ctx.host || null }; sh.close(); }, mano() { go = { p: "al-mano", pick: ctx.pick || null }; sh.close(); } },
       onClose: () => { const g = go; go = null; if (g) setTimeout(() => nav.open(g), 60); } });
     return sh;
   }
@@ -379,17 +433,70 @@
       end("Per 100 g serve a confrontare, la porzione serve a contare.", "Ogni cibo ha un compito: proteine, energia o vitamine.", "Cosa guardo per primo sull'etichetta?");
   }
 
-  /* 43 · scansione «tipo Yuka»: fotocamera continua, riconoscimento automatico */
+  /* 43 · scansione «tipo Yuka»: fotocamera continua, riconoscimento automatico.
+     Dal pasto composto (pick.k, tavole 68-71) la fotocamera resta accesa: ogni codice entra subito nel pasto (p.host = la pagina del pasto) */
+  const hostOf = p => p && p.p === "al-scan" && p.pick && p.pick.k && p.host && p.host.p === "al-pasto" ? p.host : null;
+  const ALLA = { la: "alla", lo: "allo", il: "al" };
   function pageScan(p) {
-    return ui.back() + `<div><h1 class="v3-t1">Scansiona</h1><p class="v3-sub">Inquadra il codice a barre</p></div>` +
+    const h = hostOf(p);
+    if (!h) return ui.back() + `<div><h1 class="v3-t1">Scansiona</h1><p class="v3-sub">Inquadra il codice a barre</p></div>` +
       `<div class="v3-al-cam" id="al-cam" data-st="${e(p.st || "on")}"><video playsinline muted autoplay aria-label="Fotocamera"></video><span class="v3-al-fr" aria-hidden="true"></span>
         <span class="v3-al-hint" aria-live="polite">Lo riconosco da solo, tienilo fermo</span>
         <div class="v3-al-msg" role="status"><b id="al-cam-t">${e(p.mt || "")}</b><span id="al-cam-s">${e(p.ms || "")}</span></div></div>` +
       ui.secondary("Scrivi il codice a mano", "al-ean");
+    const k = h.k, back = k === "extra" ? "Torna al fuori programma" : `Torna ${ALLA[ART[k]] || "al"} ${LAB(k).toLowerCase()}`;
+    return ui.back() + `<div><h1 class="v3-t1">Scansiona</h1><p class="v3-sub">${e(LAB(k))} · inquadra il codice a barre</p></div>` +
+      `<div class="v3-al-cam pk${p.say && p.say.k === "miss" ? " miss" : ""}" id="al-cam" data-st="${e(p.st || "on")}"><video playsinline muted autoplay aria-label="Fotocamera"></video><span class="v3-al-fr" aria-hidden="true"></span>
+        <span class="v3-al-hint">Lo riconosco da solo, tienilo fermo</span>
+        <div class="v3-al-msg" role="status"><b id="al-cam-t">${e(p.mt || "")}</b><span id="al-cam-s">${e(p.ms || "")}</span></div>
+        <div class="v3-al-say${p.say && p.say.k === "miss" ? " miss" : ""}" id="al-say" role="status" aria-live="polite">${sayHtml(p.say)}</div></div>` +
+      `<div class="v3-sec" id="al-sacts">${sacts(p)}</div>` +
+      `<section class="v3-sec" id="al-tray">${trayHtml(h)}</section>` +
+      btn(back, "back", null, "v3-apri wide");
+  }
+  const sayHtml = s => !s ? "" : `<span><b>${e(s.t)}</b>${s.s ? `<span>${e(s.s)}</span>` : ""}</span>${s.undo ? `<button data-v3act="al-sundo" data-v3arg="${e(s.undo)}">Annulla</button>` : ""}`;
+  /* sotto la fotocamera: se il codice non c'è, le tre strade (tavola 70); sempre «Scrivi il codice a mano» */
+  const sacts = p => (p.say && p.say.k === "miss" ? `<div class="v3-al-two"><label class="v3-b2 v3-al-lb">Fotografa l'etichetta<input type="file" accept="image/*" capture="environment" hidden data-alfile="label" data-ean="${e(p.say.ean || "")}"></label>${btn("Scansiona un altro", "al-sagain", null, "v3-b2")}</div>` : "") +
+    ui.secondary("Scrivi il codice a mano", "al-ean");
+  function trayHtml(h) {
+    const its = h.items.filter(x => byId(x.id)); if (!its.length) return "";
+    return ui.label(`${{ la: "Nella", lo: "Nello" }[ART[h.k]] || "Nel"} ${LAB(h.k).toLowerCase()} · ${its.length}`) +
+      `<p class="v3-al-trs">I grammi li sistemi dopo</p><div class="v3-al-tray">${its.map(x => { const f = byId(x.id);
+        return `<span class="v3-al-tc">${svgI(f, 18)}<span>${e(f.nome)}</span><button data-v3act="al-sx" data-v3arg="${e(f.id)}" aria-label="Togli ${e(f.nome.toLowerCase())}">×</button></span>`; }).join("")}</div>`;
+  }
+  /* aggiorna solo i pezzi della scansione, senza ridisegnare: il video resta acceso */
+  function scanUpd(p) {
+    const h = hostOf(p); if (!h || top() !== p) return;
+    const box = document.getElementById("al-cam"), say = document.getElementById("al-say"), acts = document.getElementById("al-sacts"), tray = document.getElementById("al-tray"), miss = !!(p.say && p.say.k === "miss");
+    if (box) box.classList.toggle("miss", miss);
+    if (say) { say.classList.toggle("miss", miss); say.innerHTML = sayHtml(p.say); }
+    if (acts) acts.innerHTML = sacts(p);
+    if (tray) tray.innerHTML = trayHtml(h);
+  }
+  const sayAdded = (f, g) => kid() ? porLab(f, g) : `${gfmt(g)} · ${itemSub(f, g)}`;
+  function scanAdd(p, f) {
+    const h = hostOf(p); if (!h) return;
+    const ex = h.items.find(x => x.id === f.id);
+    if (ex) p.say = { k: "ok", t: `${f.nome} c'è già`, s: kid() ? "È già nel piatto" : "I grammi li sistemi dopo" };
+    else { const g = gStart(f); h.items.push({ id: f.id, g, sc: 1 }); p.say = { k: "ok", t: `${f.nome} aggiunto`, s: sayAdded(f, g), undo: f.id }; }
+    scanUpd(p);
+  }
+  /* il prodotto lo cerco tra i miei alimenti, poi su Open Food Facts; uno mai visto si salva anche nei miei alimenti */
+  async function scanFound(p, code) {
+    lastCode = code; lastAt = Date.now(); try { navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive) && navigator.vibrate(40); } catch (_) {}
+    const mine = foods().find(f => f.ean === code);
+    if (mine) return scanAdd(p, mine);
+    p.say = { k: "busy", t: "Cerco il prodotto", s: `Codice ${code}` }; scanUpd(p);
+    let d = null, err = null;
+    try { d = await offGet(code); } catch (x) { err = x; }
+    if (d && d.ok) { const f = await addFromOff(d); return scanAdd(p, f); }
+    const why = err ? err.code : d ? "novalori" : "nonc";
+    p.say = { k: "miss", ean: code, t: { offline: "Sei senza rete", rate: "Troppe ricerche in un minuto", net: "La libreria non risponde", novalori: "Lo conosco, ma senza valori" }[why] || "Non lo conosco", s: `Codice ${code}` };
+    scanUpd(p);
   }
   const POLY = "https://cdn.jsdelivr.net/npm/barcode-detector@3.2.2/dist/es/ponyfill.js/+esm"; // ZXing-WASM, versione fissata, solo alla prima scansione
   const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"];
-  let cam = null, polyMod = null, lastCode = null; // «Scansiona un altro»: lo stesso codice ancora inquadrato si ignora per 4 secondi
+  let cam = null, polyMod = null, lastCode = null, lastAt = 0; // lo stesso codice ancora inquadrato si ignora finché resta nel riquadro (4 secondi dall'ultima volta che l'ho visto)
   async function detector() {
     if (window.BarcodeDetector) { try { const f = await BarcodeDetector.getSupportedFormats(); const ok = FORMATS.filter(x => f.includes(x)); if (ok.length) return new BarcodeDetector({ formats: ok }); } catch (_) {} }
     try { polyMod = polyMod || await import(POLY); return new polyMod.BarcodeDetector({ formats: FORMATS }); } catch (_) { return null; }
@@ -418,7 +525,9 @@
       if (cam !== me) return;
       const vv = video(); if (!vv) return camStop(); // pagina chiusa: si spegne da sola
       if (vv.srcObject !== stream) { vv.srcObject = stream; try { await vv.play(); } catch (_) {} }
-      try { const codes = await det.detect(vv); const c = (codes || []).find(x => eanOk(x.rawValue) && !(x.rawValue === lastCode && Date.now() - me.at < 4000)); if (c && cam === me) return found(c.rawValue); } catch (_) {}
+      try { const codes = await det.detect(vv), now = Date.now(); let c = null;
+        for (const x of codes || []) { if (!eanOk(x.rawValue)) continue; if (x.rawValue === lastCode && now - Math.max(lastAt, me.at) < 4000) { lastAt = now; continue; } c = x; break; }
+        if (c && cam === me) { const p = top(); if (hostOf(p)) { await scanFound(p, c.rawValue); if (cam === me) me.t = setTimeout(tick, 400); return; } return found(c.rawValue); } } catch (_) {}
       me.t = setTimeout(tick, 160);
     };
     tick();
@@ -426,7 +535,8 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden) camStop(); else if (document.getElementById("al-cam") && !cam) { const p = nav && nav.top(); if (p && p.p === "al-scan" && (p.st || "on") === "on") camStart(); } });
 
   async function found(code) {
-    camStop(); lastCode = code; try { navigator.vibrate && navigator.vibrate(40); } catch (_) {}
+    if (hostOf(top())) return scanFound(top(), code); // dal pasto: la fotocamera resta accesa
+    camStop(); lastCode = code; lastAt = Date.now(); try { navigator.vibrate && navigator.vibrate(40); } catch (_) {}
     camMsg("busy", "Cerco il prodotto", `Codice ${code}`);
     const mine = foods().find(f => f.ean === code);
     const pk = (top() || {}).pick;
@@ -525,11 +635,16 @@
     return { items: [], from: c ? "testo" : "" };
   }
   const gLab = (f, g) => kid() ? porLab(f, g) : gfmt(g);
+  const teen = () => data.profile().group === "ragazzo";
+  /* sotto il nome: calorie per l'adulto, proteine per il ragazzo (niente calorie ai minori), il compito del cibo per il bambino */
+  const itemSub = (f, g) => kid() ? (ROLE_KID[roleOf(f)] || "").split(":")[0] : teen() ? `${nf(pr(f, g), 0)} g di proteine` : `${nf(kc(f, g), 0)} calorie`;
+  const gStart = f => Math.max(stepOf(f), Math.round((f.porzione || 100) / stepOf(f)) * stepOf(f));
   function totLine(items) {
     const t = tot(items);
     if (kid()) { const r = new Set(items.filter(x => x.g > 0 && byId(x.id)).map(x => roleOf(byId(x.id)))), miss = [["m", "le proteine"], ["v", "la verdura"], ["e", "l'energia"]].filter(([q]) => !r.has(q)).map(x => x[1]);
       return { big: items.length ? (miss.length ? "Nel piatto manca " + miss.join(" e ") : "Piatto completo") : "Piatto vuoto", t }; }
-    return { big: `${nf(t.kcal, 0)} calorie · ${nf(t.p, 0)} g proteine`, t };
+    if (teen()) return { big: `${nf(t.p, 0)} g di proteine`, sub: `Carboidrati ${nf(t.c, 0)} g`, t };
+    return { big: `${nf(t.kcal, 0)} calorie · ${nf(t.p, 0)} g di proteine`, sub: `Carboidrati ${nf(t.c, 0)} g · Grassi ${nf(t.f, 0)} g`, t };
   }
   function oilLine(p) {
     const its = p.items.filter(x => x.g > 0 && byId(x.id)); if (!its.length) return "";
@@ -538,30 +653,31 @@
     if (!veg && !["pra", "cen"].includes(p.k)) return "";
     return `<div class="v3-al-x"><p class="v3-al-note" style="flex:1">${veg ? `Hai messo l'olio ${/insalat|lattuga|rucola/i.test(byId(veg.id).nome) ? "sull'insalata" : "sulle verdure"}?` : "Hai messo l'olio?"}</p><button class="v3-in" data-v3act="al-oil">Aggiungi l'olio</button></div>`;
   }
-  function pastoBox(p) { const l = totLine(p.items); return `<div class="v3-lime" id="al-tot"><p class="v3-al-sum" id="al-tot-n">${e(l.big)}</p>${oilLine(p)}</div>`; }
+  function pastoBox(p) { const l = totLine(p.items); return `<div class="v3-lime" id="al-tot"><p class="v3-al-sum" id="al-tot-n">${e(l.big)}${l.sub && p.items.length ? `<span class="v3-al-tots" id="al-tot-s">${e(l.sub)}</span>` : ""}</p>${oilLine(p)}</div>`; }
   function pageRows(p) {
-    return p.items.map((x, i) => { const f = byId(x.id); if (!f) return ""; const st = stepOf(f);
-      return `<div class="v3-al-row">${ph(f, "sm")}<span class="v3-rx v3-al-pr"><span class="v3-rt">${e(f.nome)}</span><span class="v3-rs" style="display:block" id="al-sk${i}">${e(kid() ? (ROLE_KID[roleOf(f)] || "").split(":")[0] : nf(kc(f, x.g), 0) + " calorie")}</span></span>
-        <div class="v3-al-st" role="group" aria-label="Quantità di ${e(f.nome)}"><button data-v3act="al-g" data-v3arg="${i}:-1" data-hold="alg${i}m" aria-label="${kid() ? "Meno mezza porzione" : `Meno ${st} g`}">−</button><span class="v3-al-sv" id="al-sv${i}" aria-live="polite">${e(gLab(f, x.g))}</span><button data-v3act="al-g" data-v3arg="${i}:1" data-hold="alg${i}p" aria-label="${kid() ? "Più mezza porzione" : `Più ${st} g`}">+</button></div></div>`; }).join("");
+    return p.items.map((x, i) => { const f = byId(x.id); if (!f) return ""; const st = stepOf(f), lo = f.nome.toLowerCase();
+      const less = kid() ? `Meno mezza porzione di ${lo}` : `Meno ${st} g di ${lo}`, more = kid() ? `Più mezza porzione di ${lo}` : `Più ${st} g di ${lo}`;
+      return `<div class="v3-al-row v3-al-prow">${ico(f, x.sc || !!f.ean)}<span class="v3-rx v3-al-pr"><span class="v3-rt">${e(f.nome)}</span><span class="v3-rs" style="display:block" id="al-sk${i}">${e(itemSub(f, x.g))}</span></span>
+        <div class="v3-al-st big" role="group" aria-label="Quantità di ${e(lo)}"><button data-v3act="al-g" data-v3arg="${i}:-1" data-hold="alg${i}m" aria-label="${e(less)}">−</button><span class="v3-al-sv" id="al-sv${i}" aria-live="polite">${e(gLab(f, x.g))}</span><button data-v3act="al-g" data-v3arg="${i}:1" data-hold="alg${i}p" aria-label="${e(more)}">+</button></div></div>`; }).join("");
   }
   function pagePasto(p) {
-    const used = sorted().filter(f => !p.items.some(x => x.id === f.id)).slice(0, 4), k = p.k, rp = k !== "extra" && ripeti()[dowT() + ":" + k];
-    const sub = p.from === "ripeti" ? `Come ${DOW[dowT()].toLowerCase()} scorso, cambia pure` : p.from === "testo" ? "Rifallo con i tuoi alimenti" : "Componi con i tuoi alimenti";
+    const used = sorted().filter(f => !p.items.some(x => x.id === f.id)).slice(0, 4), k = p.k, rp = k !== "extra" && ripeti()[dowT() + ":" + k], n = p.items.length;
+    const sub = p.from === "ripeti" ? `Come ${DOW[dowT()].toLowerCase()} scorso, cambia pure` : n ? `${n} ${n === 1 ? "alimento" : "alimenti"} · sistema i grammi` : p.from === "testo" ? "Rifallo con i tuoi alimenti" : "Componi con i tuoi alimenti";
+    const two = n ? `<div class="v3-al-two">${btn("Scansiona un altro", "al-pscan", null, "v3-b2")}${btn("Aggiungi", "al-pfind", null, "v3-b2")}</div>`
+      : `<div class="v3-al-two">${btn("Scansiona", "al-pscan")}${btn("Aggiungi", "al-pfind", null, "v3-b2")}</div><button class="v3-b2" data-act="mealalt" data-v="${e(k)}">Scrivilo a parole</button>`;
     return ui.back() + `<div><h1 class="v3-t1">${e(LAB(k))}</h1><p class="v3-sub">${e(sub)}</p></div>` +
-      (p.items.length ? `<section class="v3-sec" id="al-rows">${pageRows(p)}</section>` : ui.card(`<p class="v3-rt">Cosa hai mangiato?</p><p class="v3-rs">Scansiona il codice o tocca un alimento qui sotto.</p>`)) +
-      ui.section(used.length ? "I più usati" : "", `${used.length ? `<div class="v3-al-chips">${used.map(f => `<button class="v3-al-chip pl" data-v3act="al-padd" data-v3arg="${e(f.id)}">+ ${e(f.nome)}</button>`).join("")}</div>` : ""}
-        <div class="v3-al-two">${btn("Scansiona", "al-pscan")}${btn("Aggiungi", "al-pfind", null, "v3-b2")}</div>${`<button class="v3-b2" data-act="mealalt" data-v="${e(k)}">Scrivilo a parole</button>`}`) +
-      pastoBox(p) +
-      (rp ? ui.row({ title: "Lo riproponi la prossima settimana", sub: `Fino a ${dLong(rp.al)}`, act: "al-rp", apri: "Cambia" }) : "") +
-      btn(k === "extra" ? "Segna il fuori programma" : `Segna ${ART[k] || "il"} ${LAB(k).toLowerCase()}`, "al-psave", null, "v3-apri wide") +
+      (n ? `<section class="v3-sec" id="al-rows">${pageRows(p)}${two}</section>` : `<section class="v3-sec">${ui.card(`<p class="v3-rt">Cosa hai mangiato?</p><p class="v3-rs">Scansiona il codice o aggiungi un alimento. Puoi scansionarne più di uno di fila.</p>`)}${two}</section>`) +
+      (used.length ? ui.section("I più usati", `<div class="v3-al-chips">${used.map(f => `<button class="v3-al-chip pl" data-v3act="al-padd" data-v3arg="${e(f.id)}">+ ${e(f.nome)}</button>`).join("")}</div>`) : "") +
+      (n ? pastoBox(p) + (rp ? ui.row({ title: "Lo riproponi la prossima settimana", sub: `Fino a ${dLong(rp.al)}`, act: "al-rp", apri: "Cambia" }) : "") +
+        btn(k === "extra" ? "Segna il fuori programma" : `Segna ${ART[k] || "il"} ${LAB(k).toLowerCase()}`, "al-psave", null, "v3-apri wide") : "") +
       end("Un cucchiaio d'olio vale circa 90 calorie: si conta anche lui.", "Nel piatto: proteine, verdura e una fonte di energia.", "Quanto olio posso usare al giorno?");
   }
   function pastoUpd(p, i) {
     const x = p.items[i], f = x && byId(x.id); if (!f) return;
-    const sv = document.getElementById("al-sv" + i), sk = document.getElementById("al-sk" + i), n = document.getElementById("al-tot-n");
+    const sv = document.getElementById("al-sv" + i), sk = document.getElementById("al-sk" + i), n = document.getElementById("al-tot-n"), l = totLine(p.items);
     if (sv) sv.textContent = gLab(f, x.g);
-    if (sk && !kid()) sk.textContent = nf(kc(f, x.g), 0) + " calorie";
-    if (n) n.textContent = totLine(p.items).big;
+    if (sk) sk.textContent = itemSub(f, x.g);
+    if (n) { n.firstChild.textContent = l.big; const s2 = document.getElementById("al-tot-s"); if (s2 && l.sub) s2.textContent = l.sub; }
   }
   function savePasto(p) {
     const its = p.items.filter(x => x.g > 0 && byId(x.id));
@@ -694,9 +810,14 @@
     "al-g"(a) { const p = top(); if (!p || p.p !== "al-pasto") return; const [i, s] = a.split(":").map(Number), x = p.items[i], f = x && byId(x.id); if (!f) return;
       const st = kid() ? (f.porzione || 100) / 2 : stepOf(f); x.g = Math.max(0, Math.round((x.g + st * s) * 10) / 10); pastoUpd(p, i); },
     "al-padd"(id) { const p = top(), f = byId(id); if (!f || p.items.some(x => x.id === id)) return; p.items.push({ id, g: Math.max(stepOf(f), Math.round((f.ug || f.porzione || 100) / stepOf(f)) * stepOf(f)) }); V3.refresh(); },
-    "al-pfind"() { const p = top(); sheetAdd({ pick: { k: p.k } }); },
-    "al-mscan"() { const p = top(); nav.replace({ p: "al-scan", pick: p.pick || null }); },
-    "al-pscan"() { const p = top(); nav.open({ p: "al-scan", pick: { k: p.k } }); },
+    "al-pfind"() { const p = top(); sheetAdd({ pick: { k: p.k }, host: p }); },
+    "al-mscan"() { const p = top(); nav.replace({ p: "al-scan", pick: p.pick || null, host: p.host || null }); },
+    "al-pscan"() { const p = top(); nav.open({ p: "al-scan", pick: { k: p.k }, host: p }); },
+    /* scansione dal pasto: Annulla, togli dal vassoio, scansiona un altro */
+    "al-sundo"(id) { const p = top(), h = hostOf(p), f = byId(id); if (!h) return; h.items = h.items.filter(x => x.id !== id);
+      p.say = { k: "ok", t: f ? `${f.nome} tolto` : "Tolto", s: "Inquadra il prossimo codice" }; scanUpd(p); },
+    "al-sx"(id) { const p = top(), h = hostOf(p); if (!h) return; h.items = h.items.filter(x => x.id !== id); if (p.say && p.say.undo === id) p.say = null; scanUpd(p); },
+    "al-sagain"() { const p = top(); if (!hostOf(p)) return; p.say = null; scanUpd(p); if (!cam && (p.st || "on") === "on") camStart(); },
     "al-oil"() { const p = top(); let f = foods().find(x => /olio.*oliva|olio extravergine/i.test(x.nome)) || foods().find(x => /^olio/i.test(x.nome));
       if (!f) { const b = BASE.find(x => /^Olio extravergine/.test(x.nome)); if (b) f = fromBase(b); }
       if (!f) return; if (!p.items.some(x => x.id === f.id)) p.items.push({ id: f.id, g: 10 }); V3.refresh(); toast("Olio aggiunto", { sub: kid() ? "Un cucchiaio" : "Un cucchiaio, 10 g · circa 90 calorie" }); },
@@ -728,7 +849,7 @@
       const ean = t.dataset.ean || null, sc = t.closest(".v3-scrim"); if (sc && sc._v3) sc._v3.close();
       const sp = t.dataset.pick ? JSON.parse(t.dataset.pick) : null, p = top();
       const f = await leoLabel(file, ean ? { ean } : {});
-      if (f) setTimeout(() => { if (sp) addToPick(sp, f, false); else if (p && p.pick && p.p === "al-scan") addToPick(p.pick, f); else nav.replace({ p: "al-scheda", id: f.id }); }, 120);
+      if (f) setTimeout(() => { if (hostOf(p) && top() === p) scanAdd(p, f); else if (sp) addToPick(sp, f, false); else if (p && p.pick && p.p === "al-scan") addToPick(p.pick, f); else nav.replace({ p: "al-scheda", id: f.id }); }, 120);
     }
   });
   /* ricerca: lista (in diretta) e scrivi a mano (3 lettere, 600 ms) senza ridisegnare la pagina, così la tastiera resta aperta */

@@ -306,7 +306,7 @@
     let today;
     if (ts.state === "fatta") {
       const d0 = doneToday(), nd = ts.next && P[ts.next] ? ts.next : null;
-      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica: " + fatWord(d0.fatica).toLowerCase() : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi" }) +
+      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica: " + fatWord(d0.fatica).toLowerCase() : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi", act: "storico-oggi" }) + // 29/10: → Progressi › Il mio storico, giorno di oggi
         (strPost() ? ui.row({ title: "Stretching finale", sub: stretchDone() ? "Fatto oggi ✓" : pl(STAT.length, "posizione", "posizioni") + ", circa " + stretchMin() + " minuti", act: "stretch", apri: stretchDone() ? "Rifai" : "Inizia" }) : "") +
         (nd ? ui.row({ title: tv("Prossima seduta: ", "Prossimo allenamento: ") + (P[nd].nome || nd), sub: "Domani, dopo il riposo", act: "apri-seduta", arg: nd }) : "") + ageRow());
     } else {
@@ -606,6 +606,7 @@
       "q-seduta"() { if (window.V3Quiz) open("quiz", () => V3Quiz.start(V3Quiz.cfg.seduta())); },
       "apri-seduta"(k) { if (P[k]) open("seduta", () => { selDay = k; }); },
       settimana() { open("settimana"); },
+      "storico-oggi"() { V3.open("progressi", { storico: { view: "giorno", iso: localISO() } }); }, // 29/10: seduta fatta → storico Giorno
       giorno(iso) { V3.open("oggi", { day: iso }); }, // 29/10: giorno della settimana → diario in Oggi, Indietro torna qui
       "cardio-fuori"() { if (typeof cardioFuori === "function") cardioFuori(); },
       routine() { open("routine"); },

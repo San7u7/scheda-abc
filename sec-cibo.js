@@ -11,7 +11,7 @@
   /* ---------- stato interno (mai in S) ---------- */
   const subs = [];                 // pila delle pagine interne: { p, k, … }
   let ci = null, ciDay = null;     // pasto al centro del carosello
-  let pianoDow = null, numPer = 0;
+  let pianoDow = null;
   /* Pagine interne annidate: una voce di history per pagina, indietro (di sistema o «‹ Indietro») torna alla precedente.
      replace() sostituisce la pagina in cima senza nuova voce (es. «pasto» → «segnato»). */
   const top = () => subs[0] || null;
@@ -142,6 +142,18 @@
     #view.v3 .v3-cibo-seg .v3-sg { min-height: 48px; }
     #view.v3 .v3-cibo-pact .v3-row .v3-apri { width: 96px; min-width: 96px; padding: 0; }
     #view.v3 .v3-cibo-tg { width: 96px; flex: none; }
+    #view.v3 .v3-cibo-nl { display: flex; flex-direction: column; gap: 12px; }
+    #view.v3 .v3-cibo-nr { background: var(--v3-s1); border-radius: 18px; display: flex; flex-direction: column; }
+    #view.v3 .v3-cibo-nb { border: 0; background: transparent; color: inherit; font: inherit; text-align: left; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 48px; border-radius: 18px; width: 100%; }
+    #view.v3 .v3-cibo-nh { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    #view.v3 .v3-cibo-nh > span:first-child { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    #view.v3 .v3-cibo-nh b { font-size: 16px; font-weight: 700; }
+    #view.v3 .v3-cibo-nh .v3-rs { font-size: 15px; }
+    #view.v3 .v3-cibo-nv { font-size: 18px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    #view.v3 .v3-cibo-nr .v3-bar { background: rgba(255,255,255,.12); }
+    #view.v3 .v3-cibo-nr .v3-bar i { background: var(--v3-lime); }
+    #view.v3 .v3-cibo-nr .v3-pm2 { margin: 0 16px 16px; }
+    #view.v3 .v3-cibo-note { margin: 0; padding: 0 4px; font-size: 16px; line-height: 1.4; color: var(--v3-t2); }
     @media (prefers-reduced-motion: reduce) { #view.v3 .v3-cibo-mc, #view.v3 .v3-cibo-dots i { transition: none; } }`;
     document.head.appendChild(st);
   }
@@ -187,15 +199,73 @@
     return `<div class="v3-cibo-mc${cur ? " cur" : ""}" data-i="${i}"${cur ? "" : ` data-v3act="dot" data-v3arg="${i}" aria-hidden="true"`}><div class="v3-cibo-in"${cur ? "" : " inert"}>
       <p class="v3-cibo-k">${e(LAB(k))} · ${e(s.lab)}</p><p class="v3-cibo-t">${e(t)}</p>${body}</div></div>`;
   }
-  function numsBox(act) {
+  /* ---------- «I numeri di oggi» (29/10, tavole 72-74): stessi numeri dei riquadri di Oggi (V3.data.today, V3Num di sec-oggi.js) ---------- */
+  const NUM = () => window.V3Num || null;
+  const waterNow = () => NUM() ? NUM().water() : { l: ((S.days[today()] || {}).water || 0) * 0.25, t: planTargets().waterL || 2 };
+  const fvNow = () => NUM() ? NUM().fruitVeg() : null;
+  function pastiNow() { const list = hasPlanNow() ? planMeals(dowOf(today())) : MEALS.map(m => m[0]); return { n: list.filter(k => stOf(today(), k) !== "open").length, t: list.length || 5 }; }
+  /* un numero: etichetta, valore, obiettivo, unità, percentuale, parametro dello storico */
+  function numOf(k) {
     const d = data.today();
-    if (kid()) { const list = planMeals(dowOf(today())), n = list.filter(k => stOf(today(), k) !== "open").length;
-      return ui.limeBox({ title: "Pasti e proteine", action: { label: "Apri", act }, tiles: [
-        { label: "Pasti segnati", value: String(n), of: list.length || 5, pct: ui.pct(n, list.length || 5), act },
-        { label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), act }] }); }
-    return ui.limeBox({ title: "Calorie e proteine", action: { label: "Apri", act }, tiles: [
-      { label: "Calorie", value: d.kcal, of: d.kcalT, pct: ui.pct(d.kcal, d.kcalT), act },
-      { label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), act }] });
+    if (k === "kcal") return { label: "Calorie", value: d.kcal, of: d.kcalT, pct: ui.pct(d.kcal, d.kcalT), param: "kcal", sub: d.train ? "Giorno di palestra" : "Giorno di riposo" };
+    if (k === "pro") return { label: "Proteine", value: d.pro, of: d.proT, unit: "g", pct: ui.pct(d.pro, d.proT), param: "pro" };
+    if (k === "carb") return { label: "Carboidrati", value: d.cho, of: d.choT || null, unit: "g", pct: d.choT ? ui.pct(d.cho, d.choT) : null, param: "cho" };
+    if (k === "fat") return { label: "Grassi", value: d.fat, of: d.fatT || null, unit: "g", pct: d.fatT ? ui.pct(d.fat, d.fatT) : null, param: "fat" };
+    if (k === "water") { const w = waterNow(); return { label: "Acqua", value: nf(w.l, 2), of: nf(w.t, 2), unit: "L", pct: ui.pct(w.l, w.t), param: "acqua" }; }
+    if (k === "fv") { const n = fvNow(); return n == null ? { label: "Frutta e verdura", value: "–", miss: "Serve il piano dei pasti", pct: null, param: "fv" } : { label: "Frutta e verdura", value: n, of: 5, unit: "porzioni", pct: ui.pct(n, 5), param: "fv" }; }
+    if (k === "pasti") { const p = pastiNow(); return { label: "Pasti segnati", value: p.n, of: p.t, pct: ui.pct(p.n, p.t), param: null }; }
+    return null;
+  }
+  const NK = { kcal: "Calorie", pro: "Proteine", carb: "Carboidrati", fat: "Grassi", water: "Acqua", fv: "Frutta e verdura", pasti: "Pasti segnati" };
+  const numKeys = () => minor() ? ["pro", "water", "fv", "pasti"] : ["kcal", "pro", "carb", "fat", "water", "fv"]; // minori: niente calorie né grassi
+  const TK = "cibo_tiles";
+  function ciboTiles() {
+    const ok = Object.keys(NK).filter(k => !(minor() && (k === "kcal" || k === "fat"))), def = minor() ? ["pro", "pasti"] : ["kcal", "pro"];
+    const sv = (typeof lsGet === "function" ? lsGet(TK, null) : null);
+    const k = (Array.isArray(sv) ? sv : []).filter((x, i, a) => ok.includes(x) && a.indexOf(x) === i);
+    return k.concat(def).filter((x, i, a) => a.indexOf(x) === i).slice(0, 2);
+  }
+  function numsBox(act) {
+    return ui.limeBox({ title: "I numeri di oggi", action: { label: "Apri", act }, tiles: ciboTiles().map(k => { const n = numOf(k); return { label: n.label, value: n.value, of: n.of, unit: n.unit, pct: n.pct, miss: n.miss, act }; }) });
+  }
+  /* «Scegli i 2 numeri da vedere in Cibo»: foglio come tilesSheet di sec-oggi.js, chiave propria «cibo_tiles» */
+  function ciboTilesSheet() {
+    const opts = Object.keys(NK).filter(k => !(minor() && (k === "kcal" || k === "fat")));
+    let sel = ciboTiles().slice();
+    const html = () => `<h2 class="v3-sh1">Scegli i 2 numeri</h2><p class="v3-shp">${sel.length === 2 ? "Tocca un numero scelto per toglierlo." : `Scegline ancora ${2 - sel.length}.`}</p>
+      <div class="v3-oggi-w">${opts.map(k => { const i = sel.indexOf(k); return `<button class="v3-row sm${i >= 0 ? " on" : ""}" data-v3act="nsel" data-v3arg="${k}" aria-pressed="${i >= 0}"><span class="v3-rx"><span class="v3-rt" style="display:block">${e(NK[k])}</span></span><span class="v3-val">${i >= 0 ? (i + 1) + " ✓" : ""}</span></button>`; }).join("")}</div>
+      <button class="v3-apri wide" data-v3act="nsave"${sel.length === 2 ? "" : " disabled"}>Salva i 2 numeri</button>${ui.secondary("Ripristina i numeri iniziali", "nreset")}`;
+    const paint = () => { sh.el.innerHTML = '<div class="v3-grab"></div>' + html(); };
+    const sh = V3.sheet(html(), { label: "Scegli i 2 numeri da vedere in Cibo", on: {
+      nsel(k) { const i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); paint(); },
+      nsave() { if (sel.length !== 2) return; lsSet(TK, sel); sh.close(); toast("Numeri aggiornati", { sub: "Li vedi nella pagina Cibo" }); },
+      nreset() { lsSet(TK, null); sh.close(); }
+    }, onClose: () => setTimeout(() => V3.refresh(), 0) });
+  }
+  function numRow(k) {
+    const n = numOf(k), w = n.pct != null ? Math.max(0, Math.min(100, n.pct)) : null;
+    const val = `${typeof n.value === "number" ? nf(n.value, 0) : e(n.value)}${n.of != null ? ` <span class="v3-of">/${typeof n.of === "number" ? nf(n.of, 0) : e(n.of)}${n.unit ? " " + e(n.unit) : ""}</span>` : ""}`;
+    const head = `<span class="v3-cibo-nh"><span><b>${e(n.label)}</b>${n.sub ? `<span class="v3-rs">${e(n.sub)}</span>` : ""}${n.miss ? `<span class="v3-rs">${e(n.miss)}</span>` : ""}</span><span class="v3-cibo-nv">${val}</span></span>${w != null ? `<span class="v3-bar" role="img" aria-label="${w}% dell'obiettivo"><i style="width:${w}%"></i></span>` : ""}`;
+    const pm = k === "water" ? `<div class="v3-pm2"><button data-act="water" data-v="-1" data-v3act="wupd">Togli 0,25 L</button><button data-act="water" data-v="1" data-v3act="wupd">Aggiungi 0,25 L</button></div>` : "";
+    return `<div class="v3-cibo-nr"><button class="v3-cibo-nb" data-v3act="storico" data-v3arg="${e(n.param || "")}" aria-label="${e(n.label)}: apri il mio storico">${head}</button>${pm}</div>`;
+  }
+  /* verdetto breve, senza tono di mancanza: cosa va bene e cosa viene dopo */
+  function numVerdict() {
+    const d = data.today(), w = waterNow(), fv = fvNow();
+    const it = [{ k: "pro", p: ui.pct(d.pro, d.proT), a: "le proteine", di: "di proteine" }, { k: "water", p: ui.pct(w.l, w.t), a: "l'acqua", di: "d'acqua" }];
+    if (fv != null) it.push({ k: "fv", p: ui.pct(fv, 5), a: "frutta e verdura", di: "di frutta e verdura" });
+    if (!d.logged && !w.l) return "La giornata è appena iniziata";
+    const low = it.reduce((a, b) => b.p < a.p ? b : a);
+    if (low.p >= 90) return "Tutto in linea con il piano";
+    if (minor()) return `Ancora un po' ${low.di}`;
+    return it[0].p >= 60 && low.k !== "pro" ? `Proteine a buon punto, ora ${low.a}` : `Il prossimo passo: ${low.a}`;
+  }
+  function pageNumeri() {
+    const rows = numKeys().map(numRow).join("");
+    return ui.back() + title("I numeri di oggi", numVerdict()) +
+      `<section class="v3-sec"><div class="v3-cibo-nl">${rows}</div>${minor() ? `<p class="v3-cibo-note">Sotto i 18 anni contano pasti, proteine, acqua, frutta e verdura.</p>` : ""}</section>` +
+      `<section class="v3-sec">${ui.row({ title: "Il mio storico", sub: "Giorno, settimana e mese", act: "storico", apri: "Apri" })}${ui.secondary("Scegli i 2 numeri da vedere in Cibo", "scegli")}</section>` +
+      ui.end(minor() ? "Bere spesso aiuta a stare attento a scuola" : "Bere poco abbassa la forza in palestra", { leoQ: "Quanta acqua devo bere oggi?" });
   }
   function mainPlan() {
     const iso = today(), list = planMeals(dowOf(iso));
@@ -205,7 +275,7 @@
       `<section class="v3-sec">${ui.label("Cosa fare adesso")}
         <div class="v3-cibo-caro hscroll" role="group" aria-label="Pasti di oggi, scorri col dito">${list.map((k, i) => card(k, i, list)).join("")}</div>
         <div class="v3-cibo-dots" role="group" aria-label="Pasti di oggi">${list.map((k, i) => `<button data-v3act="dot" data-v3arg="${i}" aria-label="${e(LAB(k))}${stOf(iso, k) === "plan" || stOf(iso, k) === "custom" ? ", mangiato" : ""}" aria-current="${i === ci}"><i></i></button>`).join("")}</div>
-        ${ui.secondary("Vedi tutta la giornata", "giornata")}</section>` +
+        ${ui.secondary("Tutti i pasti di oggi", "giornata")}</section>` +
       (AL ? AL.block() : "") +
       numsBox("numeri") +
       ui.row({ title: "Scopri di più", sub: "La settimana, le curiosità, il piano", act: "scopri", apri: "Apri" }) +
@@ -252,7 +322,7 @@
     const rows = list.map((k, i) => { const s = stateOf(k, i, list), m = mealOf(dw, k), t = s.st === "custom" ? v.custom[k].text : m ? m.t : "Non ancora segnato";
       return ui.row({ title: `${LAB(k)} · ${s.lab}`, sub: t, act: "pasto", arg: k, on: i === ni && s.st === "open" }); }).join("");
     const ex = v.extra.map(x => `<div class="v3-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Fuori programma</span><span class="v3-rs" style="display:block">${e(x.text)} · ${kid() ? Math.round(x.p) + " g di proteine" : nf(Math.round(x.kcal), 0) + " calorie"}</span></span>${leg("Togli", "delextra", x.id, "v3-b2 v3-cibo-tg")}</div>`).join("");
-    return ui.back() + title("Tutta la giornata", `Hai segnato ${done} ${done === 1 ? "pasto" : "pasti"} su ${list.length}`) +
+    return ui.back() + title("Tutti i pasti di oggi", `Hai segnato ${done} ${done === 1 ? "pasto" : "pasti"} su ${list.length}`) +
       ui.section("Pasti di oggi", rows + ex + alt("Aggiungi cibo fuori programma", "extra")) +
       endCur(curFor(mealText(dw, list[ni] || "pra"), iso));
   }
@@ -301,37 +371,6 @@
       acts(ui.secondary("Torna ai pasti di oggi", "home") + ui.secondary("Rimetti tra i pasti da fare", "unmark", k)) + endCur(c);
   }
 
-  /* calorie e proteine giorno per giorno */
-  const PER = ["7 giorni", "4 settimane", "3 mesi"];
-  function series(per) {
-    const t = today(), out = [];
-    if (per === 0) { for (let i = 6; i >= 0; i--) { const d = data.day(addDays(t, -i)); out.push({ lab: ui.dLab(d.iso), kcal: d.logged ? d.kcal : 0, pro: d.logged ? d.pro : 0, n: d.logged && d.closed ? 1 : 0, kT: d.kcalT, pT: d.proT, days: [d] }); } }
-    else { const n = per === 1 ? 4 : 13, mon = localISO(mondayOf(new Date()));
-      for (let w = n - 1; w >= 0; w--) { const from = addDays(mon, -7 * w), ds = []; for (let j = 0; j < 7; j++) { const iso = addDays(from, j); if (iso <= t) ds.push(data.day(iso)); }
-        const ok = ds.filter(d => d.closed && d.logged), av = f => ok.length ? Math.round(ok.reduce((s, d) => s + d[f], 0) / ok.length) : 0;
-        out.push({ lab: ui.dLab(from), kcal: av("kcal"), pro: av("pro"), n: ok.length, kT: av("kcalT") || (ds[0] || {}).kcalT, pT: av("proT") || (ds[0] || {}).proT, days: ds }); } }
-    return out;
-  }
-  function pageNumeri() {
-    const s = series(numPer), closed = s.flatMap(x => x.days).filter(d => d.closed && d.logged), d0 = data.today();
-    const av = f => closed.length ? Math.round(closed.reduce((a, d) => a + d[f], 0) / closed.length) : null;
-    const kc = av("kcal"), kT = av("kcalT"), pr = av("pro"), pT = av("proT"), last = s.length - 1;
-    const xl = [[0, s[0].lab], [last, numPer === 0 ? "oggi" : "ora"]];
-    const unitTip = numPer === 0 ? "" : " in media";
-    const panel = (big, line, vals, max, tick, fmt, aria) => ui.big(big, line) + ui.chart.bars({ vals, max, ticks: [[tick, fmt(tick), true], [0, "0"]], xl, tip: i => `${s[i].lab}: ${s[i].days.some(d => d.logged) ? fmt(vals[i]) + unitTip : "non segnato"}`, aria });
-    const empty = ui.big("–", closed.length ? "" : "Ancora pochi dati: segna i pasti");
-    let chart;
-    const proP = pr == null ? empty : panel(`${pr} <span class="v3-of">/${pT} g</span>`, "Proteine al giorno, in media", s.map(x => x.pro), Math.max(pT || 1, ...s.map(x => x.pro)) * 1.05, pT, v => nf(v, 0) + " g", "Proteine al giorno");
-    if (kid()) chart = ui.card(proP);
-    else chart = ui.card((kc == null ? empty : panel(`${nf(kc, 0)} <span class="v3-of">/${nf(kT, 0)}</span>`, "Calorie al giorno, in media", s.map(x => x.kcal), Math.max(kT || 1, ...s.map(x => x.kcal)) * 1.05, kT, v => nf(v, 0), "Calorie al giorno")) + (pr == null ? "" : proP));
-    let verdict = "Ancora pochi dati";
-    if (kc != null && !kid()) { const diff = kc - kT; verdict = Math.abs(diff) < 100 ? "In linea con il piano" : minor() ? (diff < 0 ? "Un po' sotto il piano" : "Un po' sopra il piano") : `${diff < 0 ? "Sotto" : "Sopra"} di circa ${nf(Math.round(Math.abs(diff) / 10) * 10, 0)} calorie`; }
-    else if (pr != null) verdict = pr >= pT * .9 ? "Proteine in linea col piano" : "Proteine un po' basse";
-    const rows = (kid() ? "" : ui.row({ title: "Calorie di oggi", value: `${nf(d0.kcal, 0)} <span class="v3-of">/${nf(d0.kcalT, 0)}</span>` })) + ui.row({ title: "Proteine di oggi", value: `${d0.pro} <span class="v3-of">/${d0.proT} g</span>` });
-    return ui.back() + title(kid() ? "Proteine" : "Calorie e proteine", verdict) + `<div class="v3-cibo-seg">${ui.seg(PER, numPer, "per", "Periodo")}</div>` + chart + `<div class="v3-sec">${rows}</div>` +
-      ui.end(kid() ? "Le proteine sono i mattoni con cui crescono i muscoli." : "Non serve essere precisi ogni giorno: conta la media.", { leoQ: kid() ? "Cosa sono le proteine?" : "Cosa sono le calorie?" });
-  }
-
   /* settimana: cosa hai mangiato davvero (dai pasti segnati) */
   const FOOD = [
     { id: "leg", re: /fagiol|ceci|lenticch|legum|piselli/i, name: "Legumi", ok: [2, 4], hint: "Consigliati 2–4 volte a settimana", why: "Fagioli, ceci e lenticchie danno mattoni per i muscoli, energia e tanta fibra. Le linee guida li consigliano 2–4 volte a settimana." },
@@ -339,8 +378,8 @@
     { id: "fv", re: /verdur|vegetal|insalat|frutta fresca|porzione di frutta|frutto|pomodor/i, name: "Frutta e verdura", ok: [14, 99], hint: "In almeno due pasti al giorno", why: "Ogni colore di frutta e verdura porta vitamine diverse. Le linee guida consigliano 5 porzioni al giorno, più colori possibile." }
   ];
   function weekFood() {
-    const t = today(), cnt = { leg: 0, pesce: 0, fv: 0 }, perDay = [];
-    for (let i = 6; i >= 0; i--) { const iso = addDays(t, -i), v = dayV(iso), dw = dowOf(iso); let n = 0;
+    const mon = localISO(mondayOf(new Date())), cnt = { leg: 0, pesce: 0, fv: 0 }, perDay = []; // 29/10: da lunedì a domenica
+    for (let i = 0; i < 7; i++) { const iso = addDays(mon, i), v = dayV(iso), dw = dowOf(iso); let n = 0;
       const texts = MEALS.map(([k]) => { const st = mealState(v, k); if (st !== "open" && st !== "skip") n++; return st === "plan" ? mealText(dw, k) : st === "custom" ? String(v.custom[k].text || "") : ""; }).concat(v.extra.map(x => String(x.text || "")));
       for (const f of FOOD) cnt[f.id] += texts.filter(x => x && f.re.test(x)).length;
       perDay.push({ iso, n, logged: !!S.days[iso] && intake(iso).logged }); }
@@ -348,13 +387,13 @@
   }
   function pageSettimana() {
     const w = weekFood(), logged = w.perDay.filter(d => d.logged).length, closed = w.perDay.map(d => data.day(d.iso)).filter(d => d.closed && d.logged);
-    let verdict = `${logged} giorni segnati su 7`;
+    let verdict = `${logged} ${logged === 1 ? "giorno segnato" : "giorni segnati"} su 7`;
     if (!minor() && closed.length) { const diff = Math.round(closed.reduce((s, d) => s + d.kcal - d.kcalT, 0) / closed.length / 10) * 10;
       verdict = Math.abs(diff) < 100 ? "In linea con il piano" : `${diff < 0 ? "Sotto" : "Sopra"} di circa ${nf(Math.abs(diff), 0)} calorie al giorno`; }
     const chart = ui.card(ui.big(`${logged} <span class="v3-of">/7</span>`, "Giorni con i pasti segnati") + ui.chart.bars({ vals: w.perDay.map(d => d.n), max: 5, ticks: [[5, "5", true], [0, "0"]],
-      xl: [[0, ui.dLab(w.perDay[0].iso)], [6, "oggi"]], tip: i => `${ui.dLab(w.perDay[i].iso)}: ${w.perDay[i].n} pasti segnati`, aria: "Pasti segnati negli ultimi 7 giorni" }));
+      xl: [[0, "lun " + ui.dLab(w.perDay[0].iso)], [6, "dom " + ui.dLab(w.perDay[6].iso)]], live: false, tip: i => `${ui.dLab(w.perDay[i].iso)}: ${w.perDay[i].iso > today() ? "ancora da venire" : w.perDay[i].n + " pasti segnati"}`, aria: "Pasti segnati questa settimana, da lunedì a domenica" }));
     const rows = FOOD.map(f => ui.row({ title: `${f.name} · ${w.cnt[f.id]} ${w.cnt[f.id] === 1 ? "volta" : "volte"}`, sub: f.hint, act: "why", arg: f.id, apri: "Perché?" })).join("");
-    return ui.back() + title("La mia settimana", verdict) + chart + ui.section("Cibi importanti", rows) +
+    return ui.back() + title("I cibi della settimana", verdict) + chart + ui.section("Cibi importanti", rows) +
       ui.end("Il piano conta sulla media della settimana, non sul singolo giorno.", { leoQ: "Come sto mangiando questa settimana?" });
   }
 
@@ -378,7 +417,7 @@
   function pageScopri() {
     const w = weekFood(), n = discovered().length, dw = dowOf(today()), pr = mealOf(dw, "pra");
     return ui.back() + title("Scopri di più", "Cosa mangi, cosa impari") +
-      `<div class="v3-sec">${ui.row({ title: "La mia settimana", sub: `Legumi ${w.cnt.leg} ${w.cnt.leg === 1 ? "volta" : "volte"} · pesce ${w.cnt.pesce} ${w.cnt.pesce === 1 ? "volta" : "volte"}`, act: "settimana" }) +
+      `<div class="v3-sec">${ui.row({ title: "I cibi della settimana", sub: `Legumi ${w.cnt.leg} ${w.cnt.leg === 1 ? "volta" : "volte"} · pesce ${w.cnt.pesce} ${w.cnt.pesce === 1 ? "volta" : "volte"}`, act: "settimana" }) +
       ui.row({ title: "Le mie curiosità", sub: `${n} ${n === 1 ? "scoperta" : "scoperte"} finora`, act: "curiosita" }) +
       (hasMealPlan() ? ui.row({ title: "Il mio piano alimentare", sub: pr ? `Oggi a pranzo: ${pr.t.toLowerCase()}` : "Pasto per pasto, giorno per giorno", act: "piano" }) : ui.row({ title: "Crea il tuo piano", sub: "Oppure carica quello del dietista", act: "crea" }))}</div>` +
       ui.end("Ogni pasto segnato è una cosa in più che sai sul cibo.", { leoQ: "Come funziona un piano alimentare?" });
@@ -392,7 +431,7 @@
   }
   function pageWhy(id) {
     const f = FOOD.find(x => x.id === id) || FOOD[0], w = weekFood();
-    return ui.back() + title(f.name, `${w.cnt[f.id]} ${w.cnt[f.id] === 1 ? "volta" : "volte"} in 7 giorni`) + ui.card(`<p class="v3-cibo-qq">${e(f.hint)}</p><p class="v3-rs">${e(f.why)}</p>`) +
+    return ui.back() + title(f.name, `${w.cnt[f.id]} ${w.cnt[f.id] === 1 ? "volta" : "volte"} questa settimana`) + ui.card(`<p class="v3-cibo-qq">${e(f.hint)}</p><p class="v3-rs">${e(f.why)}</p>`) +
       acts(ui.secondary("Ho capito", "back")) + `<div class="v3-end">${ui.leo(`Perché sono importanti: ${f.name.toLowerCase()}?`)}</div>`;
   }
 
@@ -416,7 +455,7 @@
   /* ============================== REGISTRAZIONE ============================== */
   V3.register("cibo", {
     /* V3.go("cibo", { meal: k }) apre direttamente il pasto k */
-    enter(o) { if (o && o.meal && MEALS.some(m => m[0] === o.meal)) open({ p: "pasto", k: o.meal }); },
+    enter(o) { if (o && o.meal && MEALS.some(m => m[0] === o.meal)) open({ p: "pasto", k: o.meal }); else if (o && o.numeri) open({ p: "numeri" }); },
     render(el) {
       const p = top();
       if (p && p.p === "guida") return false; // guida flessibile della vista vecchia
@@ -443,12 +482,14 @@
       giornata() { open({ p: "giornata" }); },
       pasto(k) { open({ p: "pasto", k }); },
       numeri() { open({ p: "numeri" }); },
+      scegli() { ciboTilesSheet(); },
+      storico(param) { V3.open("progressi", { storico: param ? { view: "settimana", param } : { view: "settimana" } }); },
+      wupd(a, btn) { const x = waterNow(); toast(btn && btn.dataset.v === "-1" ? "Tolti 0,25 L" : "Aggiunti 0,25 L", { sub: `${nf(x.l, 2)} di ${nf(x.t, 2)} L oggi` }); },
       scopri() { open({ p: "scopri" }); },
       settimana() { open({ p: "settimana" }); },
       curiosita() { open({ p: "curiosita" }); },
       piano() { pianoDow = null; open({ p: "piano" }); },
       crea() { if (!window.V3Quiz) return open({ p: "guida" }); V3Quiz.start(V3Quiz.cfg.piano()); open({ p: "quiz" }); },
-      per(i) { numPer = +i; V3.refresh(); },
       dow(i) { pianoDow = DOWS[+i]; V3.refresh(); },
       lg(hub) { V3.legacy({ tab: "piano", hub }); },
       cur(id) { open({ p: "cur", id }); },

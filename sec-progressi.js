@@ -155,6 +155,7 @@
     const drop = (ref.kg - cur.kg) / ref.kg;
     return drop > 0.05 ? { from: ref.kg, to: cur.kg, kg: ref.kg - cur.kg, fromDate: ref.date } : null;
   }
+  window.V3Calo = calo; // 29/10: lo usa anche il report (report.js), stessa regola
   const fase = () => ({ massa: "fase di massa", definizione: "fase di definizione", mantenimento: "mantenimento" })[prof().obiettivo] || "";
 
   /* ---------- foto ---------- */
@@ -472,13 +473,16 @@
   function mainPage() {
     const c = calo();
     const w0 = data.week(), cm = typeof cardioWeek === "function" ? cardioWeek(w0.from, w0.to) : 0, cof = typeof CARDIO !== "undefined" ? CARDIO.obiettivo(data.profile().group) : 150, sw = typeof stretchWeek === "function" ? stretchWeek(w0.from, w0.to) : 0;
-    const rows = allowed().map(id => ui.row({ title: SEC[id].title, sub: rowSub(id), act: "open", arg: id })).join("")
-      + (typeof cardioWeek === "function" ? ui.row({ title: kid() ? "Movimento della settimana" : "Cardio della settimana", sub: `${cm} /${cof} minuti` + (kid() ? "" : ` · stretching ${sw} /${CARDIO.stretchVolte}`), act: "go", arg: "palestra" }) : "")
-      + (minor() ? "" : ui.row({ title: "Tutti i dati", sub: S.downloads ? "Grafici di prima ed esportazione CSV" : "I grafici di prima", act: "legacy", arg: "carichi" }));
+    /* 29/10 (tavole 75 e 81): «Il mio report» e «Il mio storico» in cima; «La mia settimana» vive in Palestra; «Tutti i dati» sostituito dallo storico (CSV in Impostazioni) */
+    const rows = (window.V3Report ? ui.row({ title: "Il mio report", sub: kid() ? "Com'è andata la settimana" : "Com'è andata e cosa fare adesso", act: "report" }) : "")
+      + (window.V3Storico ? ui.row({ title: "Il mio storico", sub: minor() ? "Pasti, allenamenti e numeri" : `Pasti, ${aw() ? "allenamenti" : "sedute"} e tutti i numeri`, act: "storico" }) : "")
+      + allowed().filter(id => id !== "settimana" || !window.V3Storico).map(id => ui.row({ title: SEC[id].title, sub: rowSub(id), act: "open", arg: id })).join("")
+      + (typeof cardioWeek === "function" ? ui.row({ title: kid() ? "Movimento della settimana" : "Cardio della settimana", sub: `${cm} /${cof} minuti` + (kid() ? "" : ` · stretching ${sw} /${CARDIO.stretchVolte}`), act: "cardio" }) : "")
+      + (minor() || window.V3Storico ? "" : ui.row({ title: "Tutti i dati", sub: S.downloads ? "Grafici di prima ed esportazione CSV" : "I grafici di prima", act: "legacy", arg: "carichi" }));
     const sap = kid() ? "La colazione dà energia per allenarsi." : minor() ? "La colazione aiuta ad allenarsi." : o65() ? "Dopo i 65 anni servono proteine a ogni pasto." : "Le proteine aiutano i muscoli a recuperare.";
     return ui.header("Progressi") + lime()
       + (c ? ui.card((hidden() ? bigS("Peso in calo", "da 3 mesi") : bigS(`${nf(c.kg)} kg in meno`, "in 3 mesi")) + `<p class="v3-progressi-note">Parlane con il medico o con il dietista</p><button class="v3-b2" data-v3act="medico">Prepara il riepilogo per il medico</button>`) : "")
-      + ui.section("I tuoi progressi", rows)
+      + ui.section(window.V3Storico ? "I miei dati" : "I tuoi progressi", rows)
       + ui.end(sap, { act: "psap", arg: "main", leoQ: kid() ? "Cosa mi manca questa settimana?" : "Cosa mi manca per chiudere la settimana?" });
   }
 
@@ -574,11 +578,21 @@
   V3.register("progressi", {
     render(el) {
       memo = {};
+      if (sub === "storico" && window.V3Storico) { el.innerHTML = V3Storico.render(); return; }
+      if (sub === "report" && window.V3Report) { el.innerHTML = V3Report.render(); return; }
       if (sub && !allowed().includes(sub)) sub = null;
       el.innerHTML = sub ? innerPage(sub) : mainPage();
     },
-    on: {
-      open(id) { if (!allowed().includes(id)) return; sub = id; V3.page(() => { sub = null; shown = new Set(); }); },
+    /* 29/10 ingressi: { storico: { view, iso, param } } e { report: "generale" | "palestra" | "cibo" } */
+    enter(o) {
+      if (o && o.storico && window.V3Storico) { V3Storico.reset(o.storico); sub = "storico"; V3.page(() => { sub = null; }); }
+      else if (o && o.report && window.V3Report) { V3Report.reset(o.report); sub = "report"; V3.page(() => { sub = null; }); }
+    },
+    on: Object.assign({}, window.V3Storico ? V3Storico.on : {}, window.V3Report ? V3Report.on : {}, {
+      storico() { if (!window.V3Storico) return; V3Storico.reset({}); sub = "storico"; V3.page(() => { sub = null; }); },
+      report() { if (!window.V3Report) return; V3Report.reset("generale"); sub = "report"; V3.page(() => { sub = null; }); },
+      cardio() { V3.open("palestra", { settimana: true }); }, // rimando 6: Cardio della settimana → Palestra › La mia settimana
+      open(id) { if (!allowed().includes(id)) return; const prev = sub; sub = id; V3.page(() => { sub = prev; shown = new Set(); }); }, // dallo storico (Peso) l'indietro torna allo storico
       sel(i) { sel[sub] = +i; shown = new Set(); V3.refresh(); },
       exlist() { exSheet(); },
       legacy(psub) { S.psub = psub || "carichi"; V3.legacy({ tab: "progressi" }); }, // vista vecchia (grafici di prima, CSV) come pagina interna
@@ -590,6 +604,6 @@
       hidep(id) { shown.delete(id); V3.refresh(); },
       pickp(side) { photoSheet(side); },
       pose(p) { S.pose = p; } // come photos.js: la posa della prossima foto caricata dal selettore file
-    }
+    })
   });
 })();
