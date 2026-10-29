@@ -31,7 +31,7 @@
     const work = sets.filter(x => !x.w && !x.dr), wi = work.indexOf(s), nw = sets.filter(x => x.w).length;
     const all = items.flatMap(x => d.sets[x.id]), allDone = all.every(x => x.done);
 
-    const setLab = s.w ? `Riscaldamento ${sets.filter(x => x.w).indexOf(s) + 1} di ${nw}` : s.dr ? "Calo di peso, senza pausa" : `${k ? "Giro" : "Serie"} ${wi + 1} di ${work.length}`;
+    const setLab = s.w ? `Riscaldamento ${sets.filter(x => x.w).indexOf(s) + 1} di ${nw}` : s.dr ? "Serie con meno peso, senza pausa" : `${k ? "Giro" : "Serie"} ${wi + 1} di ${work.length}`;
     const restLab = k ? `riposo ${minWords(it.rest)}` : `recupero ${mmss(it.rest)}`;
     const up = pl.up && !k && !s.w;
 
@@ -42,7 +42,7 @@
     else if (tipoOf(X) !== "uguali" || X.risc || (X.schema && X.schema.calo)) why = esc(schLabel(X)) + (b.lastSets ? `. L'ultima volta <b>${kgTxt}${b.lastSets.slice(0, it.sets).join(", ")}</b>.` : ".");
     else if (!up && b.lastSets) {
       const tgt = Math.min(it.max, Math.min(...b.lastSets.slice(0, it.sets).map(Number)) + (tmp ? 5 : 1));
-      why = `${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"} <b>${kgTxt}${b.lastSets.slice(0, it.sets).join(", ")}</b>. Oggi stesso carico: prova a fare ${tgt} ${tmp ? "secondi" : "ripetizioni"}.`;
+      why = `Oggi: <b>${tgt} ${tmp ? "secondi" : "ripetizioni"}${b.kg != null && !none ? " con " + fmt(b.kg) + " kg" : ""}</b>. ${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"} ${b.lastSets.slice(0, it.sets).join(", ")}.`; // obiettivo prima (revisione copy 30/10)
     } else if (!up) why = `Prima volta: scegli un carico con cui fai ${it.min === it.max ? it.min : it.min + "–" + it.max} ${tmp ? "secondi" : "ripetizioni"} pulite.`;
     if (it.warm && !X.risc && i === 0 && !s.done && !k) why += `${why ? " " : ""}Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.`;
     if (sub) why += `${why ? " " : ""}Al posto di ${esc(short(it.name))}.`;
@@ -56,7 +56,7 @@
     const steppers = `<div class="sx-two${none ? " one" : ""}">${none ? "" : stepper(unitLab(it), kgIn, "kg", "Meno 0,5 chili", "Più 0,5 chili")}${stepper(repLab, `<b aria-live="polite">${s.reps ?? "–"}</b>`, "repsd", tmp ? "Meno 5 secondi" : `Meno 1 ${k ? "volta" : "ripetizione"}`, tmp ? "Più 5 secondi" : `Più 1 ${k ? "volta" : "ripetizione"}`)}</div>`;
 
     const label = none ? `${s.reps ?? "–"}${unitR}` : `${fmt(s.kg)} kg × ${s.reps ?? "–"}${tmp ? " secondi" : ""}`;
-    const main = s.done ? `<button class="sx-pri" data-act="done">Correggi: ${label}</button>` : `<button class="sx-pri" data-act="done">${k ? "Fatto" : "Serie fatta"}: ${label}</button>`;
+    const main = `<button class="sx-pri" data-act="done" aria-label="${s.done ? "Correggi" : k ? "Fatto" : "Serie fatta"}: ${label}">${s.done ? "Correggi" : k ? "Fatto" : "Serie fatta"}</button>`; // i numeri sono già nei selettori (scelta Giovanni 30/10)
     const CK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
     const chips = `<div class="sx-chips" role="group" aria-label="${k ? "Giri" : "Serie"}" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, j) => `<button class="${x.done ? "d" : ""}${x.w || x.dr ? " w" : ""}" data-act="pickset" data-v="${j}" aria-current="${j === i}" aria-label="${cap(setName(sets, x, k))}: ${none ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"}${unitR || " ripetizioni"}${x.done ? ", fatta" : ""}">${x.done ? CK : ""}${none ? "" : fmt(x.kg) + " × "}${x.reps ?? "–"}</button>`).join("")}</div>`;
 
@@ -69,13 +69,16 @@
 
     const canSwap = S.sample || (window.LIB && it.lib && window.LIB[it.lib]);
     const last = idx === items.length - 1;
-    const tools = `<div class="sx-tools" style="--n:${canSwap ? 3 : 2}"><button data-act="sheet" data-v="ex">Come si fa</button>${canSwap ? `<button data-act="alts">${k ? "Più facile" : "Sostituisci"}</button>` : ""}<button data-act="exlist">Elenco</button></div>
-      <div class="sx-tools" style="--n:2"><button data-act="sx-male">Mi fa male</button>${last ? `<button data-act="finish">Concludi ›</button>` : `<button data-act="ex-step" data-v="1">Prossimo esercizio ›</button>`}</div>`;
+    /* testi lunghi (revisione copy 30/10): righe da 2, il passo avanti su tutta la larghezza */
+    const btn = [`<button data-act="sheet" data-v="ex">Come si fa</button>`, canSwap ? `<button data-act="alts">${k ? "Più facile" : "Cambia esercizio"}</button>` : "", `<button data-act="exlist">Tutti gli esercizi</button>`, `<button data-act="sx-male">Mi fa male</button>`].filter(Boolean);
+    const nxt = last ? `<button data-act="finish">${tv("Concludi la seduta ›", "Concludi l'allenamento ›")}</button>` : `<button data-act="ex-step" data-v="1">Prossimo esercizio ›</button>`;
+    if (btn.length % 2) btn.push(nxt);
+    const tools = `<div class="sx-tools" style="--n:2">${btn.join("")}</div>${btn.includes(nxt) ? "" : `<div class="sx-tools" style="--n:1">${nxt}</div>`}`;
 
     return `<div class="sx">
       <div class="sx-top"><button class="sx-out" data-act="sx-esci">‹ Esci</button><span>Esercizio ${idx + 1} di ${items.length}</span></div>
       ${allDone ? `<div class="sx-fine"><p><b>Tutte le serie fatte</b>${d.startedAt ? ` in ${Math.max(1, Math.round((Date.now() - d.startedAt) / 60000))} minuti` : ""}</p><button class="sx-pri" data-act="finish">${tv("Concludi la seduta", "Concludi l'allenamento")}</button></div>` : ""}
-      <div class="sx-hd"><h1>${nm}</h1><p>${setLab} · ${restLab}</p>${up ? `<span class="sx-up">Nuovo carico · +${fmt(+(pl.kg - (b.kg || 0)).toFixed(2))} kg</span>` : ""}</div>
+      <div class="sx-hd"><h1>${nm}</h1><p>${setLab} · ${restLab}</p>${up ? `<span class="sx-up">Carico in aumento: +${fmt(+(pl.kg - (b.kg || 0)).toFixed(2))} kg</span>` : ""}</div>
       ${fig}
       ${why ? `<div class="sx-why"><p>${why}</p></div>` : ""}
       <section class="sx-sec" aria-label="${k ? "Giro" : "Serie"} in corso">${steppers}${main}${chips}${box}</section>
@@ -87,7 +90,7 @@
   /* ---------- fogli: Esci e Mi fa male (prototipo 27/10) ---------- */
   function esci() {
     const sh = V3.sheet(`<h2 class="v3-sh1">Vuoi uscire ${tv("dalla seduta", "dall'allenamento")}?</h2><p class="v3-shp">Quello che hai fatto finora è già salvato sul telefono.</p>
-      <div class="sx-shb"><button class="v3-apri wide" data-v3act="fine">${tv("Concludi la seduta", "Concludi l'allenamento")}</button><button class="v3-b2" data-v3act="pausa">Metti in pausa, la riprendo dopo</button><button class="v3-b2" data-v3act="close">${tv("Continua la seduta", "Continua l'allenamento")}</button></div>`, { on: {
+      <div class="sx-shb"><button class="v3-apri wide" data-v3act="fine">${tv("Concludi la seduta", "Concludi l'allenamento")}</button><button class="v3-b2" data-v3act="pausa">Metti in pausa</button><button class="v3-b2" data-v3act="close">${tv("Continua la seduta", "Continua l'allenamento")}</button></div>`, { on: {
       fine() { sh.close(); setTimeout(() => { S.fat = null; S.pain = !!draft(activeDay()).male; S.confirmDiscard = false; openSheet("finish"); }, 60); },
       pausa() { sh.close(); setTimeout(() => { V3.go("oggi"); toast(tv("Seduta in pausa", "Allenamento in pausa"), { sub: "La riprendi da Palestra" }); }, 60); }
     } });
@@ -96,9 +99,9 @@
     const a = activeDay(), d = draft(a), items = P[a].items, it = items.find(x => x.id === d.cur.id), k = kid();
     const canSwap = S.sample || (window.LIB && it.lib && window.LIB[it.lib]);
     d.male = true; saveDrafts(); // a fine seduta «dolore» è già segnato: niente proposta di aumento
-    const sh = V3.sheet(`<h2 class="v3-sh1">${k ? "Fermati e chiama l'adulto che è con te." : "Fermati qui: con il dolore non si spinge."}</h2>
-      <p class="v3-shp">Se senti dolore al petto, capogiro o fiato corto, interrompi ${tv("la seduta", "l'allenamento")} e chiedi aiuto (112).</p>
-      <div class="sx-shb"><button class="v3-apri wide" data-v3act="salta">Salta questo esercizio</button>${canSwap ? `<button class="v3-b2" data-v3act="alt">${k ? "Prova quello più facile" : "Prova un'alternativa più leggera"}</button>` : ""}<button class="v3-b2" data-v3act="close">Chiudi</button></div>`, { label: "Mi fa male", on: {
+    const sh = V3.sheet(`<h2 class="v3-sh1">${k ? "Fermati e chiama l'adulto che è con te." : "Se hai dolore, fermati."}</h2>
+      <p class="v3-shp">Se senti dolore al petto, capogiro o fiato corto, interrompi ${tv("la seduta", "l'allenamento")} e chiama il 112.</p>
+      <div class="sx-shb"><button class="v3-apri wide" data-v3act="salta">Salta questo esercizio</button>${canSwap ? `<button class="v3-b2" data-v3act="alt">${k ? "Prova quello più facile" : "Cambia con uno più leggero"}</button>` : ""}<button class="v3-b2" data-v3act="close">Torna all'esercizio</button></div>`, { label: "Mi fa male", on: {
       salta() {
         sh.close();
         const idx = items.indexOf(it), nx = items.slice(idx + 1).concat(items.slice(0, idx)).find(x => d.sets[x.id].some(y => !y.done));
@@ -118,8 +121,8 @@
     else if (act === "sx-annulla") {
       e.stopPropagation();
       const d = draft(activeDay()), sets = d.sets[d.cur.id], j = +b.dataset.v, x = sets[j]; if (!x || !x.done) return;
-      const n = cap(setName(sets, x, kid())); x.done = false; d.cur.i = j; saveDrafts(); render();
-      toast(`${n} annullat${/^Il /.test(n) ? "o" : "a"}`, { sub: "Puoi rifarla", undo: () => { x.done = true; saveDrafts(); render(); } });
+      const n = cap(setName(sets, x, kid()).replace(/^(la|il) /, "")); x.done = false; d.cur.i = j; saveDrafts(); render();
+      toast(`${n} annullat${/^Serie/.test(n) ? "a" : "o"}`, { sub: "Puoi rifarla", undo: () => { x.done = true; saveDrafts(); render(); } });
     }
   }, true);
   /* «Prova un'alternativa» riusa il pulsante Sostituisci della vista (stessa logica di index.html) */
