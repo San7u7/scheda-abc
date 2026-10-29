@@ -195,7 +195,7 @@
     else if (s.st === "skip") body = `<p class="v3-rs">Segnato come non mangiato.</p><div class="v3-cibo-acts">${ui.secondary("Vedi o cambia", "pasto", k)}</div>`;
     else body = `<p class="v3-rs">${e(numLine(mealNums(dw, k)))}</p><div class="v3-cibo-acts">${lime("Ho mangiato questo", "eat", k)}${s.past
       ? `<div class="v3-cibo-two">${alt("Un'altra cosa", k)}${leg("Non l'ho mangiato", "mealskip", k)}</div>` : alt("Ho mangiato un'altra cosa", k)}</div>`;
-    return `<div class="v3-cibo-mc${cur ? " cur" : ""}" data-i="${i}"${cur ? "" : ` data-v3act="dot" data-v3arg="${i}" aria-hidden="true"`}><div class="v3-cibo-in"${cur ? "" : " inert"}>
+    return `<div class="v3-cibo-mc${cur ? " cur" : ""}" data-i="${i}"${cur ? "" : ` data-v3act="dot" data-v3arg="${i}" aria-hidden="true"`}><div class="v3-cibo-in"${cur ? "" : " inert"}>${s.st === "skip" || !window.Piatti ? "" : Piatti.card(t)}
       <p class="v3-cibo-k">${e(LAB(k))} · ${e(s.lab)}</p><p class="v3-cibo-t">${e(t)}</p>${body}</div></div>`;
   }
   /* ---------- «I numeri di oggi» (29/10, tavole 72-74): stessi numeri dei riquadri di Oggi (V3.data.today, V3Num di sec-oggi.js) ---------- */
@@ -319,7 +319,8 @@
     const iso = today(), dw = dowOf(iso), v = dayV(iso), list = data.dayMeals(iso).map(x => x.k); // audit M13: anche i pasti segnati fuori dal piano
     const done = data.mealsDone(iso), ni = nextIdx(list);
     const rows = list.map((k, i) => { const s = stateOf(k, i, list), m = mealOf(dw, k), t = s.st === "custom" ? v.custom[k].text : m ? m.t : s.st === "plan" ? "Come da piano" : "Non ancora segnato";
-      return ui.row({ title: `${LAB(k)} · ${s.lab}`, sub: t, act: "pasto", arg: k, on: i === ni && s.st === "open" }); }).join("");
+      const r = ui.row({ title: `${LAB(k)} · ${s.lab}`, sub: t, act: "pasto", arg: k, on: i === ni && s.st === "open" }), th = window.Piatti && (m || s.st === "custom") ? Piatti.thumb(t) : ""; // tavola 89: miniatura a sinistra
+      return th ? r.replace('class="v3-row', 'class="v3-row pf-row').replace('<span class="v3-rx">', th + '<span class="v3-rx">') : r; }).join("");
     const ex = v.extra.map(x => `<div class="v3-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Fuori programma</span><span class="v3-rs" style="display:block">${e(x.text)} · ${minor() ? Math.round(x.p) + " g di proteine" : nf(Math.round(x.kcal), 0) + " calorie"}</span></span>${leg("Togli", "delextra", x.id, "v3-b2 v3-cibo-tg")}</div>`).join("");
     return ui.back() + title("Tutti i pasti di oggi", `Hai segnato ${done} ${done === 1 ? "pasto" : "pasti"} su ${list.length}`) +
       ui.section("Pasti di oggi", rows + ex + alt("Aggiungi cibo fuori programma", "extra")) +
@@ -345,6 +346,7 @@
     const iso = today(), dw = dowOf(iso), m = mealOf(dw, k), v = dayV(iso), st = stOf(iso, k), list = planMeals(dw), i = list.indexOf(k), s = stateOf(k, i, list);
     const c = curFor(st === "custom" ? v.custom[k].text : mealText(dw, k), iso), dayT = data.today();
     let h = ui.back() + title(LAB(k), st === "custom" ? "Mangiato un'altra cosa" : s.lab);
+    if (window.Piatti && st !== "skip") h += Piatti.big(st === "custom" ? v.custom[k].text : m ? m.t : ""); // tavola 90: foto grande con credito
     if (st === "custom") {
       h += ui.card(`<p class="v3-cibo-t">${e(v.custom[k].text)}</p>${m ? `<p class="v3-rs">Il piano prevedeva: ${e(m.t.toLowerCase())}</p>` : ""}`) + plateBox(mealNums(dw, k), dayT) +
         acts(alt("Modifica cosa ho mangiato", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
