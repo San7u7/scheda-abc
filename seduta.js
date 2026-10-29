@@ -25,6 +25,38 @@
   }
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
 
+  /* ---------- tavole 91-94: timer degli esercizi a tempo (plank e simili). Stato in d.tmr {id, i, ph: prep|run, t0, dur} ---------- */
+  const PREP = 3, RR = 130, CC = +(2 * Math.PI * RR).toFixed(1);
+  const secTxt = n => n < 60 ? `${n} secondi` : mmss(n);
+  const ring = (txt, lab, frac, big) => `<div class="sx-ring${big ? " big" : ""}"><svg viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="${RR}"/><circle class="arc" id="sx-arc" cx="150" cy="150" r="${RR}" stroke-dasharray="${CC}" style="stroke-dashoffset:${(CC * (1 - frac)).toFixed(1)}"/></svg><div role="timer"><b id="sx-tt">${txt}</b><span id="sx-tl">${lab}</span></div></div>`;
+  function tState(T) {
+    const el = (Date.now() - T.t0) / 1000;
+    if (T.ph === "prep") return { prep: true, left: PREP - el, txt: String(Math.max(1, Math.ceil(PREP - el))), lab: "mettiti in posizione", frac: 1 };
+    const left = Math.max(0, T.dur - el);
+    return { left, el, txt: mmss(Math.ceil(left)), lab: "mancano su " + mmss(T.dur), frac: T.dur ? left / T.dur : 0 };
+  }
+  function tDone(sec, full) {
+    const a = activeDay(), d = draft(a), T = d.tmr; if (!T) return;
+    delete d.tmr;
+    const sets = d.sets[T.id], it = P[a].items.find(x => x.id === T.id);
+    if (!sets || !sets[T.i] || !it) { saveDrafts(); render(); return; }
+    const s = sets[T.i], nx = sets.findIndex((x, j) => j > T.i && !x.done), keep = nx >= 0 ? sets[nx].reps : null;
+    s.reps = Math.max(1, Math.round(sec)); d.cur = { id: T.id, i: T.i };
+    if (window.sxBeep) sxBeep();
+    markDone();
+    if (nx >= 0 && !full) { sets[nx].reps = keep; saveDrafts(); render(); } // fermato prima: la serie dopo resta col tempo previsto
+    toast("Serie fatta", { sub: `${short(exName(it))} · ${full ? secTxt(T.dur) : s.reps + " secondi su " + T.dur}` });
+  }
+  setInterval(() => {
+    const a = activeDay(); if (!a) return;
+    const d = draft(a), T = d.tmr; if (!T) return;
+    const st = tState(T);
+    if (st.prep && st.left <= 0) { T.ph = "run"; T.t0 += PREP * 1000; saveDrafts(); if (window.sxBeep) sxBeep(); try { navigator.vibrate && navigator.vibrate(60); } catch (_) {} render(); return; }
+    if (!st.prep && st.left <= 0) { tDone(T.dur, true); return; }
+    const tt = document.getElementById("sx-tt"), tl = document.getElementById("sx-tl"), arc = document.getElementById("sx-arc");
+    if (tt) tt.textContent = st.txt; if (tl) tl.textContent = st.lab; if (arc) arc.style.strokeDashoffset = (CC * (1 - st.frac)).toFixed(1);
+  }, 250);
+
   function page(a, d, items, it) {
     const idx = items.indexOf(it), sets = d.sets[it.id], i = d.cur.i, s = sets[i], X = itOf(it, d), pl = plan(X), b = pl.b, k = kid();
     const none = k || it.unit === "none", tmp = it.misura === "tempo", sub = curSub(it);
@@ -44,7 +76,7 @@
       const tgt = Math.min(it.max, Math.min(...b.lastSets.slice(0, it.sets).map(Number)) + (tmp ? 5 : 1));
       why = `Oggi: <b>${tgt} ${tmp ? "secondi" : "ripetizioni"}${b.kg != null && !none ? " con " + fmt(b.kg) + " kg" : ""}</b>. ${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"} ${b.lastSets.slice(0, it.sets).join(", ")}.`; // obiettivo prima (revisione copy 30/10)
     } else if (!up) why = `Prima volta: scegli un carico con cui fai ${it.min === it.max ? it.min : it.min + "–" + it.max} ${tmp ? "secondi" : "ripetizioni"} pulite.`;
-    if (it.warm && !X.risc && i === 0 && !s.done && !k) why += `${why ? " " : ""}Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.`;
+    if (it.warm && !X.risc && i === 0 && !s.done && !k && !tmp) why += `${why ? " " : ""}Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.`;
     if (sub) why += `${why ? " " : ""}Al posto di ${esc(short(it.name))}.`;
 
     const id = window.demoFor ? demoFor(it) : null, nm = esc(short(exName(it)));
@@ -56,9 +88,9 @@
     const steppers = `<div class="sx-two${none ? " one" : ""}">${none ? "" : stepper(unitLab(it), kgIn, "kg", "Meno 0,5 chili", "Più 0,5 chili")}${stepper(repLab, `<b aria-live="polite">${s.reps ?? "–"}</b>`, "repsd", tmp ? "Meno 5 secondi" : `Meno 1 ${k ? "volta" : "ripetizione"}`, tmp ? "Più 5 secondi" : `Più 1 ${k ? "volta" : "ripetizione"}`)}</div>`;
 
     const label = none ? `${s.reps ?? "–"}${unitR}` : `${fmt(s.kg)} kg × ${s.reps ?? "–"}${tmp ? " secondi" : ""}`;
-    const main = `<button class="sx-pri" data-act="done" aria-label="${s.done ? "Correggi" : k ? "Fatto" : "Serie fatta"}: ${label}">${s.done ? "Correggi" : k ? "Fatto" : "Serie fatta"}</button>`; // i numeri sono già nei selettori (scelta Giovanni 30/10)
+    const main = tmp && !s.done ? `<button class="sx-pri" data-act="sx-tgo">Avvia ${secTxt(+s.reps || 0)}</button>` : `<button class="sx-pri" data-act="done" aria-label="${s.done ? "Correggi" : k ? "Fatto" : "Serie fatta"}: ${label}">${s.done ? "Correggi" : k ? "Fatto" : "Serie fatta"}</button>`; // i numeri sono già nei selettori (scelta Giovanni 30/10)
     const CK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-    const chips = `<div class="sx-chips" role="group" aria-label="${k ? "Giri" : "Serie"}" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, j) => `<button class="${x.done ? "d" : ""}${x.w || x.dr ? " w" : ""}" data-act="pickset" data-v="${j}" aria-current="${j === i}" aria-label="${cap(setName(sets, x, k))}: ${none ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"}${unitR || " ripetizioni"}${x.done ? ", fatta" : ""}">${x.done ? CK : ""}${none ? "" : fmt(x.kg) + " × "}${x.reps ?? "–"}</button>`).join("")}</div>`;
+    const chips = `<div class="sx-chips" role="group" aria-label="${k ? "Giri" : "Serie"}" style="--n:${Math.min(sets.length, 3)}">${sets.map((x, j) => `<button class="${x.done ? "d" : ""}${x.w || x.dr ? " w" : ""}" data-act="pickset" data-v="${j}" aria-current="${j === i}" aria-label="${cap(setName(sets, x, k))}: ${none ? "" : fmt(x.kg) + " kg per "}${x.reps ?? "–"}${unitR || " ripetizioni"}${x.done ? ", fatta" : ""}">${x.done ? CK : ""}${none ? "" : fmt(x.kg) + " × "}${x.reps ?? "–"}${tmp ? " s" : ""}</button>`).join("")}</div>`;
 
     /* Togli / Annulla a sinistra, Aggiungi a destra (tavole 85-86); bambino solo Annulla quando serve */
     const prev = i > 0 && !s.done && sets[i - 1].done ? i - 1 : -1;
@@ -75,13 +107,22 @@
     if (btn.length % 2) btn.push(nxt);
     const tools = `<div class="sx-tools" style="--n:2">${btn.join("")}</div>${btn.includes(nxt) ? "" : `<div class="sx-tools" style="--n:1">${nxt}</div>`}`;
 
+    const T = tmp && d.tmr && d.tmr.id === it.id && d.tmr.i === i ? d.tmr : null;
+    const head = `<div class="sx-top"><button class="sx-out" data-act="sx-esci">‹ Esci</button><span>Esercizio ${idx + 1} di ${items.length}</span></div>
+      <div class="sx-hd"><h1>${nm}</h1><p>${setLab} · ${restLab}</p></div>`;
+    if (T) { /* tavole 92-93: 3 secondi per mettersi in posizione, poi il tempo scorre */
+      const st = tState(T);
+      return `<div class="sx sx-run">${head}<section class="sx-sec">${ring(st.txt, st.lab, st.frac, true)}
+        <p class="sx-hint">${st.prep ? "Il tempo parte da solo dopo 3 secondi." : "Respira piano, tieni la posizione."}</p>
+        ${st.prep ? `<button class="sx-sec2" data-act="sx-tstop">Annulla</button>` : `<button class="sx-pri" data-act="sx-tstop">Ferma qui</button><p class="sx-hint small">Se ti fermi prima, segno i secondi fatti.</p>`}${chips}</section></div>`;
+    }
     return `<div class="sx">
       <div class="sx-top"><button class="sx-out" data-act="sx-esci">‹ Esci</button><span>Esercizio ${idx + 1} di ${items.length}</span></div>
       ${allDone ? `<div class="sx-fine"><p><b>Tutte le serie fatte</b>${d.startedAt ? ` in ${Math.max(1, Math.round((Date.now() - d.startedAt) / 60000))} minuti` : ""}</p><button class="sx-pri" data-act="finish">${tv("Concludi la seduta", "Concludi l'allenamento")}</button></div>` : ""}
       <div class="sx-hd"><h1>${nm}</h1><p>${setLab} · ${restLab}</p>${up ? `<span class="sx-up">Carico in aumento: +${fmt(+(pl.kg - (b.kg || 0)).toFixed(2))} kg</span>` : ""}</div>
       ${fig}
       ${why ? `<div class="sx-why"><p>${why}</p></div>` : ""}
-      <section class="sx-sec" aria-label="${k ? "Giro" : "Serie"} in corso">${steppers}${main}${chips}${box}</section>
+      <section class="sx-sec" aria-label="${k ? "Giro" : "Serie"} in corso">${tmp ? ring(mmss(+s.reps || 0), s.done ? "fatti" : "pronto", 1) : ""}${steppers}${main}${chips}${box}</section>
       <section class="sx-sec">${tools}</section>
       ${k ? `<p class="sx-note">Se qualcosa fa male, fermati e chiama l'adulto con te.</p>` : ""}
     </div>`;
@@ -118,6 +159,19 @@
     const act = b.dataset.act;
     if (act === "sx-esci") { e.stopPropagation(); esci(); }
     else if (act === "sx-male") { e.stopPropagation(); male(); }
+    else if (act === "sx-tgo") {
+      e.stopPropagation();
+      const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; if (!s || s.done || !(+s.reps > 0)) return;
+      d.tmr = { id: d.cur.id, i: d.cur.i, ph: "prep", t0: Date.now(), dur: +s.reps }; S.timer = null; saveDrafts(); render(); window.scrollTo(0, 0);
+    }
+    else if (act === "sx-tstop") {
+      e.stopPropagation();
+      const d = draft(activeDay()), T = d.tmr; if (!T) return;
+      if (T.ph === "prep") { delete d.tmr; saveDrafts(); render(); return; }
+      const el = Math.round((Date.now() - T.t0) / 1000);
+      if (el < 1) { delete d.tmr; saveDrafts(); render(); return; }
+      tDone(Math.min(el, T.dur), el >= T.dur);
+    }
     else if (act === "sx-annulla") {
       e.stopPropagation();
       const d = draft(activeDay()), sets = d.sets[d.cur.id], j = +b.dataset.v, x = sets[j]; if (!x || !x.done) return;
@@ -167,6 +221,19 @@
   .sx-box button + button { border-left: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
   .sx-tools { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; }
   .sx-tools button { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-size: 15px; font-weight: 600; padding: 0 10px; }
+  .sx-ring { position: relative; width: 232px; max-width: 62vw; aspect-ratio: 1; align-self: center; }
+  .sx-ring.big { width: 280px; max-width: 74vw; }
+  .sx-ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
+  .sx-ring circle { fill: none; stroke: var(--raised); stroke-width: 12; }
+  .sx-ring .arc { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+  .sx-ring > div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .sx-ring b { font-size: 60px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .sx-ring span { font-size: 15px; color: rgba(255,255,255,.8); }
+  @media (prefers-reduced-motion: reduce) { .sx-ring .arc { transition: none; } }
+  .sx-run .sx-sec { margin-top: 8px; }
+  .sx-hint { margin: 0; text-align: center; font-size: 16px; color: rgba(255,255,255,.8); }
+  .sx-hint.small { font-size: 15px; }
+  .sx-sec2 { min-height: 48px; width: 100%; border: 0; border-radius: 24px; background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--text); font-size: 15px; font-weight: 600; }
   .sx-note { margin: 0; padding-left: 16px; font-size: 16px; color: rgba(255,255,255,.8); }
   .sx-fine { border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
   .sx-fine p { margin: 0; font-size: 16px; }

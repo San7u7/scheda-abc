@@ -163,6 +163,7 @@
   function beep() { try { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; o.connect(g); g.connect(ac.destination); const t = ac.currentTime;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35); o.start(t); o.stop(t + 0.4);
     const o2 = ac.createOscillator(), g2 = ac.createGain(); o2.frequency.value = 1175; o2.connect(g2); g2.connect(ac.destination); g2.gain.setValueAtTime(0.0001, t + 0.4); g2.gain.exponentialRampToValueAtTime(0.3, t + 0.42); g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.8); o2.start(t + 0.4); o2.stop(t + 0.85); } catch (_) {} }
+  window.sxBeep = () => { if (pref().sound) beep(); }; // timer degli esercizi a tempo (seduta.js)
   setInterval(() => {
     const t = S.timer, p = pref();
     if (t && Date.now() >= t.end && beeped !== t.end) { beeped = t.end; if (p.sound) beep(); if (p.flash) { document.body.classList.add("rest-flash"); setTimeout(() => document.body.classList.remove("rest-flash"), 900); } }
