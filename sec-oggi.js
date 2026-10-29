@@ -24,7 +24,7 @@
   }
 
   /* ---------- dati della giornata (sola lettura) ---------- */
-  const MT = { col: "7:30", spu: "10:30", pra: "13:00", mer: "16:30", cen: "20:00" }; // stessi orari dei promemoria (settings.js)
+  const MT = data.MEAL_TIME; // audit B6: una sola tabella degli orari (v3.js), uguale ai promemoria di settings.js
   const mins = hm => { const [h, m] = String(hm).split(":").map(Number); return h * 60 + (m || 0); };
   const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
   const prefs = () => Object.assign({ remind: "18:00" }, (typeof lsGet === "function" ? lsGet("prefs", {}) : {}) || {});
@@ -35,13 +35,9 @@
   const weekLab = () => kidWords() ? "Allenamenti della settimana" : "Sedute della settimana";
 
   function timeline() {
-    const dw = new Date().getDay(), plan = hasPlanNow(), items = [];
-    for (const [k, label] of MEALS) {
-      const m = plan ? mealOf(dw, k) : null;
-      if (plan && !m) continue;
-      const st = mstate(k);
-      items.push({ kind: "meal", key: k, title: label, sub: m ? m.t : "Segna cosa hai mangiato", when: MT[k], t: mins(MT[k]), done: st === "plan" || st === "custom", skip: st === "skip" });
-    }
+    const items = [];
+    for (const x of data.dayMeals(localISO())) // audit M13: stessi pasti del diario (piano di oggi + quelli già segnati)
+      items.push({ kind: "meal", key: x.k, title: x.label, sub: x.m ? x.m.t : x.st === "custom" && x.c ? x.c.text : x.st === "plan" ? "Come da piano" : "Segna cosa hai mangiato", when: MT[x.k], t: mins(MT[x.k]), done: x.eaten, skip: x.st === "skip" });
     /* 28/10 (Giovanni): l'allenamento c'è sempre: da fare, in corso, fatto, riposo o settimana completa (che apre il riepilogo) */
     const s = data.todaySession(), wk = data.week().sessions, full = wk.planned > 0 && wk.done >= wk.planned, n = nowMin();
     if (s.state === "in-corso") items.push({ kind: "sess", title: sessName(s.name) + " in corso", sub: `${s.doneSets} di ${s.sets} serie fatte`, when: "Ora", t: -1, live: true });
@@ -53,8 +49,8 @@
   }
   /* riga del momento + la prossima: seduta in corso prima di tutto, poi le voci aperte non ancora passate da 2 ore */
   function upcoming(items) { // 28/10: il pasto del momento + sempre la riga dell'allenamento (in corso = prima)
-    const n = nowMin(), meals = items.filter(x => x.kind === "meal" && !x.done && !x.skip), tr = items.find(x => x.kind !== "meal");
-    const meal = meals.find(x => x.t + 120 > n) || meals[meals.length - 1];
+    const ck = data.currentMeal(), tr = items.find(x => x.kind !== "meal"); // audit B6: pasto del momento uguale a Cibo
+    const meal = items.find(x => x.kind === "meal" && x.key === ck);
     return (tr && tr.live ? [tr, meal] : [meal, tr]).filter(Boolean);
   }
   const rowOf = (x, on) => {
@@ -74,13 +70,14 @@
     for (const [k] of MEALS) if (mstate(k) === "plan") { const m = mealOf(dw, k); if (m) n += (m.i || []).filter(t => FV.test(t)).length; }
     return n;
   }
-  function moveMin() { // minuti di palestra registrati oggi (tempo misurato dal cronometro)
+  function moveMin() { // M3: stessa regola di Progressi e report (V3Stats.move, obiettivo 60 al giorno per i minori)
     const t = localISO();
+    if (window.V3Stats && V3Stats.move) return Math.round(V3Stats.move(t, t).min || 0);
     return Math.round(S.sessions.filter(s => localISO(new Date(s.date)) === t).reduce((m, s) => m + (s.tempi && s.tempi.total ? s.tempi.total / 60 : 0), 0));
   }
   function tileKeys() {
     const p = data.profile(), saved = typeof lsGet === "function" ? lsGet("tiles", null) : null;
-    const def = ["sess", "pro", "water", p.minor ? "mov" : p.over65 ? "fv" : "kcal"];
+    const def = data.tilesDefault(); // audit B13: stessi riquadri iniziali di board.js
     let k = Array.isArray(saved) && saved.length === 4 ? saved.slice() : def;
     if (p.minor) k = k.map(x => x === "kcal" || x === "peso" ? "mov" : x); // minori: niente calorie né peso in Oggi
     return k.filter((x, i) => k.indexOf(x) === i).concat(def).filter((x, i, a) => a.indexOf(x) === i).slice(0, 4);
@@ -100,10 +97,10 @@
     if (k === "mov") { const m = moveMin(); return ({ label: "Movimento", value: m, of: 60, unit: "min", pct: ui.pct(m, 60), act: "go", arg: "palestra" }); }
     if (k === "fv") { const n = fruitVeg(); return n == null ? ({ label: "Frutta e verdura", value: "–", miss: "Serve il piano dei pasti", act: "numeri" })
       : ({ label: "Frutta e verdura", value: n, of: 5, unit: "porzioni", pct: ui.pct(n, 5), act: "numeri" }); }
-    if (k === "peso") { const w = data.weight().last; return ({ label: "Peso", value: w ? ui.nf(w.kg) : "–", unit: w ? "kg" : null, miss: w ? null : "Nessuna pesata", act: "peso" }); }
+    if (k === "peso") { const a = data.weight().avg7, w = a[a.length - 1]; return ({ label: "Peso", value: w ? ui.nf(w.kg) : "–", unit: w ? "kg" : null, miss: w ? "media 7 giorni" : "Nessuna pesata", act: "peso" }); } // audit B1: come Progressi
     return null;
   }
-  const water = () => { const v = dayRaw(); return { l: (v && v.water || 0) * 0.25, t: planTargets().waterL || 2 }; };
+  const water = () => data.water(localISO()); // audit B2: acqua e obiettivo da un punto solo (v3.js)
   /* 29/10: stessi conti per Cibo › «I numeri di oggi» (sec-cibo.js), così i numeri sono identici a questi riquadri */
   window.V3Num = { fruitVeg, water };
 
@@ -116,6 +113,7 @@
     mov: ["Un'ora di movimento al giorno", "L'Organizzazione mondiale della sanità consiglia almeno 60 minuti al giorno sotto i 18 anni. Valgono anche gioco, bici e corsa.", "Che cosa conta come movimento?"],
     bones: ["Il movimento rende le ossa più forti", "Saltare, correre e sollevare pesi leggeri fa crescere ossa più dense. Le ossa costruite da giovani durano tutta la vita.", "Perché il movimento fa bene alle ossa?"],
     fv: ["Cinque porzioni di frutta e verdura", "Danno fibre, vitamine e acqua. Una porzione è circa un frutto o un piatto di verdura.", "Quanto è una porzione di verdura?"],
+    segna: ["Segnare i pasti ti fa vedere cosa mangi davvero", "Quello che ricordiamo a fine giornata è spesso diverso da quello che abbiamo mangiato. Segnarlo subito rende i numeri veri.", "Perché segnare i pasti?"],
     o65: ["Le proteine proteggono i muscoli", "Dopo i 65 anni il muscolo si perde più in fretta. Proteine a ogni pasto e allenamento lo mantengono forte.", "Quante proteine mi servono?"]
   };
   function fact() {
@@ -136,12 +134,18 @@
       ui.end(f[1], { act: "sap", arg: f[0], leoQ: f[3] });
   }
   function dayPage() {
-    const items = timeline(), meals = items.filter(x => x.kind === "meal"), done = meals.filter(x => x.done).length, up = upcoming(items), cur = up[0];
+    const items = timeline(), meals = items.filter(x => x.kind === "meal"), done = data.mealsDone(localISO()), up = upcoming(items), cur = up[0];
     const verdict = meals.length ? `${done} di ${meals.length} pasti segnati` : "Nessun pasto in programma";
-    if (window.V3Giorni) return V3Giorni.render({ title: ui.dateSub(), verdict, rows: items.map(x => rowOf(x, x === cur)).join("") }); // 29/10 modifica 3: diario con i giorni passati
+    /* audit M9/M14: nel diario le sedute di oggi già fatte sono righe del diario (tutte, si correggono come i giorni passati); i pasti restano su Cibo */
+    const row = x => x.kind === "sess" && x.done && window.V3Giorni ? V3Giorni.sessRows(localISO()) : rowOf(x, x === cur);
+    /* settimana completa o seduta in corso: le sedute fatte oggi restano nel diario, al loro orario */
+    const fatte = S.sessions.filter(z => localISO(new Date(z.date)) === localISO()).map(z => new Date(z.date)).sort((a2, b2) => a2 - b2);
+    const list = window.V3Giorni && fatte.length && !items.some(x => x.kind === "sess" && x.done) ? items.concat({ kind: "fatte", t: fatte[0].getHours() * 60 + fatte[0].getMinutes() }).sort((a2, b2) => a2.t - b2.t) : items;
+    const row2 = x => x.kind === "fatte" ? V3Giorni.sessRows(localISO(), true) : row(x);
+    if (window.V3Giorni) return V3Giorni.render({ title: ui.dateSub(), verdict, rows: list.map(row2).join("") }); // 29/10 modifica 3: diario con i giorni passati
     return ui.back() + `<div class="v3-oggi-ttl"><h1 class="v3-t1">La tua giornata</h1><p class="v3-sub">${ui.esc(verdict)}</p></div>` +
       `<div class="v3-oggi-tl">${items.map(x => rowOf(x, x === cur)).join("")}</div>` +
-      ui.end("Segnare i pasti ti fa vedere cosa mangi davvero", { act: "sap", arg: "pro", leoQ: "Perché segnare i pasti?" });
+      ui.end(FACTS.segna[0], { act: "sap", arg: "segna", leoQ: FACTS.segna[2] });
   }
 
   /* 29/10: «La tua settimana» tolta (coerenza): la settimana ha una casa sola, Palestra › La mia settimana */

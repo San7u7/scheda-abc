@@ -9,7 +9,7 @@
   const { ui, data } = V3, e = ui.esc, nf = ui.nf;
   const GG = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
   const MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
-  const MT = { col: "7:30", spu: "10:30", pra: "13:00", mer: "16:30", cen: "20:00" };
+  const MT = data.MEAL_TIME; // audit B6: una sola tabella degli orari (v3.js)
   const T = () => localISO();
   const minIso = () => addDays(T(), -13);
   const okIso = iso => !!iso && iso >= minIso() && iso <= T();
@@ -72,11 +72,10 @@
 
   /* ---------- lettura ---------- */
   const dayV = iso => { const v = S.days[iso]; return v ? { meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {}, extra: v.extra || [] } : { meals: {}, custom: {}, skip: {}, extra: [] }; };
-  function mealsOf(iso) {
-    const dw = dt(iso).getDay(), plan = hasPlanNow(), v = dayV(iso);
-    return MEALS.filter(([k]) => !plan || mealOf(dw, k)).map(([k]) => ({ k, m: plan ? mealOf(dw, k) : null, st: mealState(v, k), c: v.custom[k] }));
-  }
-  const sessOf = iso => S.sessions.filter(s => localISO(new Date(s.date)) === iso).sort((a, b) => a.date < b.date ? 1 : -1)[0] || null;
+  /* audit M13: i pasti di quel giorno (piano + segnati anche se il piano di oggi non li prevede più), da v3.js */
+  const mealsOf = iso => data.dayMeals(iso);
+  /* audit M14: tutte le sedute del giorno, dalla prima all'ultima */
+  const sessAll = iso => S.sessions.filter(s => localISO(new Date(s.date)) === iso).sort((a, b) => a.date < b.date ? -1 : 1);
   const nSets = s => (s.items || []).reduce((m, x) => m + (x.cardio ? 0 : (x.sets || []).length), 0);
   const locked = () => { if (!activeDay()) return false; toast(`Concludi prima ${kw() ? "l'allenamento" : "la seduta"} di oggi`); return true; };
 
@@ -90,7 +89,7 @@
   function strip() {
     const t = T(), from = addDays(localISO(mondayOf(new Date())), -7 * wOff), canPrev = addDays(from, -1) >= minIso();
     const cells = Array.from({ length: 7 }, (_, i) => {
-      const iso = addDays(from, i), dis = iso > t || iso < minIso(), ms = dis ? [] : mealsOf(iso), done = ms.filter(x => x.st !== "open" && x.st !== "skip").length, s = !dis && sessOf(iso);
+      const iso = addDays(from, i), dis = iso > t || iso < minIso(), ms = dis ? [] : mealsOf(iso), done = dis ? 0 : data.mealsDone(iso), s = !dis && sessAll(iso).length > 0;
       const dots = "<i></i>".repeat(Math.min(5, done)) + (s ? '<i class="s"></i>' : "");
       const aria = `${cap(gName(iso))} ${dt(iso).getDate()} ${MESI[dt(iso).getMonth()]}${iso === t ? ", oggi" : ""}${dis ? "" : `, ${done} ${done === 1 ? "pasto" : "pasti"}${s ? ", " + sessWord() + " fatta" : ""}`}`;
       return `<button class="v3-g-c${iso === t ? " today" : ""}"${iso === sel ? ' aria-current="date"' : ""}${dis ? " disabled aria-disabled=\"true\"" : ` data-v3act="g-day" data-v3arg="${iso}"`} aria-label="${e(aria)}"><span>${iso === t ? "oggi" : "LMMGVSD"[i]}</span><b>${dt(iso).getDate()}</b><span class="v3-g-d" aria-hidden="true">${dots}</span></button>`;
@@ -104,10 +103,10 @@
     const sub = x.st === "plan" ? "Come da piano" : x.st === "custom" ? "Altro: " + x.c.text : x.st === "skip" ? "Non mangiato" : x.m ? x.m.t : "Non segnato";
     return ui.row({ title: LAB(x.k) + (done ? " ✓" : ""), sub, when: MT[x.k], act: "g-meal", arg: x.k, apri: x.st === "open" ? "Segna" : "Cambia" });
   }
-  function sessRow(iso) {
-    const s = sessOf(iso);
-    if (s) return ui.row({ title: sName(s.day), sub: `${nSets(s)} serie${s.late ? " · segnata dopo" : ""}`, when: s.late ? "" : hm(s.date), act: "g-sess", arg: s.id });
-    if (!DAYS.length) return "";
+  function sessRow(iso, only) { // only = solo le sedute fatte (oggi, accanto alle righe di sec-oggi)
+    const all = sessAll(iso);
+    if (all.length) return all.map(s => ui.row({ title: sName(s.day), sub: `${nSets(s)} serie${s.late ? " · segnata dopo" : ""}`, when: s.late ? "" : hm(s.date), act: "g-sess", arg: s.id })).join("");
+    if (only || !DAYS.length) return "";
     return ui.row({ title: kw() ? "Nessun allenamento" : "Nessuna seduta", sub: "Ti sei allenato senza app?", act: "g-new", apri: "Segna" });
   }
   /* host = { title, verdict, rows } per oggi (le righe di sempre di sec-oggi) */
@@ -117,14 +116,18 @@
     let head, rows;
     if (sel === T()) { head = [host.title, host.verdict]; rows = host.rows; }
     else {
-      const ms = mealsOf(sel), done = ms.filter(x => x.st === "plan" || x.st === "custom").length, s = sessOf(sel);
-      head = [dLong(sel), (ms.length ? `${done} ${done === 1 ? "pasto" : "pasti"} su ${ms.length}` : "Nessun pasto in programma") + (s ? ` e ${sessWord()} fatta` : "")];
+      const ms = mealsOf(sel), done = data.mealsDone(sel), ns = sessAll(sel).length;
+      head = [dLong(sel), (ms.length ? `${done} ${done === 1 ? "pasto" : "pasti"} su ${ms.length}` : "Nessun pasto in programma") + (ns === 1 ? ` e ${sessWord()} fatta` : ns > 1 ? ` e ${ns} ${kw() ? "allenamenti fatti" : "sedute fatte"}` : "")];
       rows = ms.map(x => mealRow(sel, x)).join("") + sessRow(sel);
     }
     return ui.back() + `<div class="v3-g-ttl"><h1 class="v3-t1">${e(head[0])}</h1><p class="v3-sub v3-g-v">${e(head[1])}</p></div>` + strip() +
       `<div class="v3-g-list">${rows}</div>` +
-      ui.end("Puoi sistemare pasti e sedute fino a due settimane fa", { act: "sap", arg: "pro", leoQ: "Perché segnare i pasti?" });
+      ui.end(SAP[0], { act: "g-sap", leoQ: "Perché segnare i pasti?" });
   }
+
+  /* audit B8: il foglio «Lo sapevi?» ripete il testo dell'anteprima e lo spiega */
+  const SAP = ["Puoi sistemare pasti e sedute fino a due settimane fa", "Tocca un giorno nella striscia, poi il pasto o la seduta da correggere. Cambiano solo i numeri di quel giorno."];
+  function sapSheet() { V3.sheet(`<h2 class="v3-sh1">${e(SAP[0])}</h2><p class="v3-shp">${e(SAP[1])}</p>${ui.secondary("Chiudi", "close")}`, { label: "Lo sapevi?" }); }
 
   /* ---------- pasto di un giorno passato (tavola GiorniPasto) ---------- */
   function setMeal(iso, k, how) {
@@ -136,16 +139,16 @@
   }
   function mealSheet(iso, k) {
     let ask = false, then = null;
-    const g = gName(iso);
+    const g = gName(iso), fem = ["col", "mer", "cen"].includes(k);
     const html = () => {
-      const x = mealsOf(iso).find(y => y.k === k) || { k, m: mealOf(dt(iso).getDay(), k), st: mealState(dayV(iso), k), c: dayV(iso).custom[k] }, di = data.day(iso);
+      const x = mealsOf(iso).find(y => y.k === k) || { k, m: hasPlanNow() ? mealOf(dt(iso).getDay(), k) : null, st: mealState(dayV(iso), k), c: dayV(iso).custom[k] }, di = data.day(iso);
       const what = x.st === "plan" ? "Segnato come da piano" : x.st === "custom" ? "Segnato: " + x.c.text : x.st === "skip" ? "Segnato come non mangiato" : x.m ? `Da piano: ${x.m.t}${minor() || x.m.kcal == null ? "" : " · " + nf(x.m.kcal, 0) + " calorie"}` : "Non ancora segnato";
       const nums = kid() ? "" : ui.limeBox({ title: `I numeri di ${g}`, tiles: [...(minor() ? [] : [{ label: "Calorie", value: di.kcal, of: di.kcalT, pct: ui.pct(di.kcal, di.kcalT) }]), { label: "Proteine", value: di.pro, of: di.proT, unit: "g", pct: ui.pct(di.pro, di.proT) }] });
       const acts = ask
-        ? `<p class="v3-shp">Si cancellano il segno e i numeri di questo pasto.</p><button class="v3-apri wide" data-v3act="g-unyes">Sì, togli il segno</button><button class="v3-b2" data-v3act="g-unno">No, tienilo</button>`
+        ? `<p class="v3-shp">${x.st === "skip" ? "Si cancella il segno «non mangiato»." : "Si cancellano il segno e i numeri di questo pasto."}</p><button class="v3-apri wide" data-v3act="g-unyes">Sì, rimetti tra i pasti da fare</button><button class="v3-b2" data-v3act="g-unno">No, ${fem ? "lasciala segnata" : "lascialo segnato"}</button>`
         : (x.m && x.st !== "plan" ? `<button class="v3-apri wide" data-v3act="g-plan">Segna come da piano</button>` : "") +
           `<div class="v3-g-two"><button class="v3-b2" data-v3act="g-text">${x.st === "custom" ? "Cambia cosa" : "Scrivi cosa"}</button>` +
-          (x.st === "open" ? `<button class="v3-b2" data-v3act="g-skip">Segna saltato</button>` : `<button class="v3-b2" data-v3act="g-un">Togli il segno</button>`) + `</div>`;
+          (x.st === "open" ? `<button class="v3-b2" data-v3act="g-skip">Non l'ho mangiato</button>` : `<button class="v3-b2" data-v3act="g-un">Rimetti tra i pasti da fare</button>`) + `</div>`;
       return `<h2 class="v3-sh1">${e(LAB(k))} di ${e(g)}</h2><p class="v3-shp">${e(what)}</p>${nums}${acts}<p class="v3-g-note">Conta nei numeri di ${e(g)}, non di oggi.</p>`;
     };
     const paint = () => { s.el.innerHTML = '<div class="v3-grab"></div>' + html(); };
@@ -154,8 +157,9 @@
       "g-plan"() { const u = setMeal(iso, k, "plan"); if (u) done(`${LAB(k)} segnato come da piano`, u); },
       "g-skip"() { const u = setMeal(iso, k, "skip"); if (u) done(`${LAB(k)} segnato come non mangiato`, u); },
       "g-un"() { ask = true; paint(); }, "g-unno"() { ask = false; paint(); },
-      "g-unyes"() { const u = setMeal(iso, k, "open"); if (u) done("Segno tolto", u); },
-      "g-text"() { const c = dayV(iso).custom[k]; then = () => { S.food = { key: k, text: c ? c.text : "", items: [], note: "", busy: false, err: null, iso }; openSheet("food"); }; s.close(); }
+      "g-unyes"() { const u = setMeal(iso, k, "open"); if (u) done(`${LAB(k)} di nuovo da fare`, u); },
+      /* audit M10: «Scrivi cosa» apre il compositore di «I miei alimenti» su quel giorno (senza alimenti.js resta il foglio vecchio) */
+      "g-text"() { const c = dayV(iso).custom[k]; then = window.V3Alim ? () => V3.open("cibo", { altra: k, iso }) : () => { S.food = { key: k, text: c ? c.text : "", items: [], note: "", busy: false, err: null, iso }; openSheet("food"); }; s.close(); }
     }, onClose: () => setTimeout(() => { if (then) then(); else V3.refresh(); }, 0) });
   }
 
@@ -267,7 +271,7 @@
   }
   async function saveNew(p) {
     if (locked() || !okIso(p.iso)) return;
-    if (sessOf(p.iso)) { toast(`C'è già ${kw() ? "un allenamento" : "una seduta"} in questo giorno`); return; }
+    if (sessAll(p.iso).length) { toast(`C'è già ${kw() ? "un allenamento" : "una seduta"} in questo giorno`); return; }
     const items = p.items.filter(x => x.on && (x.cardio || x.sets.length)).map(x => { const o = { id: x.id, name: x.name, sets: x.cardio ? [] : clone(x.sets) }; if (x.cardio) o.cardio = clone(x.cardio); return o; });
     if (!items.length) { toast("Segna almeno un esercizio"); return; }
     const s = { id: "s" + Date.now(), date: new Date(p.iso + "T18:00:00").toISOString(), day: p.day, items, late: true };
@@ -279,8 +283,10 @@
   /* ---------- API per sec-oggi ---------- */
   window.V3Giorni = {
     render: diary,
+    sessRows: (iso, only) => sessRow(iso, only),
     reset(iso) { sel = okIso(iso) ? iso : T(); wOff = 0; const mon = localISO(mondayOf(new Date())); while (sel < addDays(mon, -7 * wOff)) wOff++; pile.length = 0; },
     on: {
+      "g-sap"() { sapSheet(); },
       "g-day"(iso) { if (okIso(iso)) { sel = iso; V3.refresh(); } },
       "g-wk"(n) { wOff = Math.max(0, +n); const from = addDays(localISO(mondayOf(new Date())), -7 * wOff); sel = wOff ? (addDays(from, 6) >= minIso() ? addDays(from, 6) : sel) : T(); V3.refresh(); },
       "g-meal"(k) { if (okIso(sel)) mealSheet(sel, k); },

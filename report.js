@@ -47,7 +47,7 @@
     const both = exs.filter(o => o.old), up = both.filter(o => diffOf(o) > 0);
     return { wk, ds, reg: reg.length, closedN: closed.length, ses, T, a, gym, rest, mAvg, eaten, planned: mealsAll.length, topMiss: topMiss && topMiss[1] >= 2 ? { k: topMiss[0], n: topMiss[1], label: (MEALS.find(m => m[0] === topMiss[0]) || [0, topMiss[0]])[1] } : null,
       leg: closed.reduce((m, d) => m + d.leg, 0), pesce: closed.reduce((m, d) => m + d.pesce, 0), fat, fatP, vol, volP, sets: ses.reduce((m, s) => m + s.sets, 0), pesoA, pesoP, exs, useKg, diffOf, both, up,
-      cardio: a("cardio").total, cardioT: X.cardioT(), dolore: ses.some(s => s.dolore), colMiss: miss.col || 0 };
+      cardio: a("cardio").total, cardioT: X.cardioT(), min: X.minRange(wk.from, wk.to), late: ses.some(s => s.late), dolore: ses.some(s => s.dolore), colMiss: miss.col || 0 };
   }
 
   /* ============================== frasi a regole ============================== */
@@ -79,8 +79,8 @@
   }
   function palestra(f) {
     const out = [], fa = avg(f.fat), w = fatW(fa);
-    if (kid()) { out.push(fraseSedute(f)); if (f.sets) out.push(`In tutto hai fatto ${B(f.sets + " serie")}.`); if (f.cardio || f.cardioT) out.push(`Ti sei mosso ${B(nf(f.cardio, 0) + " minuti")}: l'obiettivo è 60 minuti al giorno.`); return out; }
-    out.push(fraseSedute(f) + (w ? `, con fatica in media ${e(w.toLowerCase())}.` : "."));
+    if (kid()) { out.push(fraseSedute(f)); if (f.sets) out.push(`In tutto hai fatto ${B(f.sets + " serie")}${f.min ? ` in ${B(nf(f.min, 0) + " minuti")}` : ""}.`); if (f.cardio || f.cardioT) out.push(`Ti sei mosso ${B(nf(Math.round(f.cardio / 7), 0) + " minuti al giorno")}, in media: l'obiettivo è ${SO.MOVIMENTO_GIORNO} minuti al giorno.`); return out; }
+    out.push(fraseSedute(f) + (f.min ? ` (${nf(f.min, 0)} minuti in tutto)` : "") + (w ? `, con fatica in media ${e(w.toLowerCase())}.` : "."));
     if (!o65() && f.vol) out.push(`Hai sollevato ${B(nf(f.vol, 0) + " kg")} in tutto` + (f.volP ? `, il ${Math.abs(Math.round((f.vol - f.volP) / f.volP * 100))}% in ${f.vol >= f.volP ? "più" : "meno"} della settimana prima.` : "."));
     else if (f.sets) out.push(`Hai fatto ${B(f.sets + " serie")} in tutto.`);
     if (f.both.length) out.push(`Nel mese il carico è salito su ${B(f.up.length + " " + pl(f.both.length, "esercizio", "esercizi") + " su " + f.both.length)}.`);
@@ -92,7 +92,7 @@
     if (kid()) {
       out.push(`Hai segnato ${B(f.eaten + " pasti su " + f.planned)}.` + (f.topMiss ? ` Il pasto che salti più spesso è ${e(art(f.topMiss.label) + f.topMiss.label.toLowerCase())}.` : ""));
       if (pro.n) out.push(`Hai mangiato abbastanza proteine ${B(pro.okN + " " + pl(pro.okN, "giorno", "giorni") + " su " + pro.n)}.`);
-      if (fv.n) out.push(fv.avg >= SO.FV_PORZIONI ? "Frutta e verdura: ne mangi abbastanza." : `Frutta e verdura: in media ${B(nf(fv.avg, 0))} porzioni al giorno, ne servono ${SO.FV_PORZIONI}.`);
+      if (fv.n) out.push(fv.avg >= SO.FV_PORZIONI ? "Frutta e verdura: ne mangi abbastanza." : `Frutta e verdura: in media ${B(nf(fv.avg, fv.avg % 1 ? 1 : 0))} porzioni al giorno, ne servono ${SO.FV_PORZIONI}.`);
       return out;
     }
     out.push(`Hai segnato ${B(f.eaten + " pasti su " + f.planned)}` + (f.topMiss ? `: ${e(art(f.topMiss.label) + f.topMiss.label.toLowerCase())} è il pasto che resta più spesso non mangiato.` : "."));
@@ -115,7 +115,7 @@
     if (kid()) {
       if (f.T && f.ses.length < f.T) p.push({ t: "Un allenamento alla volta", s: "Chiedi all'adulto che ti allena quando fare il prossimo." });
       p.push({ t: "Una ripetizione in più", s: "Prova a farne una in più all'esercizio che ti piace." });
-      if (f.cardio < f.cardioT) h.push({ t: "60 minuti di movimento al giorno", s: "Gioco, bici, corsa: conta tutto." });
+      if (f.cardio < f.cardioT) h.push({ t: `${SO.MOVIMENTO_GIORNO} minuti di movimento al giorno`, s: "Gioco, bici, corsa: conta tutto." });
       else h.push({ t: "Continua a muoverti così", s: "Hai fatto il movimento della settimana." });
       return { s, p, h };
     }
@@ -139,7 +139,7 @@
     }
     if (!minor() && kc.n && kc.avg < kc.tAvg - 300) s.push({ t: "Mangia tutti i pasti del piano", s: `Sei sotto di circa ${nf(Math.round((kc.tAvg - kc.avg) / 50) * 50, 0)} calorie al giorno: segui le porzioni del tuo piano.` });
     if (minor() && f.colMiss >= 2) s.push({ t: "Non saltare la colazione", s: "Dà energia per la scuola e l'allenamento, come nel tuo piano." });
-    if (o65() && pro.n && pro.avg < pro.tAvg * 0.9) s.push({ t: "Proteine a ogni pasto, dentro il tuo piano", s: "Legumi, pesce, uova o latticini, come previsto dal piano." });
+    if (o65() && pro.n && pro.avg < pro.tAvg * SO.PROTEINE_MIN) s.push({ t: "Proteine a ogni pasto, dentro il tuo piano", s: "Legumi, pesce, uova o latticini, come previsto dal piano." });
     if (f.topMiss) p.push({ t: `Prepara ${art(f.topMiss.label) + f.topMiss.label.toLowerCase()} la sera prima`, s: "Così non lo salti: è già nel tuo piano." });
     const rp0 = f.mAvg(f.rest, "pro"), rT = f.mAvg(f.rest, "proT");
     if (rp0 != null && rp0 < rT - 5) p.push({ t: "Le proteine del piano anche a riposo", s: "Segui le porzioni del tuo piano anche nei giorni senza palestra." });
@@ -164,13 +164,14 @@
     const sed = { label: cap(WN()), value: String(f.ses.length), ...(f.T ? of(f.T) : {}), pct: f.T ? ui.pct(f.ses.length, f.T) : null };
     const proG = { label: "Proteine", value: pro.n ? String(pro.okN) : "–", ...(pro.n ? of(pro.n, "giorni") : {}), pct: pro.n ? ui.pct(pro.okN, pro.n) : null, miss: pro.n ? null : "Nessun giorno segnato" };
     const acqua = { label: "Acqua", value: aq.n ? nf(aq.avg, 1) : "–", ...of(nf(wT, 1), "L"), pct: aq.n ? ui.pct(aq.avg, wT) : null, miss: aq.n ? "media al giorno" : "Non segnata" };
-    const fvT = { label: "Frutta e verdura", value: fv.n ? nf(fv.avg, 0) : "–", ...of(SO.FV_PORZIONI, "porzioni"), pct: fv.n ? ui.pct(fv.avg, SO.FV_PORZIONI) : null, miss: fv.n ? "media al giorno" : "Nessun giorno segnato" };
+    const fvT = { label: "Frutta e verdura", value: fv.n ? nf(fv.avg, fv.avg < SO.FV_PORZIONI && fv.avg % 1 ? 1 : 0) : "–", ...of(SO.FV_PORZIONI, "porzioni"), pct: fv.n ? ui.pct(fv.avg, SO.FV_PORZIONI) : null, miss: fv.n ? "media al giorno" : "Nessun giorno segnato" };
     if (tipo === "palestra") {
       const fa = avg(f.fat), w = fatW(fa);
       const t2 = { label: "Fatica", value: w || "–", miss: f.fat.length ? `media ${pl(f.fat.length, kw() ? "dell'allenamento" : "della seduta", (kw() ? "dei " : "delle ") + f.fat.length + " " + WN())}` : "Non segnata" };
       const t3 = !kid() && !o65() ? { label: "Peso sollevato", value: f.vol ? nf(f.vol, 0) : "–", unit: f.vol ? "kg" : null, miss: f.vol && f.volP ? `${f.vol >= f.volP ? "+" : "−"}${Math.abs(Math.round((f.vol - f.volP) / f.volP * 100))}% sulla settimana prima` : f.vol ? "" : `Nessuna ${W1()} con i pesi` }
         : { label: "Serie fatte", value: String(f.sets) };
-      const t4 = { label: kid() ? "Movimento" : "Cardio", value: nf(f.cardio, 0), ...of(f.cardioT, "minuti"), pct: ui.pct(f.cardio, f.cardioT) };
+      const md = Math.round(f.cardio / 7), t4 = minor() ? { label: kid() ? "Movimento" : "Cardio", value: nf(md, 0), ...of(SO.MOVIMENTO_GIORNO, "minuti"), pct: ui.pct(md, SO.MOVIMENTO_GIORNO), miss: "media al giorno" } // minori: 60 al giorno, stessa regola di cardioWeek
+        : { label: "Cardio", value: nf(f.cardio, 0), ...of(f.cardioT, "minuti"), pct: ui.pct(f.cardio, f.cardioT) };
       return [sed, t2, t3, t4];
     }
     if (tipo === "cibo") {

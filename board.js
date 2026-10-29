@@ -16,8 +16,10 @@
   /* ---------- the 4 number tiles, each slot chosen by the user ---------- */
   const TI = { carb: '<svg viewBox="0 0 24 24"><path d="M12 21V8M12 8c-3 0-5-2-5-5 3 0 5 2 5 5zm0 0c3 0 5-2 5-5-3 0-5 2-5 5zM12 14c-3 0-5-2-5-5 3 0 5 2 5 5zm0 0c3 0 5-2 5-5-3 0-5 2-5 5z"/></svg>',
     fat: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="13" rx="6.5" ry="8"/><circle cx="12" cy="15" r="2.6"/></svg>' };
-  const TILES = [["kcal", "Calorie"], ["pro", "Proteine"], ["carb", "Carboidrati"], ["fat", "Grassi"], ["water", "Acqua"], ["peso", "Peso"], ["sess", "Sedute della settimana"]];
-  const tileCfg = () => { const t = lsGet("tiles", null); return Array.isArray(t) && t.length === 4 ? t : ["kcal", "pro", "fat", "water"]; };
+  const TILES = [["kcal", "Calorie"], ["pro", "Proteine"], ["carb", "Carboidrati"], ["fat", "Grassi"], ["water", "Acqua"], ["peso", "Peso"], ["sess", "Sedute della settimana"], ["mov", "Movimento"], ["fv", "Frutta e verdura"]];
+  /* audit B13: stessi riquadri iniziali di Oggi (V3.data.tilesDefault: sedute, proteine, acqua, calorie; minori movimento; over 65 frutta e verdura) */
+  const tilesDef = () => { try { return window.V3 ? V3.data.tilesDefault() : ["sess", "pro", "water", "kcal"]; } catch (_) { return ["sess", "pro", "water", "kcal"]; } };
+  const tileCfg = () => { const t = lsGet("tiles", null); return Array.isArray(t) && t.length === 4 ? t : tilesDef(); };
   function tile(k) {
     const I = window.TILE_ICONS || {}, T = planTargets(), iso = localISO(), v = dayLog(iso), e = intake(iso).eaten, st = window.statTile;
     const left = (val, tgt, u) => tgt ? (tgt - val > 0.5 ? ` · mancano ${fmt(Math.round(tgt - val))}${u}` : " · fatto") : "";
@@ -29,6 +31,8 @@
     if (k === "water") return st(I.water, `${fmt(v.water * 0.25)}<small> / ${fmt(T.waterL)} L</small>`, "Acqua", v.water * 0.25 / T.waterL * 100, "water", "1", "+");
     if (k === "peso") { const w = weights(), l = w[w.length - 1]; return st(I.peso, v.peso ? `${fmt(v.peso)}<small> kg</small>` : l ? `${fmt(l.kg)}<small> kg</small>` : "–", v.peso ? "Peso di oggi" : "Peso · tocca per registrare", null, "sheet", "peso"); }
     if (k === "sess") { const n = Object.keys(weekDone()).length, tot = DAYS.length || 3; return st(I.sess, `${n}<small> / ${tot}</small>`, "Sedute della settimana", n / tot * 100, "macro", "train"); }
+    if (k === "mov") { const m = Math.round(S.sessions.filter(x => localISO(new Date(x.date)) === iso).reduce((a, x) => a + (x.tempi && x.tempi.total ? x.tempi.total / 60 : 0), 0)); return st(I.sess, `${m}<small> / 60 min</small>`, "Movimento", m / 60 * 100, "macro", "train"); }
+    if (k === "fv") { const n = window.V3Num ? V3Num.fruitVeg() : null; return st(I.pro, n == null ? "–" : `${n}<small> / 5</small>`, "Frutta e verdura", n == null ? null : n / 5 * 100, "macro", "food"); }
     return "";
   }
   const tilesHtml = (edit) => `<div>${edit ? `<div class="block-h" style="margin-bottom:10px"><h2>I numeri di <span class="hl">oggi</span></h2><button class="link small" data-act="tiles-edit">Scegli i numeri</button></div>` : ""}<div class="stiles">${tileCfg().map(tile).join("")}</div></div>`;
@@ -235,7 +239,7 @@
       $("#overlay").innerHTML = `<div class="scrim" data-act="close"><div class="sheet full" role="dialog" aria-modal="true" aria-label="Modifica i riquadri"><div class="grab"></div>
         <h2>I tuoi <span class="hl">4 riquadri</span></h2><p class="muted">Scegli cosa mostrare in ogni riquadro. Valgono in Oggi e in Cibo.</p>
         ${t.map((cur, i) => `<div class="block" style="margin-top:14px"><p class="small muted" style="margin:0 0 8px">Riquadro ${i + 1} · ${i % 2 ? "a destra" : "a sinistra"}, ${i < 2 ? "in alto" : "in basso"}</p><div class="seg wrap" role="group">${TILES.map(([k, l]) => `<button data-act="tile-set" data-i="${i}" data-v="${k}" aria-pressed="${cur === k}">${l}</button>`).join("")}</div></div>`).join("")}
-        <button class="primary" data-act="close" style="margin-top:16px">Fatto</button><button class="link small" data-act="tiles-reset" style="align-self:center">Ripristina: calorie, proteine, grassi, acqua</button></div></div>`;
+        <button class="primary" data-act="close" style="margin-top:16px">Fatto</button><button class="link small" data-act="tiles-reset" style="align-self:center">Ripristina i riquadri iniziali</button></div></div>`;
       return;
     }
     if (S.sheet !== "bxadd") return prevSheet();
@@ -259,7 +263,7 @@
     else if (act === "wk-reset") { lsSet("shift", null); render(); toast("Tornata la settimana della scheda"); }
     else if (act === "tiles-edit") { S.sheet = "tiles"; renderSheet(); }
     else if (act === "tile-set") { const t = tileCfg().slice(), i = +b.dataset.i, j = t.indexOf(v); if (j >= 0 && j !== i) t[j] = t[i]; t[i] = v; lsSet("tiles", t); renderSheet(); render(); }
-    else if (act === "tiles-reset") { lsSet("tiles", ["kcal", "pro", "fat", "water"]); renderSheet(); render(); }
+    else if (act === "tiles-reset") { lsSet("tiles", null); renderSheet(); render(); }
     else if (act === "board-go") { e.stopPropagation(); S.macro = null;
       if (v === "menu" || v === "piano") { S.tab = "piano"; S.hub = v === "menu" ? "menu" : ""; }
       else { S.tab = "progressi"; S.psub = v; }

@@ -28,8 +28,6 @@
 
   /* ---------- utilità ---------- */
   const today = () => localISO();
-  const nowH = () => { const d = new Date(); return d.getHours() + d.getMinutes() / 60; };
-  const HOUR = { col: 8, spu: 10.5, pra: 13, mer: 16.5, cen: 20 };
   const LAB = k => (MEALS.find(m => m[0] === k) || [k, k])[1];
   const dowOf = iso => new Date(iso + "T12:00:00").getDay();
   const prof = () => data.profile();
@@ -171,13 +169,14 @@
     const st = stOf(today(), k);
     if (st === "plan" || st === "custom") return { st, lab: "Mangiato ✓" };
     if (st === "skip") return { st, lab: "Non mangiato" };
-    const past = HOUR[k] + 1.5 < nowH();
+    const past = data.mealPast(k); // audit B6: stessi orari e stessa regola di Oggi (v3.js)
     return { st, past, lab: past ? "Da segnare" : idx === nextIdx(list) ? "Adesso" : "Più tardi" };
   }
-  function nextIdx(list) {
-    const h = nowH(), open = list.map((k, i) => [k, i]).filter(([k]) => stOf(today(), k) === "open");
-    const now = open.find(([k]) => HOUR[k] >= h - 1);
-    return now ? now[1] : open.length ? open[0][1] : list.length - 1;
+  function nextIdx(list) { // il «pasto del momento» è uno solo per Oggi e Cibo: V3.data.currentMeal()
+    const i = list.indexOf(data.currentMeal());
+    if (i >= 0) return i;
+    const open = list.map((k, j) => [k, j]).filter(([k]) => stOf(today(), k) === "open");
+    return open.length ? open[open.length - 1][1] : list.length - 1;
   }
   function mealNums(dw, k) { // calorie e macro del pasto come segnato (piano o «altra cosa»)
     const st = stOf(today(), k), v = dayV(today());
@@ -195,15 +194,15 @@
     if (s.st === "plan" || s.st === "custom") body = `<p class="v3-rs">${e(numLine(mealNums(dw, k)))}${s.st === "custom" ? " · al posto del piano" : ""}</p><div class="v3-cibo-acts">${ui.secondary("Vedi o cambia", "pasto", k)}</div>`;
     else if (s.st === "skip") body = `<p class="v3-rs">Segnato come non mangiato.</p><div class="v3-cibo-acts">${ui.secondary("Vedi o cambia", "pasto", k)}</div>`;
     else body = `<p class="v3-rs">${e(numLine(mealNums(dw, k)))}</p><div class="v3-cibo-acts">${lime("Ho mangiato questo", "eat", k)}${s.past
-      ? `<div class="v3-cibo-two">${alt("Un'altra cosa", k)}${leg("Non mangiato", "mealskip", k)}</div>` : alt("Ho mangiato un'altra cosa", k)}</div>`;
+      ? `<div class="v3-cibo-two">${alt("Un'altra cosa", k)}${leg("Non l'ho mangiato", "mealskip", k)}</div>` : alt("Ho mangiato un'altra cosa", k)}</div>`;
     return `<div class="v3-cibo-mc${cur ? " cur" : ""}" data-i="${i}"${cur ? "" : ` data-v3act="dot" data-v3arg="${i}" aria-hidden="true"`}><div class="v3-cibo-in"${cur ? "" : " inert"}>
       <p class="v3-cibo-k">${e(LAB(k))} · ${e(s.lab)}</p><p class="v3-cibo-t">${e(t)}</p>${body}</div></div>`;
   }
   /* ---------- «I numeri di oggi» (29/10, tavole 72-74): stessi numeri dei riquadri di Oggi (V3.data.today, V3Num di sec-oggi.js) ---------- */
   const NUM = () => window.V3Num || null;
-  const waterNow = () => NUM() ? NUM().water() : { l: ((S.days[today()] || {}).water || 0) * 0.25, t: planTargets().waterL || 2 };
+  const waterNow = () => data.water(today()); // audit B2: stessa fonte di Oggi
   const fvNow = () => NUM() ? NUM().fruitVeg() : null;
-  function pastiNow() { const list = hasPlanNow() ? planMeals(dowOf(today())) : MEALS.map(m => m[0]); return { n: list.filter(k => stOf(today(), k) !== "open").length, t: list.length || 5 }; }
+  function pastiNow() { const iso = today(); return { n: data.mealsDone(iso), t: data.dayMeals(iso).length || 5 }; } // audit M1: il «non mangiato» non conta
   /* un numero: etichetta, valore, obiettivo, unità, percentuale, parametro dello storico */
   function numOf(k) {
     const d = data.today();
@@ -282,7 +281,7 @@
       endCur(c);
   }
   function mainNoPlan() {
-    const iso = today(), v = dayV(iso), done = MEALS.filter(([k]) => mealState(v, k) !== "open").length;
+    const iso = today(), v = dayV(iso), done = data.mealsDone(iso); // audit M1
     const rows = MEALS.map(([k, l]) => { const st = mealState(v, k);
       return ui.row({ title: l, sub: st === "custom" ? v.custom[k].text : st === "skip" ? "Non mangiato" : st === "plan" ? "Mangiato ✓" : "Non ancora segnato", act: "alt", arg: k, apri: st === "open" ? "Segna" : "Cambia" })
         .replace(/data-v3act="alt" data-v3arg="/, AL ? 'data-v3act="al-altra" data-v3arg="' : 'data-act="mealalt" data-v="'); }).join("");
@@ -317,9 +316,9 @@
 
   /* ============================== PAGINE INTERNE ============================== */
   function pageGiornata() {
-    const iso = today(), dw = dowOf(iso), v = dayV(iso), list = hasPlanNow() ? planMeals(dw) : MEALS.map(m => m[0]);
-    const done = list.filter(k => stOf(iso, k) === "plan" || stOf(iso, k) === "custom").length, ni = nextIdx(list);
-    const rows = list.map((k, i) => { const s = stateOf(k, i, list), m = mealOf(dw, k), t = s.st === "custom" ? v.custom[k].text : m ? m.t : "Non ancora segnato";
+    const iso = today(), dw = dowOf(iso), v = dayV(iso), list = data.dayMeals(iso).map(x => x.k); // audit M13: anche i pasti segnati fuori dal piano
+    const done = data.mealsDone(iso), ni = nextIdx(list);
+    const rows = list.map((k, i) => { const s = stateOf(k, i, list), m = mealOf(dw, k), t = s.st === "custom" ? v.custom[k].text : m ? m.t : s.st === "plan" ? "Come da piano" : "Non ancora segnato";
       return ui.row({ title: `${LAB(k)} · ${s.lab}`, sub: t, act: "pasto", arg: k, on: i === ni && s.st === "open" }); }).join("");
     const ex = v.extra.map(x => `<div class="v3-row"><span class="v3-rx"><span class="v3-rt" style="display:block">Fuori programma</span><span class="v3-rs" style="display:block">${e(x.text)} · ${minor() ? Math.round(x.p) + " g di proteine" : nf(Math.round(x.kcal), 0) + " calorie"}</span></span>${leg("Togli", "delextra", x.id, "v3-b2 v3-cibo-tg")}</div>`).join("");
     return ui.back() + title("Tutti i pasti di oggi", `Hai segnato ${done} ${done === 1 ? "pasto" : "pasti"} su ${list.length}`) +
@@ -356,7 +355,7 @@
       h += (m ? ui.card(`<p class="v3-cibo-t">${e(m.t)}</p>`) : "") + acts((m ? lime("Ho mangiato questo", "eat", k) : "") + alt("Ho mangiato un'altra cosa", k) + ui.secondary("Rimetti tra i pasti da fare", "unmark", k));
     } else {
       h += (m ? ui.section("Nel piatto", ui.card(`<ul class="v3-cibo-ing">${m.i.map(x => `<li>${e(casa(x))}</li>`).join("")}</ul>`)) : "") +
-        acts((m ? lime("Ho mangiato questo", "eat", k) + ui.secondary("Cambia le quantità", "qty", k) : "") + alt(m ? "Un'altra cosa" : "Segna cosa ho mangiato", k) + (s.past ? leg("Non mangiato", "mealskip", k) : ""));
+        acts((m ? lime("Ho mangiato questo", "eat", k) + ui.secondary("Cambia le quantità", "qty", k) : "") + alt(m ? "Un'altra cosa" : "Segna cosa ho mangiato", k) + (s.past ? leg("Non l'ho mangiato", "mealskip", k) : ""));
     }
     return h + endCur(c);
   }
@@ -375,16 +374,22 @@
   const FOOD = [
     { id: "leg", re: /fagiol|ceci|lenticch|legum|piselli/i, name: "Legumi", ok: [2, 4], hint: "Consigliati 2–4 volte a settimana", why: "Fagioli, ceci e lenticchie danno mattoni per i muscoli, energia e tanta fibra. Le linee guida li consigliano 2–4 volte a settimana." },
     { id: "pesce", re: /pesce|orata|spigola|merluzzo|sgombro|tonno|salmone|sarde|alici/i, name: "Pesce", ok: [2, 3], hint: "Consigliato 2–3 volte a settimana", why: "Proteine per i muscoli, omega 3 per il cuore. Due o tre volte a settimana bastano; prova anche sgombro o sarde, pesce azzurro con grassi buoni." },
-    { id: "fv", re: /verdur|vegetal|insalat|frutta fresca|porzione di frutta|frutto|pomodor/i, name: "Frutta e verdura", ok: [14, 99], hint: "In almeno due pasti al giorno", why: "Ogni colore di frutta e verdura porta vitamine diverse. Le linee guida consigliano 5 porzioni al giorno, più colori possibile." }
+    { id: "fv", name: "Frutta e verdura", ok: [5, 99], hint: "5 porzioni al giorno", why: "Ogni colore di frutta e verdura porta vitamine diverse. Le linee guida consigliano 5 porzioni al giorno, più colori possibile." }
   ];
+  /* audit M4: legumi, pesce e frutta e verdura con lo stesso calcolo di storico e report (V3Stats.day: RE_LEG, RE_PESCE, porzioni fv) */
   function weekFood() {
-    const mon = localISO(mondayOf(new Date())), cnt = { leg: 0, pesce: 0, fv: 0 }, perDay = []; // 29/10: da lunedì a domenica
-    for (let i = 0; i < 7; i++) { const iso = addDays(mon, i), v = dayV(iso), dw = dowOf(iso); let n = 0;
-      const texts = MEALS.map(([k]) => { const st = mealState(v, k); if (st !== "open" && st !== "skip") n++; return st === "plan" ? mealText(dw, k) : st === "custom" ? String(v.custom[k].text || "") : ""; }).concat(v.extra.map(x => String(x.text || "")));
-      for (const f of FOOD) cnt[f.id] += texts.filter(x => x && f.re.test(x)).length;
+    const mon = localISO(mondayOf(new Date())), t = today(), cnt = { leg: 0, pesce: 0, fv: 0 }, perDay = []; let fvSum = 0, fvN = 0; // 29/10: da lunedì a domenica
+    if (window.V3Stats) { V3Stats.clear(); FOOD[0].re = V3Stats.RE_LEG; FOOD[1].re = V3Stats.RE_PESCE; } // storico.js si carica dopo questo file
+    for (let i = 0; i < 7; i++) { const iso = addDays(mon, i), n = iso > t ? 0 : data.mealsDone(iso);
+      if (iso <= t && window.V3Stats) { const d = V3Stats.day(iso); cnt.leg += d.leg; cnt.pesce += d.pesce; if (d.fv != null) { fvSum += d.fv; fvN++; } }
+      else if (iso <= t) { const v = dayV(iso), dw = dowOf(iso);
+        for (const [k] of MEALS) { const st = mealState(v, k), x = st === "plan" ? mealText(dw, k) : st === "custom" ? String(v.custom[k].text || "") : ""; if (x) { if (FOOD[0].re.test(x)) cnt.leg++; if (FOOD[1].re.test(x)) cnt.pesce++; } } }
       perDay.push({ iso, n, logged: !!S.days[iso] && intake(iso).logged }); }
-    return { cnt, perDay };
+    cnt.fv = fvN ? Math.round(fvSum / fvN) : 0; // porzioni al giorno, in media sui giorni segnati (come il report)
+    return { cnt, perDay, fvN };
   }
+  const cap1 = x => x.charAt(0).toUpperCase() + x.slice(1);
+  const foodVal = (f, w) => f.id === "fv" ? (w.fvN ? `in media ${w.cnt.fv} ${w.cnt.fv === 1 ? "porzione" : "porzioni"} al giorno` : "nessun giorno segnato") : `${w.cnt[f.id]} ${w.cnt[f.id] === 1 ? "volta" : "volte"}`;
   function pageSettimana() {
     const w = weekFood(), logged = w.perDay.filter(d => d.logged).length, closed = w.perDay.map(d => data.day(d.iso)).filter(d => d.closed && d.logged);
     let verdict = `${logged} ${logged === 1 ? "giorno segnato" : "giorni segnati"} su 7`;
@@ -392,7 +397,7 @@
       verdict = Math.abs(diff) < 100 ? "In linea con il piano" : `${diff < 0 ? "Sotto" : "Sopra"} di circa ${nf(Math.abs(diff), 0)} calorie al giorno`; }
     const chart = ui.card(ui.big(`${logged} <span class="v3-of">/7</span>`, "Giorni con i pasti segnati") + ui.chart.bars({ vals: w.perDay.map(d => d.n), max: 5, ticks: [[5, "5", true], [0, "0"]],
       xl: [[0, "lun " + ui.dLab(w.perDay[0].iso)], [6, "dom " + ui.dLab(w.perDay[6].iso)]], live: false, tip: i => `${ui.dLab(w.perDay[i].iso)}: ${w.perDay[i].iso > today() ? "ancora da venire" : w.perDay[i].n + " pasti segnati"}`, aria: "Pasti segnati questa settimana, da lunedì a domenica" }));
-    const rows = FOOD.map(f => ui.row({ title: `${f.name} · ${w.cnt[f.id]} ${w.cnt[f.id] === 1 ? "volta" : "volte"}`, sub: f.hint, act: "why", arg: f.id, apri: "Perché?" })).join("");
+    const rows = FOOD.map(f => ui.row({ title: `${f.name} · ${foodVal(f, w)}`, sub: f.hint, act: "why", arg: f.id, apri: "Perché?" })).join("");
     return ui.back() + title("I cibi della settimana", verdict) + chart + ui.section("Cibi importanti", rows) +
       ui.end("Il piano conta sulla media della settimana, non sul singolo giorno.", { leoQ: "Come sto mangiando questa settimana?" });
   }
@@ -431,7 +436,7 @@
   }
   function pageWhy(id) {
     const f = FOOD.find(x => x.id === id) || FOOD[0], w = weekFood();
-    return ui.back() + title(f.name, `${w.cnt[f.id]} ${w.cnt[f.id] === 1 ? "volta" : "volte"} questa settimana`) + ui.card(`<p class="v3-cibo-qq">${e(f.hint)}</p><p class="v3-rs">${e(f.why)}</p>`) +
+    return ui.back() + title(f.name, `${cap1(foodVal(f, w))} questa settimana`) + ui.card(`<p class="v3-cibo-qq">${e(f.hint)}</p><p class="v3-rs">${e(f.why)}</p>`) +
       acts(ui.secondary("Ho capito", "back")) + `<div class="v3-end">${ui.leo(`Perché sono importanti: ${f.name.toLowerCase()}?`)}</div>`;
   }
 
@@ -455,7 +460,7 @@
   /* ============================== REGISTRAZIONE ============================== */
   V3.register("cibo", {
     /* V3.go("cibo", { meal: k }) apre direttamente il pasto k */
-    enter(o) { if (o && o.meal && MEALS.some(m => m[0] === o.meal)) open({ p: "pasto", k: o.meal }); else if (o && o.numeri) open({ p: "numeri" }); },
+    enter(o) { if (o && o.meal && MEALS.some(m => m[0] === o.meal)) open({ p: "pasto", k: o.meal }); else if (o && o.numeri) open({ p: "numeri" }); else if (o && o.altra && AL && AL.altra && MEALS.some(m => m[0] === o.altra)) AL.altra(o.altra, o.iso); }, // audit M10: dal diario, pasto di un giorno passato
     render(el) {
       const p = top();
       if (p && p.p === "guida") return false; // guida flessibile della vista vecchia

@@ -149,7 +149,7 @@ Fonte: `../askesis-ux/oggi/STANDARD_OGGI.md` + regole del 27/10. I componenti `u
 - Grafici: un asse Y, pannelli impilati, bianco = adesso, bianco .4 = prima, fascia del piano #2a2a2a o tratteggio.
 - Valori «3.380 /3.400» (obiettivo piccolo). Altezza pagina = contenuto, nessun vuoto in fondo.
 - Immagini reali dove aiutano (esercizi dal Free Exercise DB come in `ux.js`, piatti, foto del percorso), mai decorative inventate.
-- Età: minori niente record in kg né calorie da tagliare; nessun giudizio estetico sulle foto; niente rosso; niente serie di giorni consecutivi (solo settimane).
+- Età (decisione di Giovanni del 27/10): il ragazzo 14-17 vede chili e record in kg (carichi concordati con il preparatore); il bambino ≤ 13 niente chili né record in kg, solo ripetizioni. Minori: niente calorie né grassi, niente calorie da tagliare; nessun giudizio estetico sulle foto; niente rosso; niente serie di giorni consecutivi (solo settimane).
 - Testi: italiano naturale, niente trattino lungo, virgolette «», tono da coach diretto (dato + spinta breve).
 - Classi CSS: solo `v3-*`. Stile aggiuntivo di sezione: un `<style id="v3-sec-<id>">` iniettato una volta, con selettori prefissati `#view.v3 .v3-<id>-…`. Colori solo con i token `--v3-*` (`--v3-bg`, `--v3-s1`, `--v3-s2`, `--v3-s3`, `--v3-lime`, `--v3-soft`, `--v3-ink`, `--v3-t1`, `--v3-t2`, `--v3-t3`).
 

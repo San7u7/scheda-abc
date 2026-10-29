@@ -18,6 +18,8 @@
   };
   window.TILE_ICONS = I;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const sMin = s => window.V3Stats ? V3Stats.sessMin(s) : (+s.durata || null); // M3: minuti di una seduta, calcolo unico (storico.js)
+  const nSetsOf = s => s.items.filter(e => !e.cardio).reduce((m, e) => m + e.sets.length, 0); // B3: serie senza cardio
   const estMin = p => Math.max(10, Math.round(p.items.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5);
   const nameOf = () => (S.profile && S.profile.nome) || (typeof ownerName === "function" ? ownerName() : "");
   const ring = (done, total, size = 64) => { const r = size / 2 - 5, c = 2 * Math.PI * r, f = total ? done / total : 0;
@@ -42,7 +44,7 @@
     let sess;
     if (!p) sess = `<div class="card"><h2>Nessuna scheda di allenamento</h2><p class="muted">Caricala come testo, foto o PDF, oppure fattene creare una di base.</p><button class="primary go" data-act="redo" data-v="2">Carica la scheda</button></div>`;
     else if (dt0) sess = `<div class="pcard done" style="background-image:url(${photoFor(dt0.day)})"><div class="pc-top"><span class="ph-tag">Fatta oggi</span></div><div class="pc-bot"><div class="pc-title">Seduta <span class="hl">${dt0.day}</span></div>
-        <div class="srow"><span><b>${dt0.items.length}</b>esercizi</span><span><b>${dt0.durata || "–"}</b>minuti</span><span><b>${dt0.fatica != null ? fatWord(dt0.fatica) : "–"}</b>fatica</span></div>
+        <div class="srow"><span><b>${dt0.items.length}</b>esercizi</span><span><b>${sMin(dt0) || "–"}</b>minuti</span><span><b>${dt0.fatica != null ? fatWord(dt0.fatica) : "–"}</b>fatica</span></div>
         <button class="primary go" data-act="tab" data-v="progressi">Vedi i progressi</button></div></div>`;
     else { const ups = p.items.filter(x => plan(x).up).length, d = a ? S.drafts[a] : null, all = d ? P[a].items.flatMap(x => d.sets[x.id]) : [];
       sess = `<div class="pcard" style="background-image:url(${photoFor(nd)})"><div class="pc-top"><span class="ph-tag">${a ? "In corso" : p.day || "Prossima"}</span>${a ? `<span class="pc-ring">${ring(all.filter(s => s.done).length, all.length, 46)}</span>` : ""}</div><div class="pc-bot">
@@ -52,7 +54,7 @@
     const meals = MEALS.map(([k, l]) => { const m = mealOf(dw, k), st = mealState(v, k), on = st === "plan" || st === "custom";
       const kc = st === "custom" ? v.custom[k].kcal : st === "skip" ? 0 : m ? nutOf(dw, k).kcal : null;
       const title = st === "custom" ? v.custom[k].text : m ? m.t : st === "skip" ? "Saltato" : "Da registrare";
-      return `<div class="mcard ${on ? "on" : ""} ${st === "skip" ? "skip" : ""}"><button class="mc-main" data-act="meal-open" data-v="${k}"><span class="mc-l">${l}</span><span class="mc-t">${esc(title)}</span><span class="mc-k num">${kc != null ? fmt(Math.round(kc)) + " kcal" : "+ aggiungi"}</span></button>
+      return `<div class="mcard ${on ? "on" : ""} ${st === "skip" ? "skip" : ""}"><button class="mc-main" data-act="meal-open" data-v="${k}"><span class="mc-l">${l}</span><span class="mc-t">${esc(title)}</span><span class="mc-k num">${kc != null ? fmt(Math.round(kc)) + " calorie" : "+ aggiungi"}</span></button>
         <button class="check" data-act="${m && st !== "custom" ? "meal" : "mealalt"}" data-v="${k}" aria-pressed="${on}" aria-label="${l}">${on || m ? CHECK : '<svg viewBox="0 0 24 24" style="stroke:var(--faint)"><path d="M12 6v12M6 12h12"/></svg>'}</button></div>`; }).join("");
     const done = MEALS.filter(([k]) => ["plan", "custom"].includes(mealState(v, k))).length;
     const sc = supChips(v);
@@ -62,7 +64,7 @@
       <div class="block">${sess}</div>
       <div class="block"><div class="block-h"><h2>Pasti di <span class="hl">oggi</span></h2><span class="small muted num">${done} di 5</span></div>
         <div class="hscroll">${meals}<button class="mcard add" data-act="mealalt" data-v="extra"><span class="mc-l">Fuori pasto</span><span class="mc-t">Aggiungi uno spuntino o un cibo extra</span><span class="mc-k">+ aggiungi</span></button></div>
-        ${v.extra.length ? `<p class="small muted">${v.extra.map(x => `${esc(x.text)} · ${fmt(Math.round(x.kcal))} kcal`).join(" · ")}</p>` : ""}</div>
+        ${v.extra.length ? `<p class="small muted">${v.extra.map(x => `${esc(x.text)} · ${fmt(Math.round(x.kcal))} calorie`).join(" · ")}</p>` : ""}</div>
       ${sc ? `<div class="block"><h2>Integratori</h2><div class="chips">${sc}</div></div>` : ""}`;
   };
 
@@ -75,7 +77,7 @@
     return `<div class="dslide ${isNext ? "next" : ""}" data-i="${i}"><button class="dcard ${isNext ? "next" : ""} ${doneW ? "done" : ""}" data-act="open-day" data-v="${k}" style="--img:url(${photoFor(k)})" aria-label="Seduta ${k}, ${i + 1} di ${n}">
       <span class="dc-img"></span><span class="dc-tag">${doneW ? "Fatta" : isNext ? "Prossima" : p.day || "Seduta"}</span>
       <span class="dc-body"><span class="dc-title">Seduta ${k}</span><span class="dc-sub">${esc(p.focus || p.nome || "")}</span>
-      <span class="dc-meta num">${plural(p.items.length, "esercizio", "esercizi")} · ~${estMin(p)} min${ups ? ` · <b>${ups} con carico in aumento</b>` : ""}</span></span>${isNext ? "" : `<span class="dc-go">${ARROW}</span>`}</button>${isNext ? `<button class="primary dc-start" data-act="start" data-v="${k}">${a === k ? "Riprendi" : "Inizia"} seduta ${k}</button>` : ""}</div>`;
+      <span class="dc-meta num">${plural(p.items.length, "esercizio", "esercizi")} · circa ${estMin(p)} minuti${ups ? ` · <b>${ups} con carico in aumento</b>` : ""}</span></span>${isNext ? "" : `<span class="dc-go">${ARROW}</span>`}</button>${isNext ? `<button class="primary dc-start" data-act="start" data-v="${k}">${a === k ? "Riprendi" : "Inizia"} seduta ${k}</button>` : ""}</div>`;
   }
   function viewDayDetail(k) {
     const p = P[k], ups = p.items.filter(x => plan(x).up).length;
@@ -111,7 +113,7 @@
     return `<div class="fhead"><button class="back" data-act="exlist">${'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>'}Tutti gli esercizi</button>
         <div class="fring">${ring(doneN, all.length, 54)}<span class="num">${exDone}/${items.length}</span></div></div>
       <p class="small muted" style="margin:6px 0 10px">Esercizio ${idx + 1} di ${items.length} · ${tv("Seduta", "Allenamento")} ${a}</p>
-      ${allDone ? `<div class="card lime" style="margin-bottom:12px"><p class="coach-line">Tutte le serie fatte</p><p class="small">${all.length} serie${d.startedAt ? " in " + Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)) + " minuti" : ""}</p><button class="primary go" data-act="finish">${tv("Concludi la seduta", "Concludi l'allenamento")}</button></div>` : ""}
+      ${allDone ? `<div class="card lime" style="margin-bottom:12px"><p class="coach-line">Tutte le serie fatte</p><p class="small">${all.filter(x => !x.c).length} serie${d.startedAt ? " in " + Math.max(1, Math.round((Date.now() - d.startedAt) / 60000)) + " minuti" : ""}</p><button class="primary go" data-act="finish">${tv("Concludi la seduta", "Concludi l'allenamento")}</button></div>` : ""}
       ${demoBox(it)}
       ${(S.sample || (window.LIB && it.lib && window.LIB[it.lib])) ? `<button class="swapbar" data-act="alts"><span>Attrezzo occupato?</span><b>Cambia esercizio ${'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>'}</b></button>` : ""}
       ${activeCard(it, d)}
@@ -130,10 +132,10 @@
     const tiles = `<div class="stiles">
       ${statTile(I.sess, `${ses.length}`, "Sedute nel periodo", null, "psub", "carichi")}
       ${statTile(I.vol, vol >= 10000 ? `${fmt(Math.round(vol / 100) / 10)}<small> t</small>` : `${fmt(Math.round(vol))}<small> kg</small>`, "Volume sollevato", null, "psub", "carichi")}
-      ${statTile(I.kcal, kd.length ? `${fmt(Math.round(kd.reduce((a2, b2) => a2 + b2, 0) / kd.length / 10) * 10)}` : "–", "Kcal medie al giorno", null, "psub", "calorie")}
+      ${statTile(I.kcal, kd.length ? `${fmt(Math.round(kd.reduce((a2, b2) => a2 + b2, 0) / kd.length / 10) * 10)}` : "–", "Calorie medie al giorno", null, "psub", "calorie")}
       ${statTile(I.peso, wch != null ? `${wch >= 0 ? "+" : ""}${fmt(+wch.toFixed(1))}<small> kg</small>` : "–", "Peso nel periodo", null, "psub", "peso")}</div>`;
-    const recent = ses.slice(0, 4).map(s => { const nSets = s.items.reduce((m, e) => m + e.sets.length, 0);
-      return `<button class="rcard" data-act="sess-open" data-v="${esc(s.id)}"><span class="rc-day">${s.day}</span><span class="rc-body"><b>Seduta ${s.day}</b><span class="small muted">${dt(s.date)} · ${plural(nSets, "serie", "serie")}${s.durata ? ` · ${s.durata} min` : ""}${s.fatica != null ? ` · fatica: ${fatWord(s.fatica).toLowerCase()}` : ""}</span></span><span class="dc-go">${ARROW}</span></button>`; }).join("");
+    const recent = ses.slice(0, 4).map(s => { const nSets = nSetsOf(s), mn = sMin(s);
+      return `<button class="rcard" data-act="sess-open" data-v="${esc(s.id)}"><span class="rc-day">${s.day}</span><span class="rc-body"><b>Seduta ${s.day}</b><span class="small muted">${dt(s.date)} · ${plural(nSets, "serie", "serie")}${mn ? ` · ${mn} minuti` : ""}${s.fatica != null ? ` · fatica: ${fatWord(s.fatica).toLowerCase()}` : ""}</span></span><span class="dc-go">${ARROW}</span></button>`; }).join("");
     const base = baseProgress().replace(/^<h1>[\s\S]*?<\/h1>/, "");
     const segPeriod = periodSeg();
     return `<h1>I tuoi <span class="hl">progressi</span></h1>${segPeriod}<div class="block">${tiles}</div>
@@ -150,11 +152,11 @@
     if (sh === "meal") {
       const k = S.mealKey, dw = new Date().getDay(), v = dayLog(localISO()), m = mealOf(dw, k), st = mealState(v, k), l = (MEALS.find(x => x[0] === k) || [])[1];
       html = `<div class="block-h"><h2>${l}</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
-        ${st === "custom" ? `<div class="card"><b>${esc(v.custom[k].text)}</b><p class="small muted">${fmt(Math.round(v.custom[k].kcal))} kcal · ${Math.round(v.custom[k].p)} g proteine (stima)</p></div>` : ""}
-        ${m ? `<div class="card"><div class="block-h"><b>${esc(m.t)}</b><span class="small muted num">${fmt(nutOf(dw, k).kcal)} kcal</span></div><ul class="plain muted">${m.i.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : `<p class="muted">Per questo pasto non c'è un piano: registra cosa hai mangiato.</p>`}
+        ${st === "custom" ? `<div class="card"><b>${esc(v.custom[k].text)}</b><p class="small muted">${fmt(Math.round(v.custom[k].kcal))} calorie · ${Math.round(v.custom[k].p)} g proteine (stima)</p></div>` : ""}
+        ${m ? `<div class="card"><div class="block-h"><b>${esc(m.t)}</b><span class="small muted num">${fmt(nutOf(dw, k).kcal)} calorie</span></div><ul class="plain muted">${m.i.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : `<p class="muted">Per questo pasto non c'è un piano: registra cosa hai mangiato.</p>`}
         ${m && st !== "custom" ? `<button class="primary" data-act="meal" data-v="${k}">${st === "plan" ? "Segna come non fatto" : "Fatto come da piano"}</button>` : ""}
         <button class="ghost" data-act="mealalt" data-v="${k}">${st === "custom" ? "Modifica cosa ho mangiato" : "Ho mangiato altro"}</button>
-        <button class="link small" data-act="mealskip" data-v="${k}" style="align-self:center">${st === "skip" ? "Annulla «saltato»" : "L'ho saltato"}</button>`;
+        <button class="link small" data-act="mealskip" data-v="${k}" style="align-self:center">${st === "skip" ? "Rimetti tra i pasti da fare" : "Non l'ho mangiato"}</button>`;
     } else if (sh === "kcal") {
       const v = dayLog(localISO());
       html = `<div class="block-h"><h2>Calorie di <span class="hl">oggi</span></h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>${energyCard()}
@@ -168,7 +170,7 @@
       const s = S.sessions.find(x => x.id === S.sessId);
       if (!s) { S.sheet = null; return baseSheet(); }
       html = `<div class="block-h"><h2>Seduta <span class="hl">${s.day}</span> · ${dt(s.date)}</h2><button class="link small" data-act="close" style="padding:0">Chiudi</button></div>
-        <div class="srow boxed"><span><b>${s.items.length}</b>esercizi</span><span><b>${s.items.reduce((m, e) => m + e.sets.length, 0)}</b>serie</span><span><b>${s.durata || "–"}</b>minuti</span><span><b>${s.fatica != null ? fatWord(s.fatica) : "–"}</b>fatica</span></div>
+        <div class="srow boxed"><span><b>${s.items.length}</b>esercizi</span><span><b>${nSetsOf(s)}</b>serie</span><span><b>${sMin(s) || "–"}</b>minuti</span><span><b>${s.fatica != null ? fatWord(s.fatica) : "–"}</b>fatica</span></div>
         <div class="list">${s.items.map(e => `<div class="lrow"><span>${esc(short(e.name))}</span><span class="r small">${e.cardio ? `${e.cardio.min != null ? e.cardio.min + " minuti" : "Cardio"}${e.cardio.km ? " · " + fmt(e.cardio.km) + " km" : ""}` : e.sets.map(x => x.kg != null ? `${fmt(x.kg)}×${x.reps}` : x.reps).join(" · ")}</span></div>`).join("")}</div>
         ${s.note ? `<p class="muted">Note: ${esc(s.note)}</p>` : ""}`;
     }

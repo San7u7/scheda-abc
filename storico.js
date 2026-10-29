@@ -15,6 +15,8 @@
   const SOGLIE = {
     CALORIE_IN_LINEA: 100,     // calorie in linea = entro 100 dall'obiettivo del giorno
     PROTEINE_MIN: 1,           // proteine raggiunte = almeno l'obiettivo (100%)
+    PUNTO_PIENO: 0.95,         // settimana «punto pieno» (Progressi › Forza): proteine della settimana almeno al 95% del piano
+    MOVIMENTO_GIORNO: 60,      // minori: minuti di movimento al giorno (OMS, = CARDIO.obiettivo 420 / 7)
     MACRO_BANDA: 0.10,         // carboidrati e grassi in linea = entro il 10% dall'obiettivo
     FV_PORZIONI: 5,            // frutta e verdura: 5 porzioni al giorno
     FV_MAX_PASTO: 3,           // porzioni contate al massimo per un pasto
@@ -71,7 +73,7 @@
   /* pasti del giorno con le parole del diario (giorni.js mealRow) */
   function meals(iso) {
     const dw = dt(iso).getDay(), plan = hasPlanNow(), v = dayV(iso) || { meals: {}, custom: {}, skip: {}, extra: [], snap: {} };
-    return MEALS.filter(([k]) => !plan || mealOf(dw, k)).map(([k]) => {
+    return MEALS.filter(([k]) => !plan || mealOf(dw, k) || mealState(v, k) !== "open").map(([k]) => { // M13: come il diario (V3.data.dayMeals), i pasti segnati restano anche se il piano è cambiato
       const st = mealState(v, k), m = plan ? mealOf(dw, k) : null; let n = null, text = "";
       if (st === "plan") { n = v.snap[k] || (window.planNutOf ? planNutOf(dw, k) : nutOf(dw, k)); text = m ? m.t + ". " + (m.i || []).join(". ") : ""; }
       else if (st === "custom") { const c = v.custom[k]; n = c; text = String(c.text || ""); }
@@ -82,13 +84,31 @@
   }
   const fvOf = text => Math.min(SOGLIE.FV_MAX_PASTO, new Set((String(text).match(RE_FV) || []).map(x => x.toLowerCase())).size);
   const bestSet = sets => sets.filter(z => !z.dr).reduce((a, z) => !a || (+z.kg || 0) > (+a.kg || 0) || ((+z.kg || 0) === (+a.kg || 0) && (+z.reps || 0) > (+a.reps || 0)) ? z : a, null);
+  /* M3 (audit 29/10): minuti di una seduta, un solo calcolo per Palestra «Tempo», storico e report.
+     1) durata scritta a fine seduta, 2) tempi del cronometro, 3) stima dalla scheda per le sedute segnate dopo (late). Altrimenti null. */
+  function estMin(k) { // stessa stima della scheda in Palestra (pesi: serie × (recupero + 40 s), a scatti di 5, minimo 10; cardio: i suoi minuti)
+    const p = typeof P !== "undefined" && P[k]; if (!p || !p.items || !p.items.length) return null;
+    const isC = it => it.misura === "cardio", L = p.items.filter(it => !isC(it));
+    const pm = L.length ? Math.max(10, Math.round(L.reduce((m, it) => m + (+it.sets || 0) * ((+it.rest || 90) + 40), 0) / 300) * 5) : 0;
+    return pm + p.items.filter(isC).reduce((m, it) => m + (+it.dur || 0), 0) || null;
+  }
+  const sessMin = s => !s ? null : +s.durata > 0 ? Math.round(+s.durata) : s.tempi && +s.tempi.total > 0 ? Math.max(1, Math.round(s.tempi.total / 60)) : s.late ? estMin(s.day) : null;
+  const sessOf = (from, to) => S.sessions.filter(s => { const d = isoOf(s.date); return d >= from && d <= to; });
+  const minRange = (from, to) => sessOf(from, to).reduce((m, s) => m + (sessMin(s) || 0), 0); // minuti di allenamento nel periodo
+  /* movimento/cardio: stessa regola di cardioWeek (intenso doppio, leggero 0), sedute + cardio fuori palestra; obiettivo minori 60 al giorno */
+  function move(from, to) {
+    const n = range(from, to).length, min = typeof cardioWeek === "function" ? cardioWeek(from, to) : 0;
+    return { min, T: Math.round(cardioT() * n / 7), perDay: minor() ? SOGLIE.MOVIMENTO_GIORNO : null };
+  }
+  /* M6: peso di riferimento per i g/kg = media 7 giorni dell'ultima pesata; il peso del profilo solo se non ci sono pesate */
+  const pesoRif = () => { try { const w = data.weight(), a = w.avg7; if (a && a.length) return a[a.length - 1].kg; } catch (_) {} return prof().peso || null; };
   function sessInfo(s) {
     const items = (s.items || []).filter(x => !x.cardio && (x.sets || []).length).map(x => {
       const b = bestSet(x.sets), vol = x.sets.reduce((m, z) => m + (z.kg != null ? +z.kg * (+z.reps || 0) : 0), 0);
       return { name: x.name, sets: x.sets.length, best: b ? { kg: b.kg != null && b.kg !== "" ? +b.kg : null, reps: +b.reps || 0 } : null, vol };
     });
     const cardio = (s.items || []).filter(x => x.cardio).map(x => ({ name: x.name, min: +x.cardio.min || 0, int: x.cardio.int || null }));
-    return { id: s.id, date: s.date, day: s.day, name: sName(s.day), time: s.late ? null : hm(s.date), late: !!s.late, fatica: s.fatica != null ? +s.fatica : null, dolore: !!s.dolore,
+    return { id: s.id, date: s.date, day: s.day, name: sName(s.day), time: s.late ? null : hm(s.date), late: !!s.late, min: sessMin(s), fatica: s.fatica != null ? +s.fatica : null, dolore: !!s.dolore,
       items, cardio, sets: items.reduce((m, x) => m + x.sets, 0), vol: Math.round(items.reduce((m, x) => m + x.vol, 0)) };
   }
   const cw = it => typeof CARDIO !== "undefined" ? (CARDIO.peso[it] ?? 1) : 1; // come cardioWeek: leggero 0, medio 1, forte 2
@@ -105,7 +125,7 @@
       water: v && v.water > 0 ? v.water * 0.25 : null, waterT: waterT(),
       fv: reg ? ms.filter(m => m.eaten).reduce((s, m) => s + fvOf(m.text), 0) : null, fvT: SOGLIE.FV_PORZIONI,
       leg: ms.filter(m => m.eaten && RE_LEG.test(m.text)).length, pesce: ms.filter(m => m.eaten && RE_PESCE.test(m.text)).length,
-      sessions: ses, fuori, cardio: cardioMin, vol: ses.reduce((m, s) => m + s.vol, 0), sets: ses.reduce((m, s) => m + s.sets, 0),
+      sessions: ses, fuori, cardio: cardioMin, min: ses.reduce((m, s) => m + (s.min || 0), 0), vol: ses.reduce((m, s) => m + s.vol, 0), sets: ses.reduce((m, s) => m + s.sets, 0),
       peso: v && v.peso ? +v.peso : null };
     return (memo[iso] = o);
   }
@@ -120,10 +140,11 @@
     fv: { sec: "Cibo", t: () => "Frutta e verdura", u: "porzioni", dec: 0, get: d => d.fv, tgt: d => d.fvT, ok: (v, t) => v >= t, okw: "raggiunte", no: "Sotto l'obiettivo" },
     sedute: { sec: "Allenamento", tr: 1, t: () => kw() ? "Allenamenti" : "Sedute", u: "", dec: 0, get: d => d.sessions.length },
     kg: { sec: "Allenamento", tr: 1, t: () => "Peso sollevato", u: "kg", dec: 0, get: d => d.vol },
-    cardio: { sec: "Allenamento", tr: 1, t: () => kid() ? "Movimento" : "Cardio", u: "minuti", dec: 0, get: d => d.cardio, dayT: () => minor() ? Math.round(cardioT() / 7) : null },
+    tempo: { sec: "Allenamento", tr: 1, t: () => "Tempo", u: "minuti", dec: 0, get: d => d.min },
+    cardio: { sec: "Allenamento", tr: 1, t: () => kid() ? "Movimento" : "Cardio", u: "minuti", dec: 0, get: d => d.cardio, dayT: () => minor() ? SOGLIE.MOVIMENTO_GIORNO : null },
     peso: { sec: "Corpo", body: 1, t: () => "Peso", u: "kg", dec: 1, get: d => d.peso }
   };
-  const ORDER = ["kcal", "pro", "cho", "fat", "acqua", "fv", "sedute", "kg", "cardio", "peso"];
+  const ORDER = ["kcal", "pro", "cho", "fat", "acqua", "fv", "sedute", "tempo", "kg", "cardio", "peso"];
   /* minori: niente calorie, grassi né peso del corpo; bambino niente chili; over 65 niente peso sollevato */
   function params() {
     const no = new Set(minor() ? ["kcal", "cho", "fat", "peso"] : []); // minori: come «I numeri di oggi» (tavola 74)
@@ -136,7 +157,7 @@
     if (p.tr) {
       const tot = past.reduce((m, d) => m + p.get(d), 0);
       const T = k === "sedute" ? (to === addDays(from, 6) ? planned() : Math.round(planned() * ds.length / 7)) : k === "cardio" ? Math.round(cardioT() * ds.length / 7) : null;
-      const cm = k === "cardio" && typeof cardioWeek === "function" && to === addDays(from, 6) ? cardioWeek(from, to) : null;
+      const cm = k === "cardio" ? move(from, to).min : k === "tempo" ? minRange(from, to) : null; // stessi totali di Palestra e Progressi
       return { k, days: ds, total: cm != null ? cm : tot, T, n: past.length, has: past.some(d => p.get(d) > 0) };
     }
     const cl = ds.filter(d => (k === "peso" ? !d.future : d.closed) && p.get(d) != null), vals = cl.map(p.get);
@@ -148,7 +169,7 @@
     return { from, to, days: ds, reg: ds.filter(d => d.closed && d.reg).length, elapsed: ds.filter(d => !d.future).length,
       sessions: ds.flatMap(d => d.sessions.map(s => Object.assign({ iso: d.iso }, s))), T: planned(), agg: k => agg(k, from, to) }; }
 
-  window.V3Stats = { SOGLIE, PAR, ORDER, params, day, meals, agg, week, clear() { memo = {}; }, monOf, wLab, mLab, dLong, dTab, gName, range, sName, kw, cardioT, waterT, RE_LEG, RE_PESCE, bestSet };
+  window.V3Stats = { SOGLIE, PAR, ORDER, params, day, meals, agg, week, clear() { memo = {}; }, estMin, sessMin, minRange, move, pesoRif, monOf, wLab, mLab, dLong, dTab, gName, range, sName, kw, cardioT, waterT, RE_LEG, RE_PESCE, bestSet };
 
   /* ============================== STORICO (pagine) ============================== */
   const VIEWS = ["giorno", "settimana", "mese"];
@@ -206,6 +227,7 @@
         const lst = ss.length && ss.length <= 2 ? " · " + ss.map(x => `${lc1(x.s.name)} ${gName(x.iso)}`).join(", ") : "";
         return (a.T ? `${a.total} su ${a.T}` : `${a.total}`) + lst; }
       if (k === "kg") return a.total ? fmtV("kg", a.total) : `Nessuna ${W1()} con i pesi`;
+      if (k === "tempo") return a.total ? `${nf(a.total, 0)} minuti` : `Nessun${kw() ? " allenamento" : "a seduta"} con il tempo`;
       return `${nf(a.total, 0)}${a.T ? " su " + nf(a.T, 0) : ""} minuti`;
     }
     if (!a.has) return k === "peso" ? "Nessuna pesata" : k === "acqua" ? "Acqua non segnata" : "Nessun giorno segnato";
@@ -265,6 +287,7 @@
       const tot = a.total;
       if (k === "sedute") { verdict = a.T ? `${tot} su ${a.T}` : `${tot} ${pl(tot, W1(), WN())}`; head = cardHead("Totale", `${tot}${a.T ? of(a.T) : ""}`); }
       else if (k === "kg") { verdict = !tot ? `Nessuna ${W1()} con i pesi` : prevA.total ? `${sgn(Math.round((tot - prevA.total) / prevA.total * 100))}% rispetto ${isW ? "alla settimana" : "al mese"} prima` : `${fmtV("kg", tot)} in tutto`; head = cardHead("Totale", `${nf(tot, 0)} <span class="v3-of">kg</span>`); }
+      else if (k === "tempo") { verdict = tot ? `${nf(tot, 0)} minuti in tutto` : `Nessun${kw() ? " allenamento" : "a seduta"} con il tempo`; head = cardHead("Totale", `${nf(tot, 0)} <span class="v3-of">minuti</span>`); }
       else { verdict = `${nf(tot, 0)} su ${nf(a.T, 0)} minuti`; head = cardHead("Totale", `${nf(tot, 0)}${of(nf(a.T, 0), "minuti")}`); }
       chart = bars(vals, fills, { target: dT, tl: dT ? String(dT) : "", xl, tip: i => `${dTab(ds[i].iso)}: ${vals[i] == null ? "–" : fmtV(k, vals[i])}`, aria: `${P0.t()} per giorno` });
       if (k === "cardio") {
@@ -272,6 +295,12 @@
           : table(["Settimana", "Minuti", "Obiettivo"], weeksOf(p).map(w => { const x = agg("cardio", w.from, w.to); return [e(wLab(w.from, w.to)), nf(x.total, 0), nf(cardioT(), 0)]; }));
         if (!ds.some(d => d.cardio)) tab = "";
         tlab = isW ? "Giorno per giorno" : tlab;
+      } else if (k === "tempo") {
+        const ss = ds.flatMap(d => d.sessions.map(s => [d.iso, s]));
+        tlab = isW ? (kw() ? "Allenamenti della settimana" : "Sedute della settimana") : tlab;
+        tab = isW ? (ss.length ? table([cap(W1()), "Minuti"], ss.map(([iso, s]) => [e(`${cap(GG[dt(iso).getDay()].slice(0, 3))} · ${lc1(s.name)}`), s.min == null ? "–" : nf(s.min, 0)])) : "")
+          : table(["Settimana", "Minuti"], weeksOf(p).map(w => [e(wLab(w.from, w.to)), nf(minRange(w.from, w.to), 0)]));
+        extra = ss.some(([, s]) => s.late) ? `<p class="v3-st-pl">Per ${kw() ? "gli allenamenti segnati" : "le sedute segnate"} dopo il tempo è stimato dalla scheda.</p>` : "";
       } else {
         const showKg = !kid() && !o65();
         if (isW) { tlab = kw() ? "Allenamenti della settimana" : "Sedute della settimana";
@@ -315,8 +344,9 @@
     }
     for (const s of d.sessions) {
       const rows = s.items.map(x => [e(x.name), String(x.sets), !x.best ? "–" : x.best.kg != null && !kid() ? `${nf(x.best.kg)} kg × ${x.best.reps}` : `${x.best.reps} ripetizioni`]);
-      if (rows.length) h += ui.section(`${s.name} · ${s.late ? "segnata dopo" : s.time}`, table(["Esercizio", "Serie", "Serie migliore"], rows));
-      else h += ui.section(`${s.name} · ${s.late ? "segnata dopo" : s.time}`, "");
+      const sh = `${s.name} · ${s.late ? (kw() ? "segnato dopo" : "segnata dopo") : s.time}${s.min ? ` · ${s.min} minuti` : ""}`;
+      if (rows.length) h += ui.section(sh, table(["Esercizio", "Serie", "Serie migliore"], rows));
+      else h += ui.section(sh, "");
     }
     const INT = { leggero: "leggero", medio: "medio", forte: "forte" };
     const cr = d.sessions.flatMap(s => s.cardio).map(c => ui.row({ title: c.name, sub: `${c.min} minuti${c.int && INT[c.int] ? " · " + INT[c.int] : ""}` }))

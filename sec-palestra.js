@@ -94,16 +94,28 @@
   /* glossario 28/10: «Seduta» per adulto e ragazzo, «Allenamento» per bambino e over 65 */
   const alt = () => kid() || group() === "over65";
   const tv = (sed, all) => alt() ? all : sed;
-  const dname = k => (P[k] && P[k].nome) || tv("Seduta ", "Allenamento ") + k;
+  const dname = k => { const n = (P[k] && P[k].nome) || tv("Seduta ", "Allenamento ") + k; return alt() ? n.replace(/^Seduta\b/, "Allenamento") : n; }; // glossario come storico.js sName
   const pl = (n, one, many) => n + " " + (n === 1 ? one : many);
   const isC = it => it.misura === "cardio";
   const pesiOf = p => p.items.filter(it => !isC(it)), cardiOf = p => p.items.filter(isC);
   const pesiMin = p => { const L = pesiOf(p); return L.length ? Math.max(10, Math.round(L.reduce((m, it) => m + it.sets * (it.rest + 40), 0) / 300) * 5) : 0; };
   const minsOf = p => pesiMin(p) + cardiOf(p).reduce((m, it) => m + (it.dur || 0), 0); // il cardio conta i suoi minuti (non serie × recupero)
+  const minOf = s => window.V3Stats ? V3Stats.sessMin(s) : (+s.durata || null); // M3: minuti di una seduta, calcolo unico
+  /* B11: giorno vero della prossima seduta. Giorni fissi: il primo giorno della scheda dopo oggi; «Quando vuoi»: domani, o lunedì se la settimana è chiusa */
+  function nextWhen(k) {
+    const GG = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"], dw = new Date().getDay();
+    const m = window.weekPlanMap ? weekPlanMap() : {}, keys = Object.keys(m).map(Number);
+    let n = 1;
+    if (keys.length) { const at = i => m[(dw + i) % 7]; n = [1, 2, 3, 4, 5, 6, 7].find(i => at(i) === k) || [1, 2, 3, 4, 5, 6, 7].find(i => at(i)) || 1; }
+    else { const w = data.week(); if (w.sessions.planned && w.sessions.done >= w.sessions.planned) n = (8 - dw) % 7 || 7; }
+    const g = GG[(dw + n) % 7];
+    return n === 1 ? "Domani" : cap1(g);
+  }
+  const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
   const cardTxt = it => `${it.dur} minuti, ritmo ${INT[intOf(it.int)][0].toLowerCase()}`;
   /* settimana: minuti di cardio (intenso doppio) e volte di stretching */
   const wkCardio = () => { const w = data.week(); return { min: cardioWeek(w.from, w.to), of: CARDIO.obiettivo(group()), str: stretchWeek(w.from, w.to), strOf: CARDIO.stretchVolte }; };
-  const wkTiles = () => { const k = wkCardio(); return [{ label: "Cardio", value: String(k.min), of: k.of, unit: "minuti", pct: ui.pct(k.min, k.of) },
+  const wkTiles = () => { const k = wkCardio(); return [{ label: kid() ? "Movimento" : "Cardio", value: String(k.min), of: k.of, unit: "minuti", pct: ui.pct(k.min, k.of) },
     kid() ? null : { label: "Stretching", value: String(k.str), of: k.strOf, unit: k.strOf === 1 ? "volta" : "volte", pct: ui.pct(k.str, k.strOf) }].filter(Boolean); };
   const nameOf = it => { const n = has("exName") ? exName(it) : it.name; return typeof short === "function" ? short(n) : n; };
   const planOf = it => { try { return plan(it); } catch (_) { return { kg: it.kg, up: false, b: {} }; } };
@@ -306,9 +318,9 @@
     let today;
     if (ts.state === "fatta") {
       const d0 = doneToday(), nd = ts.next && P[ts.next] ? ts.next : null;
-      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [d0.durata ? d0.durata + " minuti" : null, d0.fatica != null ? "fatica: " + fatWord(d0.fatica).toLowerCase() : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi", act: "storico-oggi" }) + // 29/10: → Progressi › Il mio storico, giorno di oggi
+      today = ui.section("Oggi", ui.row({ title: (P[d0.day] ? dname(d0.day) : tv("Seduta", "Allenamento")) + tv(" fatta", " fatto"), sub: [minOf(d0) ? minOf(d0) + " minuti" : null, d0.fatica != null ? "fatica: " + fatWord(d0.fatica).toLowerCase() : null].filter(Boolean).join(" · ") || "Salvata nei tuoi progressi", act: "storico-oggi" }) + // 29/10: → Progressi › Il mio storico, giorno di oggi
         (strPost() ? ui.row({ title: "Stretching finale", sub: stretchDone() ? "Fatto oggi ✓" : pl(STAT.length, "posizione", "posizioni") + ", circa " + stretchMin() + " minuti", act: "stretch", apri: stretchDone() ? "Rifai" : "Inizia" }) : "") +
-        (nd ? ui.row({ title: tv("Prossima seduta: ", "Prossimo allenamento: ") + (P[nd].nome || nd), sub: "Domani, dopo il riposo", act: "apri-seduta", arg: nd }) : "") + ageRow());
+        (nd ? ui.row({ title: tv("Prossima seduta: ", "Prossimo allenamento: ") + dname(nd), sub: nextWhen(nd), act: "apri-seduta", arg: nd }) : "") + ageRow());
     } else {
       const k = ts.day;
       today = ui.section(ts.state === "riposo" ? tv("Prossima seduta", "Prossimo allenamento") : tv("La seduta di oggi", "L'allenamento di oggi"), hero(k, activeDay() === k ? tv("Riprendi la seduta", "Riprendi l'allenamento") : tv("Inizia la seduta", "Inizia l'allenamento"), ts.state === "riposo" ? "Oggi è giorno di riposo: puoi iniziarla lo stesso." : null) + ageRow());
@@ -319,22 +331,22 @@
     const scheda = ui.section("La mia scheda", rows + ui.secondary("Apri la scheda", "modifica") +
       ui.row({ title: "Riscaldamento e stretching", sub: "La tua routine prima e dopo", act: "routine" }) +
       (CARDIO.fuori ? ui.row({ title: "Segna un cardio", sub: "Camminata, bici o corsa fuori palestra", act: "cardio-fuori", apri: "Segna" }) : ""));
-    const sets = ws.reduce((s, x) => s + (x.items || []).reduce((a, it) => a + ((it.sets || []).length), 0), 0);
+    const sets = ws.reduce((s, x) => s + (x.items || []).filter(it => !it.cardio).reduce((a, it) => a + ((it.sets || []).length), 0), 0); // B3: serie senza cardio
     const p4 = P[nd || ts.next || DAYS[0]];
-    const mins = ws.filter(x => x.durata).reduce((s, x) => s + (+x.durata || 0), 0);
+    const mins = ws.reduce((s, x) => s + (minOf(x) || 0), 0); // M3: stesso calcolo di storico e report (V3Stats.sessMin)
     const t4 = kid() ? { label: "Esercizi", value: String(p4 ? p4.items.length : 0) } : { label: "Aumenti", value: String(p4 ? upsOf(p4) : 0), of: p4 ? pesiOf(p4).length : null };
     /* modifica 5 (Giovanni): un solo box, la settimana; Cardio /150 e Stretching /3 si aggiungono, niente tolto (griglia 2 colonne) */
     const box = ui.limeBox({ title: "La mia settimana", action: { label: "Apri", act: "settimana" }, tiles: [
       { label: tv("Sedute", "Allenamenti"), value: String(wk.sessions.done), of: wk.sessions.planned, pct: ui.pct(wk.sessions.done, wk.sessions.planned), act: "settimana" },
       { label: "Serie fatte", value: String(sets) },
-      { label: "Tempo", value: mins ? ui.nf(mins, 0) : "–", unit: mins ? "min" : null },
+      { label: "Tempo", value: mins ? ui.nf(mins, 0) : "–", unit: mins ? "minuti" : null },
       t4, ...wkTiles()] });
     return ui.header("Palestra") + today + scheda + box + ui.end(sapText(), { leoQ: leoQ() });
   }
   function seduta() {
     const k = selDay, p = P[k]; if (!p) { sub = null; return home(); }
     const g = group(), dn = doneWeek(k);
-    const list = flowOrder(p.items).map((it, j) => { const x = planOf(it), kg = it.unit === "none" ? null : x.kg;
+    const list = flowOrder(p.items).map((it, j) => { const x = planOf(it), kg = it.unit === "none" || g === "bambino" ? null : x.kg; // M11: niente chili al bambino
       const det = isC(it) ? "Cardio · " + cardTxt(it) : tipoOf(it) !== "uguali" ? SCH[tipoOf(it)][0] + " · " + it.sets + " serie" + (kg != null ? " · da " + kgTxt(kg) + " kg" : "") : it.sets + " × " + (it.min === it.max ? it.min : it.min + "–" + it.max) + (kg != null ? " · " + kgTxt(kg) + " kg" : it.unit === "none" ? " · corpo libero" : "");
       const nw = !isC(it) && x.up && g !== "bambino", up = nw ? `<span class="v3-palestra-up">Nuovo carico · +${kgTxt(+(x.kg - (x.b.kg || 0)).toFixed(2))} kg</span>` : "";
       return `<div class="v3-palestra-ex${nw ? " nw" : ""}">${thumb(it, String(j + 1))}<span class="v3-rx"><span class="v3-rt" style="display:block">${e(nameOf(it))}</span><span class="v3-rs" style="display:block">${e(det)}</span>${up}</span></div>`; }).join("");
@@ -367,7 +379,7 @@
       ui.card(ui.big(`${wk.sessions.done} <span class="v3-of">/${wk.sessions.planned}</span>`, tv("Sedute di questa settimana", "Allenamenti di questa settimana")) +
         ui.chart.bars({ vals: h.map(w => w.sessions), max, ticks: [[wk.sessions.planned, String(wk.sessions.planned), true], [0, "0"]], xl: [[0, h[0].label], [h.length - 1, "ora"]], tip: i => `${h[i].label}: ${pl(h[i].sessions, tv("seduta", "allenamento"), tv("sedute", "allenamenti"))}`, aria: tv("Sedute", "Allenamenti") + " delle ultime 13 settimane" })) +
       (rows ? ui.section("Questa settimana", rows) : "") +
-      (() => { const c = wkCardio(); return ui.section("Cardio e stretching", ui.row({ title: "Cardio", sub: c.min >= c.of ? "Obiettivo della settimana raggiunto" : "Un minuto forte vale due", value: `${c.min} <span class="v3-of">/${c.of}</span>` }) +
+      (() => { const c = wkCardio(); return ui.section(kid() ? "Movimento" : "Cardio e stretching", ui.row({ title: kid() ? "Movimento" : "Cardio", sub: c.min >= c.of ? "Obiettivo della settimana raggiunto" : kid() ? "60 minuti al giorno, conta tutto" : "Un minuto forte vale due", value: `${c.min} <span class="v3-of">/${c.of}</span>` }) +
         (kid() ? "" : ui.row({ title: "Stretching", sub: "2 o 3 volte a settimana", value: `${c.str} <span class="v3-of">/${c.strOf}</span>` })) +
         (CARDIO.fuori ? ui.secondary("Segna un cardio fuori palestra", "cardio-fuori") : "")); })() +
       ui.end("Conta " + tv("le sedute", "gli allenamenti") + " della settimana, non i giorni di fila: anche il riposo fa parte del piano.", { leoQ: "Quanti giorni di riposo mi servono?" });
@@ -452,11 +464,11 @@
     }
   }
   function serieBox(it, title) {
-    const all = targetSets(it), wk = all.filter(s => !s.w), wu = all.filter(s => s.w), noKg = it.unit === "none";
-    const lab = s => s.dr ? "Calo" : "S" + (wk.filter(z => !z.dr).indexOf(s) + 1);
+    const all = targetSets(it), wk = all.filter(s => !s.w), wu = all.filter(s => s.w), noKg = it.unit === "none" || kid(); // M11: niente chili al bambino
+    const lab = s => s.dr ? "Calo" : "Serie " + (wk.filter(z => !z.dr).indexOf(s) + 1); // B5: niente sigle («S1»)
     const tiles = wk.map(s => `<div><small>${lab(s)}</small>${noKg ? "" : `<b>${s.kg == null ? "–" : kgTxt(s.kg)}</b>`}<span>× ${s.reps}</span></div>`).join("");
     return `<div class="pal-box"><div class="pal-box-h"><b>${e(title || "Le tue serie")}</b><span>${e(ruleTxt[tipoOf(it)])}</span></div>
-      <div class="pal-ser" style="--n:${Math.min(4, wk.length)}">${tiles}</div>${wu.length ? `<p>Prima ${wu.length} serie di riscaldamento: ${e(wu.map(s => kgTxt(s.kg) + " × " + s.reps).join(", "))}</p>` : ""}</div>`;
+      <div class="pal-ser" style="--n:${Math.min(4, wk.length)}">${tiles}</div>${wu.length ? `<p>Prima ${wu.length} serie di riscaldamento: ${e(wu.map(s => (noKg || s.kg == null ? "" : kgTxt(s.kg) + " kg × ") + s.reps + (noKg || s.kg == null ? " ripetizioni" : "")).join(", "))}</p>` : ""}</div>`;
   }
   const opt = (title, sub, on, act, arg) => `<button class="pal-opt" role="radio" aria-checked="${!!on}" data-v3act="${act}" data-v3arg="${e(arg)}"><span class="v3-rx"><span class="v3-rt" style="display:block">${e(title)}</span>${sub ? `<span class="v3-rs" style="display:block">${e(sub)}</span>` : ""}</span><span class="pal-rad" aria-hidden="true"><i></i></span></button>`;
   const togRow = (title, sub, on, act, bg) => `<div class="v3-row"${bg ? ' style="background:var(--v3-s2)"' : ""}><span class="v3-rx"><span class="v3-rt" style="display:block">${e(title)}</span><span class="v3-rs" style="display:block">${e(sub)}</span></span><button class="pal-tog" aria-pressed="${!!on}" aria-label="${e(title)}" data-v3act="${act}"><i></i></button></div>`;

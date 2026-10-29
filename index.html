@@ -456,10 +456,10 @@ body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; 
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610292100"></script>
-<script src="lib.js?v=202610292100"></script>
-<script src="ai.js?v=202610292100"></script>
-<script src="coach.js?v=202610292100"></script>
+<script src="seed-abc.js?v=202610292330"></script>
+<script src="lib.js?v=202610292330"></script>
+<script src="ai.js?v=202610292330"></script>
+<script src="coach.js?v=202610292330"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -815,12 +815,12 @@ function viewOggi() {
       ${a ? "" : `<button class="link small" data-act="tab" data-v="allenamento">Fai un'altra seduta</button>`}</div></div>`;
   const meals = MEALS.map(([k, l]) => { const m = mealOf(dw, k), st = mealState(v, k), on = st === "plan" || st === "custom";
     const kc = st === "custom" ? v.custom[k].kcal : st === "skip" ? 0 : m ? nutOf(dw, k).kcal : null;
-    const title = st === "custom" ? v.custom[k].text : m ? m.t : st === "skip" ? "Saltato" : "Non ancora registrato";
+    const title = st === "custom" ? v.custom[k].text : m ? m.t : st === "skip" ? "Non mangiato" : "Non ancora registrato";
     const chk = m || st === "custom" ? `<button class="check" data-act="${m ? "meal" : "mealalt"}" data-v="${k}" aria-pressed="${on}" aria-label="${l}${m ? " come da piano" : ": registra"}">${CHECK}</button>` : `<button class="check" data-act="mealalt" data-v="${k}" aria-pressed="false" aria-label="${l}: registra cosa hai mangiato"><svg viewBox="0 0 24 24" style="stroke:var(--faint)"><path d="M12 6v12M6 12h12"/></svg></button>`;
     return `<div class="meal ${on ? "on" : ""} ${st === "custom" && m ? "var" : ""} ${st === "skip" ? "skip" : ""}">${chk}
       <details><summary><span><span class="ml">${l}</span><span class="mt">${esc(title)}</span></span><span style="display:flex;gap:6px;align-items:center"><span class="mk">${kc != null ? fmt(Math.round(kc)) + " kcal" : ""}</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></summary>
       ${st === "custom" ? `<p class="small muted" style="margin:4px 0">Stima: ${Math.round(v.custom[k].p)} g proteine, ${Math.round(v.custom[k].c)} g carboidrati, ${Math.round(v.custom[k].f)} g grassi.${m ? ` Il piano prevedeva: ${esc(m.t.toLowerCase())}.` : ""}</p>` : m ? `<ul>${m.i.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-      <div class="acts"><button class="ghost" data-act="mealalt" data-v="${k}">${st === "custom" ? "Modifica cosa ho mangiato" : m ? "Ho mangiato altro" : "Registra cosa ho mangiato"}</button><button class="ghost" data-act="mealskip" data-v="${k}">${st === "skip" ? "Annulla «saltato»" : "L'ho saltato"}</button></div></details></div>`; }).join("");
+      <div class="acts"><button class="ghost" data-act="mealalt" data-v="${k}">${st === "custom" ? "Modifica cosa ho mangiato" : m ? "Ho mangiato altro" : "Registra cosa ho mangiato"}</button><button class="ghost" data-act="mealskip" data-v="${k}">${st === "skip" ? "Rimetti tra i pasti da fare" : "Non l'ho mangiato"}</button></div></details></div>`; }).join("");
   const extras = v.extra.map(x => `<div class="extra"><span><span>${esc(x.text)}</span><br><span class="mk">${fmt(Math.round(x.kcal))} kcal · ${Math.round(x.p)} g proteine</span></span><button class="icon-btn" data-act="delextra" data-v="${x.id}" aria-label="Elimina ${esc(x.text)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("");
   const wt = weightTrend();
   return `<h1>Ciao <span class="hl">${esc(S.profile.nome)}</span></h1><p class="greet-date">${DOW[dw]} ${now.getDate()} ${now.toLocaleDateString("it-IT", { month: "long" })}</p>
@@ -1708,8 +1708,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610292100"></script>
-<script src="ux.js?v=202610292100"></script>
-<script src="hub.js?v=202610292100"></script><script src="board.js?v=202610292100"></script><script src="timer.js?v=202610292100"></script><script src="nutri.js?v=202610292100"></script><script src="photos.js?v=202610292100"></script><script src="coachui.js?v=202610292100"></script><script src="settings.js?v=202610292100"></script><script src="aikey.js?v=202610292100"></script><script src="tour.js?v=202610292100"></script><script src="gesture.js?v=202610292100"></script><script src="ds.js?v=202610292100"></script><script src="v3.js?v=202610292100"></script><script src="quiz.js?v=202610292100"></script><script src="cibo-base.js?v=202610292100"></script><script src="alimenti.js?v=202610292100"></script><script src="giorni.js?v=202610292100"></script><script src="sec-oggi.js?v=202610292100"></script><script src="sec-palestra.js?v=202610292100"></script><script src="sec-cibo.js?v=202610292100"></script><script src="storico.js?v=202610292100"></script><script src="report.js?v=202610292100"></script><script src="sec-progressi.js?v=202610292100"></script>
+<script src="exdb.js?v=202610292330"></script>
+<script src="ux.js?v=202610292330"></script>
+<script src="hub.js?v=202610292330"></script><script src="board.js?v=202610292330"></script><script src="timer.js?v=202610292330"></script><script src="nutri.js?v=202610292330"></script><script src="photos.js?v=202610292330"></script><script src="coachui.js?v=202610292330"></script><script src="settings.js?v=202610292330"></script><script src="aikey.js?v=202610292330"></script><script src="tour.js?v=202610292330"></script><script src="gesture.js?v=202610292330"></script><script src="ds.js?v=202610292330"></script><script src="v3.js?v=202610292330"></script><script src="quiz.js?v=202610292330"></script><script src="cibo-base.js?v=202610292330"></script><script src="alimenti.js?v=202610292330"></script><script src="giorni.js?v=202610292330"></script><script src="sec-oggi.js?v=202610292330"></script><script src="sec-palestra.js?v=202610292330"></script><script src="sec-cibo.js?v=202610292330"></script><script src="storico.js?v=202610292330"></script><script src="report.js?v=202610292330"></script><script src="sec-progressi.js?v=202610292330"></script>
 
 </body></html>

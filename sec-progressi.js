@@ -39,6 +39,12 @@
   const pl = t => `<p class="v3-progressi-pl">${esc(t)}</p>`;
   const bigS = (num, line) => `<div><p class="v3-bn${String(num).replace(/<[^>]+>/g, "").length > 10 ? " v3-progressi-bs" : ""}">${num}</p>${line ? `<p class="v3-bd">${esc(line)}</p>` : ""}</div>`;
   const plural = (n, a, b) => n === 1 ? a : b;
+  /* M5 (audit 29/10): soglie uniche da V3Stats (storico.js); qui solo il ripiego se il modulo manca */
+  const SO = () => (window.V3Stats && V3Stats.SOGLIE) || { CALORIE_IN_LINEA: 100, PROTEINE_MIN: 1, PUNTO_PIENO: 0.95, MOVIMENTO_GIORNO: 60, ACQUA_MIN: 1 };
+  /* calorie medie contro il piano: in linea entro 100, altrimenti «N calorie sotto/sopra il piano» */
+  const kcalTxt = (v, t) => { const d = Math.round(v - t); return Math.abs(d) <= SO().CALORIE_IN_LINEA ? "in linea" : `${nf(Math.abs(d))} calorie ${d < 0 ? "sotto" : "sopra"} il piano`; };
+  /* M6: g/kg sul peso medio delle pesate (media 7 giorni), il profilo solo senza pesate */
+  const kgRif = () => window.V3Stats ? V3Stats.pesoRif() : (prof().peso || (W().last && W().last.kg));
 
   /* stato dei pasti senza creare giorni (mealState dell'app, sola lettura) */
   const mstate = (iso, k) => { const v = S.days[iso]; if (!v) return "open"; return mealState({ meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {} }, k); };
@@ -64,6 +70,7 @@
       const ds = []; for (let d = b.from; d <= b.to && d <= t; d = addDays(d, 1)) ds.push(data.day(d));
       const cl = ds.filter(d => d.closed && d.logged), gym = cl.filter(d => d.train), rest = cl.filter(d => !d.train);
       const pctOf = (arr, k) => arr.length ? Math.round(avg(arr.map(d => d[k] / d[k + "T"])) * 100) : null;
+      const abs = (arr, k) => arr.length ? Math.round(avg(arr.map(d => d[k]))) : null; // medie assolute per la banda di 100 calorie
       const sumP = cl.reduce((s, d) => s + d.pro, 0), sumT = cl.reduce((s, d) => s + d.proT, 0);
       const nd = days(b.from, b.to) + 1;
       return Object.assign(b, {
@@ -72,6 +79,7 @@
         logged: cl.length, kcal: cl.length ? Math.round(avg(cl.map(d => d.kcal))) : null, kcalT: cl.length ? Math.round(avg(cl.map(d => d.kcalT))) : null,
         proPct: sumT ? Math.round(sumP / sumT * 100) : null,
         kcalGym: pctOf(gym, "kcal"), kcalRest: pctOf(rest, "kcal"), proGym: pctOf(gym, "pro"), proRest: pctOf(rest, "pro"),
+        kGA: abs(gym, "kcal"), kGT: abs(gym, "kcalT"), kRA: abs(rest, "kcal"), kRT: abs(rest, "kcalT"),
         col: ds.filter(d => colDone(d.iso)).length, elapsed: ds.length
       });
     });
@@ -136,7 +144,7 @@
   /* punto pieno: adulti e over 65 = proteine della settimana almeno al 95% del piano; ragazzo = colazione tutti i giorni */
   function flags(e) {
     const wk = agg("week", 13);
-    return e.pts.map(p => { const b = wk[p.wi]; if (!b) return 0; return minor() ? (b.col >= (b.live ? b.elapsed : 7) ? 1 : 0) : (b.proPct != null && b.proPct >= 95 ? 1 : 0); });
+    return e.pts.map(p => { const b = wk[p.wi]; if (!b) return 0; return minor() ? (b.col >= (b.live ? b.elapsed : 7) ? 1 : 0) : (b.proPct != null && b.proPct >= SO().PUNTO_PIENO * 100 ? 1 : 0); });
   }
   const exImg = e => e.demo ? ui.fig(`https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${encodeURIComponent(e.demo)}/0.jpg`, `Esercizio: ${e.name}, posizione di partenza`, e.short) : "";
 
@@ -255,7 +263,7 @@
         const lo = Math.max(0, Math.floor((Math.min(...L) - Math.max(rng, u) * .25) / u) * u), hi = Math.ceil((Math.max(...L) + Math.max(rng, u) * .3) / u) * u;
         const diff = L[L.length - 1] - L[0];
         const head = e.useKg ? bigS(`${nf(l.kg)} kg × ${l.reps}`, diff ? `${sgn(diff)} kg dal ${dLab(p[0].date)}` : `stesso carico dal ${dLab(p[0].date)}`)
-          : bigS(`${l.reps} ${isKid ? "ripetizioni" : "rip."}`, `erano ${p[0].reps} il ${dLab(p[0].date)}`);
+          : bigS(`${l.reps} ripetizioni`, `erano ${p[0].reps} il ${dLab(p[0].date)}`);
         const xi = [[0, dLab(p[0].date)], [p.length - 1, "ultima"]];
         if (p.length > 4) xi.splice(1, 0, [Math.floor((p.length - 1) / 2), dLab(p[Math.floor((p.length - 1) / 2)].date)]);
         return ui.hf(head, exImg(e)) + pl(e.useKg ? "Carico migliore, ogni settimana" : "Ripetizioni migliori, ogni settimana")
@@ -268,7 +276,7 @@
         if (isKid || minor()) return r1 + ui.row({ title: "Allenamenti", sub: "Questa settimana", value: planned() ? `${w.sessions.done}${of(w.sessions.planned)}` : "–" });
         if (n >= 3) { const wk = agg("week", 13), ws = nn(e.pts.slice(-n).map(p => wk[p.wi] && wk[p.wi].kcalRest)), v = ws.length ? Math.round(avg(ws)) : null;
           return r1 + ui.row({ title: "Calorie a riposo", sub: "Giorni senza allenamento", value: v == null ? "–" : `${v}%${of("100%")}` }); }
-        const a = w.avg.all, kg = prof().peso || (W().last && W().last.kg);
+        const a = w.avg.all, kg = kgRif();
         return r1 + ui.row({ title: "Proteine al giorno", sub: a.n && kg ? "Media dei giorni chiusi" : "Nessun giorno chiuso", value: a.n && kg ? `${nf(a.pro / kg)}${of(nf(a.proT / kg), "g/kg")}` : "–" });
       },
       sap: () => isKid ? ["Chi decide gli esercizi?", ["L'adulto che ti allena, con la scheda.", "Qui vedi quante ripetizioni hai fatto: prova a farne una in più."]]
@@ -301,11 +309,17 @@
     series(i) { if (o65()) return i === 0 ? agg("week", 6) : i === 1 ? agg("month", 6) : pairsOf(agg("month", 12)); return i === 0 ? agg("week", 13).slice(-5) : i === 1 ? agg("week", 13) : agg("month", 12); },
     verdict(i) {
       if (this.need()) return "Ancora pochi dati";
-      const [g, r] = this.k(), bs = this.series(i).filter(b => !b.live), G = avg(nn(bs.map(b => b[g]))), R = avg(nn(bs.map(b => b[r])));
-      const what = o65() ? "proteine" : "calorie", rest = o65() ? "Senza allenamento" : "A riposo";
-      if (R != null && R < 92 && (G == null || R < G - 3)) return `${rest}, meno ${what} del piano`;
-      if (G != null && G < 92) return o65() ? "Con allenamento, meno proteine" : "Giorni di palestra: sotto il piano";
-      if ((R != null && R > 110) || (G != null && G > 110)) return `Sopra il piano, ${what}`;
+      /* M5: soglie uniche. Over 65 proteine raggiunte = almeno il piano; adulto calorie in linea entro 100 dal piano (media dei periodi chiusi) */
+      const bs = this.series(i).filter(b => !b.live);
+      if (o65()) { const G = avg(nn(bs.map(b => b.proGym))), R = avg(nn(bs.map(b => b.proRest))), min = SO().PROTEINE_MIN * 100;
+        if (R != null && R < min && (G == null || R <= G)) return "Senza allenamento, meno proteine del piano";
+        if (G != null && G < min) return "Con allenamento, meno proteine";
+        return "Proteine del piano, sempre"; }
+      const m = (a, t) => { const v = nn(bs.map(b => b[a])), T = nn(bs.map(b => b[t])); return v.length ? { v: avg(v), t: avg(T) } : null; };
+      const G = m("kGA", "kGT"), R = m("kRA", "kRT"), band = SO().CALORIE_IN_LINEA;
+      if (R && R.v < R.t - band && (!G || R.v - R.t <= G.v - G.t)) return "A riposo, meno calorie del piano";
+      if (G && G.v < G.t - band) return "Giorni di palestra: sotto il piano";
+      if ((R && R.v > R.t + band) || (G && G.v > G.t + band)) return "Sopra il piano, calorie";
       return "Vicino al piano, sempre";
     },
     card(i) {
@@ -320,11 +334,11 @@
     },
     rows() {
       const w = data.week();
-      if (o65()) { const a = w.avg.all, kg = prof().peso || (W().last && W().last.kg);
+      if (o65()) { const a = w.avg.all, kg = kgRif();
         return ui.row({ title: "Proteine al giorno", sub: a.n ? "Media dei giorni chiusi" : "Nessun giorno chiuso", value: a.n ? `${a.pro}${of(a.proT, "g")}` : "–" })
           + ui.row({ title: "Per ogni kg di peso", sub: "Dopo i 65 anni: 1,0-1,5 g", value: a.n && kg ? `${nf(a.pro / kg)} g` : "–" }); }
-      const a = w.avg.rest, miss = a.n ? a.kcalT - a.kcal : null;
-      const r1 = ui.row({ title: "A riposo, questa settimana", sub: !a.n ? "Nessun giorno di riposo chiuso" : miss > 0 ? `${nf(miss)} calorie sotto il piano, al giorno` : "In linea con il piano", value: a.n ? `${nf(a.kcal)}${of(nf(a.kcalT))}` : "–" });
+      const a = w.avg.rest, kt = a.n ? kcalTxt(a.kcal, a.kcalT) : null;
+      const r1 = ui.row({ title: "A riposo, questa settimana", sub: !a.n ? "Nessun giorno di riposo chiuso" : kt === "in linea" ? "In linea con il piano" : `${kt}, al giorno`, value: a.n ? `${nf(a.kcal)}${of(nf(a.kcalT))}` : "–" });
       const f = fabbisogno();
       const r2 = f.need ? ui.row({ title: "Il tuo fabbisogno reale", sub: `Ancora pochi dati: ne servono ${f.need} giorni`, value: "–" })
         : f.noWeight ? ui.row({ title: "Il tuo fabbisogno reale", sub: "Servono più pesate nelle ultime 4 settimane", value: "–" })
@@ -358,7 +372,7 @@
       if (!o65()) {
         const bs = i === 0 ? agg("week", 13).slice(-5) : i === 1 ? agg("week", 13) : agg("month", 12), ok = bs.filter(b => b.kcal != null && !b.live);
         if (ok.length >= 2) { const v = ok.map(b => b.kcal), plan = Math.round(avg(nn(ok.map(b => b.kcalT)))), lo = Math.floor(Math.min(...v, plan) / 100) * 100 - 100, hi = Math.ceil(Math.max(...v, plan) / 100) * 100 + 100;
-          kc = pl(i === 2 ? "Calorie medie al giorno, per mese" : "Calorie medie al giorno, per settimana") + ui.chart.line({ trend: v, plan, min: lo, max: hi, yl: [nf(hi), nf(lo)], xl: [[0, ok[0].label], [ok.length - 1, ok[ok.length - 1].label]], fmt: nf, tip: k => `${ok[k].tl}: ${nf(v[k])} kcal`, aria: "Calorie medie e piano" }); }
+          kc = pl(i === 2 ? "Calorie medie al giorno, per mese" : "Calorie medie al giorno, per settimana") + ui.chart.line({ trend: v, plan, min: lo, max: hi, yl: [nf(hi), nf(lo)], xl: [[0, ok[0].label], [ok.length - 1, ok[ok.length - 1].label]], fmt: nf, tip: k => `${ok[k].tl}: ${nf(v[k])} calorie`, aria: "Calorie medie e piano" }); }
       }
       const med = `<p class="v3-progressi-note">Parlane con il medico o con il dietista</p><button class="v3-b2" data-v3act="medico">Prepara il riepilogo per il medico</button>`;
       if (hidden()) return (c ? bigS("Peso in calo", "da 3 mesi") + med : bigS("Peso nascosto", "Continui a registrarlo")) + kc;
@@ -408,9 +422,9 @@
       const da = isoOf(a.date), db = isoOf(b.date), wk = Math.max(1, Math.round(days(da, db) / 7));
       const ses = S.sessions.filter(s => { const d = isoOf(s.date); return d >= da && d <= db; }).length;
       const pd = []; for (let d = da; d <= db && d < today(); d = addDays(d, 1)) { if (S.days[d]) { const x = data.day(d); if (x.logged) pd.push(x.pro); } }
-      const kg = prof().peso || (W().last && W().last.kg), pro = pd.length && kg ? nf(avg(pd) / kg) + " g/kg" : "–";
       const near = iso => { const a7 = W().avg7; let best = null; for (const x of a7) if (Math.abs(days(x.date, iso)) <= 7 && (!best || Math.abs(days(x.date, iso)) < Math.abs(days(best.date, iso)))) best = x; return best; };
       const wa = near(da), wb = near(db), dw = wa && wb ? sgn(Math.round((wb.kg - wa.kg) * 10) / 10) + " kg" : "–";
+      const kg = (wb && wb.kg) || kgRif(), pro = pd.length && kg ? nf(avg(pd) / kg) + " g/kg" : "–";
       return bigS(`${wk} ${plural(wk, "settimana", "settimane")}`, "tra le due foto") + `<div class="v3-progressi-pair">${pic(a, "a")}${pic(b, "b")}</div>`
         + `<div class="v3-progressi-nums"><div><p class="v3-progressi-nl">${aw() ? "Allenamenti" : "Sedute"}</p><p class="v3-progressi-nv">${ses}</p></div><div><p class="v3-progressi-nl">Proteine</p><p class="v3-progressi-nv">${pro}</p></div><div><p class="v3-progressi-nl">Peso</p><p class="v3-progressi-nv">${hidden() ? "Nascosto" : dw}</p></div></div>`;
     },
@@ -440,17 +454,20 @@
     const w = data.week(), pd = w.sessions.planned, dn = w.sessions.done, M = minor(), A = aw();
     const sed = pd ? { label: A ? "Allenamenti" : "Sedute", value: String(dn), of: pd, pct: ui.pct(dn, pd), miss: dn >= pd ? "Settimana chiusa" : `Ancora ${pd - dn} ${A ? plural(pd - dn, "allenamento", "allenamenti") : plural(pd - dn, "seduta", "sedute")}` }
       : { label: A ? "Allenamenti" : "Sedute", value: "–", miss: "Crea la scheda in Palestra" };
-    const t = today(), v = S.days[t], water = v ? (v.water || 0) * 0.25 : 0, wT = planTargets().waterL;
-    const acqua = { label: "Acqua oggi", value: nf(water), of: nf(wT), unit: "L", pct: wT ? Math.round(water / wT * 100) : 0, miss: water >= wT ? "Fatto" : `Ancora ${nf(wT - water)} L` };
+    /* B14: box settimanale = acqua media della settimana (giorni chiusi con l'acqua segnata, come storico e report) */
+    const aq = window.V3Stats ? (V3Stats.clear(), V3Stats.agg("acqua", w.from, w.to)) : { n: 0, avg: null }, wT = planTargets().waterL;
+    const acqua = aq.n ? { label: "Acqua al giorno", value: nf(aq.avg, 1), of: nf(wT, 1), unit: "L", pct: ui.pct(aq.avg, wT), miss: aq.avg >= wT * SO().ACQUA_MIN ? "Media raggiunta" : "Media della settimana" }
+      : { label: "Acqua al giorno", value: "–", miss: w.days.some(d => d.closed) ? "Non segnata" : "La settimana è appena iniziata" };
     let tiles;
     if (M) {
       const past = w.days.filter(d => !d.future), col = past.filter(d => colDone(d.iso)).length, p3 = past.filter(d => mealsDone(d.iso) >= 3).length;
       tiles = [sed, { label: "Colazione", value: String(col), of: 7, pct: ui.pct(col, 7), miss: col >= 7 ? "Tutti i giorni" : `Ancora ${7 - col} ${plural(7 - col, "giorno", "giorni")}` },
         { label: "Giorni con 3 pasti", value: String(p3), of: 7, pct: ui.pct(p3, 7), miss: p3 >= 7 ? "Tutti i giorni" : `Ancora ${7 - p3} ${plural(7 - p3, "giorno", "giorni")}` }, acqua];
     } else {
-      const pe = w.protein.eaten, pt = w.protein.target;
-      const pro = { label: "Proteine", value: nf(pe), of: nf(pt), unit: "g", pct: ui.pct(pe, pt), miss: pe >= pt ? "Fatto" : `Ancora ${nf(pt - pe)} g` };
-      const kc = (lab, a) => a.n ? { label: lab, value: nf(a.kcal), of: nf(a.kcalT), pct: ui.pct(a.kcal, a.kcalT), miss: a.kcal >= a.kcalT ? "Media: in linea" : `Media: ${nf(a.kcalT - a.kcal)} calorie sotto il piano` } : { label: lab, value: "–", miss: "Nessun giorno chiuso" };
+      /* B14: proteine mangiate finora contro l'obiettivo dei giorni passati finora (oggi compreso), non dei 7 giorni */
+      const sf = w.days.filter(d => !d.future), pe = w.protein.eaten, pt = sf.reduce((x, d) => x + d.proT, 0);
+      const pro = { label: "Proteine", value: nf(pe), of: nf(pt), unit: "g", pct: ui.pct(pe, pt), miss: pe >= pt * SO().PROTEINE_MIN ? "In linea finora" : `Ancora ${nf(pt - pe)} g finora` };
+      const kc = (lab, a) => a.n ? { label: lab, value: nf(a.kcal), of: nf(a.kcalT), pct: ui.pct(a.kcal, a.kcalT), miss: (t => t === "in linea" ? "Media: in linea" : t.replace(" calorie", ""))(kcalTxt(a.kcal, a.kcalT)) } : { label: lab, value: "–", miss: "Nessun giorno chiuso" };
       if (o65()) { const past = w.days.filter(d => d.closed), lg = past.filter(d => d.logged).length;
         tiles = [sed, pro, { label: "Giorni con i pasti segnati", value: String(lg), of: past.length || 0, pct: ui.pct(lg, past.length || 1), miss: past.length ? (lg >= past.length ? "Tutti" : `Ancora ${past.length - lg} ${plural(past.length - lg, "giorno", "giorni")}`) : "La settimana è appena iniziata" }, acqua]; }
       else tiles = [sed, pro, kc("Calorie palestra", w.avg.gym), kc("Calorie riposo", w.avg.rest)];
@@ -477,7 +494,7 @@
     const rows = (window.V3Report ? ui.row({ title: "Il mio report", sub: kid() ? "Com'è andata la settimana" : "Com'è andata e cosa fare adesso", act: "report" }) : "")
       + (window.V3Storico ? ui.row({ title: "Il mio storico", sub: `Pasti, ${aw() ? "allenamenti" : "sedute"} e tutti i numeri`, act: "storico" }) : "")
       + allowed().filter(id => id !== "settimana" || !window.V3Storico).map(id => ui.row({ title: SEC[id].title, sub: rowSub(id), act: "open", arg: id })).join("")
-      + (typeof cardioWeek === "function" ? ui.row({ title: kid() ? "Movimento della settimana" : "Cardio della settimana", sub: `${cm} /${cof} minuti` + (kid() ? "" : ` · stretching ${sw} /${CARDIO.stretchVolte}`), act: "cardio" }) : "")
+      + (typeof cardioWeek === "function" ? ui.row({ title: kid() ? "Movimento della settimana" : "Cardio della settimana", sub: `${cm} /${cof} minuti` + (kid() ? `, ${SO().MOVIMENTO_GIORNO} al giorno` : ` · stretching ${sw} /${CARDIO.stretchVolte}`), act: "cardio" }) : "")
       + (minor() || window.V3Storico ? "" : ui.row({ title: "Tutti i dati", sub: S.downloads ? "Grafici di prima ed esportazione CSV" : "I grafici di prima", act: "legacy", arg: "carichi" }));
     const sap = kid() ? "La colazione dà energia per allenarsi." : minor() ? "La colazione aiuta ad allenarsi." : o65() ? "Dopo i 65 anni servono proteine a ogni pasto." : "Le proteine aiutano i muscoli a recuperare.";
     return ui.header("Progressi") + lime()

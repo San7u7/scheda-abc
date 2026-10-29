@@ -536,7 +536,7 @@
 
   async function found(code) {
     if (hostOf(top())) return scanFound(top(), code); // dal pasto: la fotocamera resta accesa
-    camStop(); lastCode = code; lastAt = Date.now(); try { navigator.vibrate && navigator.vibrate(40); } catch (_) {}
+    camStop(); lastCode = code; lastAt = Date.now(); try { navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive) && navigator.vibrate(40); } catch (_) {}
     camMsg("busy", "Cerco il prodotto", `Codice ${code}`);
     const mine = foods().find(f => f.ean === code);
     const pk = (top() || {}).pick;
@@ -628,9 +628,13 @@
   }
 
   /* 45 · componi il pasto («Ho mangiato un'altra cosa») */
-  function pastoInit(k) {
-    const iso = today(), v = S.days[iso], c = v && v.custom && k !== "extra" ? v.custom[k] : null;
-    if (c && Array.isArray(c.items)) return { items: c.items.filter(x => byId(x.id)).map(x => ({ ...x })), from: "edit" };
+  /* audit M10: iso = giorno passato del diario (fino a 13 giorni fa); senza iso è oggi */
+  const pIso = iso => iso && iso < today() && iso >= addDays(today(), -13) ? iso : null;
+  const GG = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+  function pastoInit(k, iso) {
+    iso = pIso(iso); const v = S.days[iso || today()], c = v && v.custom && k !== "extra" ? v.custom[k] : null;
+    if (c && Array.isArray(c.items)) return { items: c.items.filter(x => byId(x.id)).map(x => ({ ...x })), from: "edit", iso };
+    if (iso) return { items: [], from: c ? "testo" : "", iso };
     const pz = k !== "extra" && proposta(k); if (pz) return { items: pz.items.filter(x => byId(x.id)).map(x => ({ ...x })), from: "ripeti" };
     return { items: [], from: c ? "testo" : "" };
   }
@@ -661,11 +665,11 @@
         <div class="v3-al-st big" role="group" aria-label="Quantità di ${e(lo)}"><button data-v3act="al-g" data-v3arg="${i}:-1" data-hold="alg${i}m" aria-label="${e(less)}">−</button><span class="v3-al-sv" id="al-sv${i}" aria-live="polite">${e(gLab(f, x.g))}</span><button data-v3act="al-g" data-v3arg="${i}:1" data-hold="alg${i}p" aria-label="${e(more)}">+</button></div></div>`; }).join("");
   }
   function pagePasto(p) {
-    const used = sorted().filter(f => !p.items.some(x => x.id === f.id)).slice(0, 4), k = p.k, rp = k !== "extra" && ripeti()[dowT() + ":" + k], n = p.items.length;
+    const used = sorted().filter(f => !p.items.some(x => x.id === f.id)).slice(0, 4), k = p.k, rp = !p.iso && k !== "extra" && ripeti()[dowT() + ":" + k], n = p.items.length;
     const sub = p.from === "ripeti" ? `Come ${DOW[dowT()].toLowerCase()} scorso, cambia pure` : n ? `${n} ${n === 1 ? "alimento" : "alimenti"} · sistema i grammi` : p.from === "testo" ? "Rifallo con i tuoi alimenti" : "Componi con i tuoi alimenti";
     const two = n ? `<div class="v3-al-two">${btn("Scansiona un altro", "al-pscan", null, "v3-b2")}${btn("Aggiungi", "al-pfind", null, "v3-b2")}</div>`
-      : `<div class="v3-al-two">${btn("Scansiona", "al-pscan")}${btn("Aggiungi", "al-pfind", null, "v3-b2")}</div><button class="v3-b2" data-act="mealalt" data-v="${e(k)}">Scrivilo a parole</button>`;
-    return ui.back() + `<div><h1 class="v3-t1">${e(LAB(k))}</h1><p class="v3-sub">${e(sub)}</p></div>` +
+      : `<div class="v3-al-two">${btn("Scansiona", "al-pscan")}${btn("Aggiungi", "al-pfind", null, "v3-b2")}</div>${p.iso ? btn("Scrivilo a parole", "al-parole", k, "v3-b2") : `<button class="v3-b2" data-act="mealalt" data-v="${e(k)}">Scrivilo a parole</button>`}`;
+    return ui.back() + `<div><h1 class="v3-t1">${e(LAB(k))}${p.iso ? " di " + GG[new Date(p.iso + "T12:00:00").getDay()] : ""}</h1><p class="v3-sub">${e(sub)}</p></div>` +
       (n ? `<section class="v3-sec" id="al-rows">${pageRows(p)}${two}</section>` : `<section class="v3-sec">${ui.card(`<p class="v3-rt">Cosa hai mangiato?</p><p class="v3-rs">Scansiona il codice o aggiungi un alimento. Puoi scansionarne più di uno di fila.</p>`)}${two}</section>`) +
       (used.length ? ui.section("I più usati", `<div class="v3-al-chips">${used.map(f => `<button class="v3-al-chip pl" data-v3act="al-padd" data-v3arg="${e(f.id)}">+ ${e(f.nome)}</button>`).join("")}</div>`) : "") +
       (n ? pastoBox(p) + (rp ? ui.row({ title: "Lo riproponi la prossima settimana", sub: `Fino a ${dLong(rp.al)}`, act: "al-rp", apri: "Cambia" }) : "") +
@@ -682,7 +686,7 @@
   function savePasto(p) {
     const its = p.items.filter(x => x.g > 0 && byId(x.id));
     if (!its.length) { toast("Aggiungi almeno un alimento", { sub: "Tocca un alimento, poi le quantità" }); return; }
-    const t = tot(its), iso = today(), first = !(S.days[iso] && intake(iso).logged), d = dayLog(iso), k = p.k;
+    const t = tot(its), iso = pIso(p.iso) || today(), past = iso !== today(), first = !(S.days[iso] && intake(iso).logged), d = dayLog(iso), k = p.k;
     const prev = k === "extra" ? null : { c: d.custom[k] ? JSON.parse(JSON.stringify(d.custom[k])) : null, m: d.meals[k], s: d.skip[k] };
     const en = { text: its.map(x => kid() ? byId(x.id).nome : `${byId(x.id).nome} ${nf(x.g, 0)} g`).join(", "), kcal: Math.round(t.kcal), p: r1(t.p), c: r1(t.c), f: r1(t.f), items: its.map(x => ({ id: x.id, g: x.g })) };
     let xid = null;
@@ -693,6 +697,7 @@
     const sub = kid() ? `${its.length} ${its.length === 1 ? "alimento" : "alimenti"} nel piatto` : `${nf(en.kcal, 0)} calorie · ${nf(en.p, 0)} g di proteine`;
     const msg = k === "extra" ? "Fuori programma segnato" : `${LAB(k)} ${k === "col" || k === "mer" || k === "cen" ? "segnata" : "segnato"}`;
     if (k === "extra") { toast(msg, { sub, undo }); V3.go("cibo"); return; }
+    if (past) { toast(msg, { sub: `${sub} · ${dLong(iso)}`, undo }); V3.back(); return; } // giorno del diario: si torna al diario, niente «riproponi»
     ask47("pasto", yes => {
       const all = ripeti(), key = dowT() + ":" + k;
       if (yes) { all[key] = { items: en.items, dal: iso, al: addDays(sunOf(iso), 7) }; lsSet(RK, all); } else if (yes === false && all[key]) { delete all[key]; lsSet(RK, all); }
@@ -763,6 +768,7 @@
     "al-scheda"(id) { nav.open({ p: "al-scheda", id }); },
     "al-dieta"() { nav.open({ p: "al-dieta", d: dietDraft(), dow: dowT() }); },
     "al-altra"(k) { nav.open({ p: "al-pasto", k, ...pastoInit(k) }); },
+    "al-parole"(k) { const p = nav.top(), iso = p && p.iso, d = iso && S.days[iso], c = d && d.custom && d.custom[k]; S.food = { key: k, text: c ? c.text : "", items: [], note: "", busy: false, err: null, iso }; openSheet("food"); },
     "al-ean"() { sheetEan(); },
     "al-fpick"() { const i = document.getElementById("al-fin"); if (i) i.click(); },
     "al-fdel"(id) { const f = byId(id); if (!f) return; let ok = false;
@@ -865,6 +871,7 @@
   /* ============================== API per sec-cibo.js ============================== */
   window.V3Alim = {
     bind(n) { nav = n; },
+    altra(k, iso) { nav.open({ p: "al-pasto", k, ...pastoInit(k, iso) }); }, // audit M10: dal diario, su quel giorno
     block,
     page(p) {
       if (!p || !String(p.p).startsWith("al-")) return null;

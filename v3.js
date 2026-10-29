@@ -294,6 +294,28 @@
       return { state, day, name: p.nome || "Seduta " + day, focus: p.focus || "", exercises: p.items.length, sets, minutes, doneSets, ups: p.items.filter(it => plan(it).up).length, next: d0 ? nextDay() : null };
     },
     today() { return dayInfo(today()); },
+    /* 29/10 audit B6: UNA tabella degli orari dei pasti (gli stessi dei promemoria di settings.js) e UNA regola del «pasto del momento» */
+    MEAL_TIME: { col: "7:30", spu: "10:30", pra: "13:00", mer: "16:30", cen: "20:00" },
+    mealMin(k) { const [h, m] = String(data.MEAL_TIME[k] || "12:00").split(":").map(Number); return h * 60 + (m || 0); },
+    /* audit M13: pasti di un giorno = quelli del piano per quel giorno della settimana + quelli segnati quel giorno (anche se il piano di oggi non li prevede più) */
+    dayMeals(iso) {
+      iso = iso || today(); const dw = new Date(iso + "T12:00:00").getDay(), plan = hasPlanNow(), v = S.days[iso], dv = v ? { meals: v.meals || {}, custom: v.custom || {}, skip: v.skip || {} } : { meals: {}, custom: {}, skip: {} };
+      return MEALS.map(([k, label]) => { const m = plan ? mealOf(dw, k) || null : null, st = mealState(dv, k); return { k, label, m, st, c: dv.custom[k] || null, eaten: st === "plan" || st === "custom" }; })
+        .filter(x => !plan || x.m || x.st !== "open");
+    },
+    /* audit M1: «pasti segnati» = mangiati come da piano o un'altra cosa; il «non mangiato» NON conta (come V3Stats.day) */
+    mealsDone(iso) { return data.dayMeals(iso).filter(x => x.eaten).length; },
+    /* pasto del momento di oggi: il primo pasto aperto non passato da 2 ore, altrimenti l'ultimo aperto; null se tutto segnato */
+    currentMeal() {
+      const d = new Date(), n = d.getHours() * 60 + d.getMinutes(), open = data.dayMeals(today()).filter(x => x.st === "open");
+      const x = open.find(y => data.mealMin(y.k) + 120 > n) || open[open.length - 1];
+      return x ? x.k : null;
+    },
+    mealPast(k) { const d = new Date(); return data.mealMin(k) + 120 <= d.getHours() * 60 + d.getMinutes(); },
+    /* audit B2: acqua di un giorno in litri (bicchieri da 0,25 L), obiettivo dal piano */
+    water(iso) { const v = S.days[iso || today()]; let t = 2; try { t = +planTargets().waterL || 2; } catch (_) {} return { l: ((v && +v.water) || 0) * 0.25, t: Math.round(t * 100) / 100 }; },
+    /* audit B13: riquadri iniziali di «I numeri di oggi» (Oggi e board.js) */
+    tilesDefault() { const p = data.profile(); return ["sess", "pro", "water", p.minor ? "mov" : p.over65 ? "fv" : "kcal"]; },
     /* unica scrittura, additiva e su chiave propria: fotografa il target del giorno per lo storico */
     saveDayTarget(iso) {
       iso = iso || today(); const x = iso === today() && window.dayTargets ? dayTargets() : targetsFor(isTrain(iso));
