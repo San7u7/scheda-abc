@@ -48,7 +48,8 @@ function makeGemini(key) {
     return contents;
   }
   // Gemini 3 reasons at HIGH by default (slow): ask for LOW; 2.5 Flash can switch reasoning off. Retry without it if refused.
-  const thinkingFor = m => /^gemini-(?:[3-9]|\d{2,})/.test(m) ? { thinkingLevel: "low" } : /^gemini-2\.5-flash/.test(m) ? { thinkingBudget: 0 } : null;
+  // quick tasks (meal estimates, labels) don't need reasoning: "minimal" is much faster than "low"
+  const thinkingFor = (m, fast) => /^gemini-(?:[3-9]|\d{2,})/.test(m) ? { thinkingLevel: fast ? "minimal" : "low" } : /^gemini-2\.5-flash/.test(m) ? { thinkingBudget: 0 } : null;
   async function attempt(m, body, opts, timeoutMs) {
     const ac = new AbortController(), timer = setTimeout(() => ac.abort("timeout"), timeoutMs);
     const onUser = () => ac.abort("user"); if (opts.signal) { if (opts.signal.aborted) throw { code: "cancelled" }; opts.signal.addEventListener("abort", onUser); }
@@ -74,9 +75,9 @@ function makeGemini(key) {
     const gmsg = t => { try { return JSON.parse(t).error.message; } catch (_) { return String(t || "").slice(0, 160); } };
     for (const [mi, m] of order.entries()) {
       if (mi) P.stage("Provo un altro modello");
-      const th = thinkingFor(m);
+      const th = thinkingFor(m, opts.fast);
       // variants: if Google refuses the request shape (400), retry simpler: without relaxed filters, then without thinking settings
-      const variants = opts.images ? [{ safe: true, th }, { safe: false, th }, { safe: false, th: null }] : [{ safe: false, th }, { safe: false, th: null }];
+      const variants = opts.images ? [{ safe: true, th }, { safe: false, th }, { safe: false, th: null }] : [{ safe: false, th }].concat(th && th.thinkingLevel === "minimal" ? [{ safe: false, th: { thinkingLevel: "low" } }] : [], [{ safe: false, th: null }]);
       let nextModel = false;
       for (const v of variants) {
         if (nextModel) break;
@@ -84,7 +85,7 @@ function makeGemini(key) {
         if (v.safe) body.safetySettings = SAFE;
         P.stage("Invio a Google"); const slow = setTimeout(() => P.stage(opts.images ? "Leo sta guardando le immagini" : "Leo sta ragionando"), 900);
         let r;
-        try { r = await attempt(m, body, opts, opts.modelTier === "complex" ? 120000 : opts.images ? 90000 : opts.fast ? 25000 : 40000); }
+        try { r = await attempt(m, body, opts, opts.modelTier === "complex" ? 120000 : opts.images ? 90000 : opts.fast ? 12000 : 40000); }
         catch (e) { clearTimeout(slow); if (e && e.code === "network") { last = { code: "network", message: e.message }; P.stage("Connessione interrotta, riprovo"); await new Promise(z => setTimeout(z, 1500)); continue; } throw e; }
         clearTimeout(slow);
         if (r.timeout) { last = { code: "timeout", message: "Nessuna risposta in tempo" }; nextModel = true; break; }
@@ -93,6 +94,7 @@ function makeGemini(key) {
           const text = c && c.content && (c.content.parts || []).filter(p => !p.thought).map(p => p.text || "").join("") || "";
           const why = (d.promptFeedback && d.promptFeedback.blockReason) || (c && c.finishReason) || "";
           if (!text) { last = { code: /SAFETY|PROHIBITED|BLOCK|SPII/i.test(why) ? "refused" : "empty_completion", message: "Risposta vuota " + why }; continue; }
+          sample.last = { model: m, tries: mi + 1 };
           return { text, truncated: c.finishReason === "MAX_TOKENS", modelApplied: m };
         }
         const t = await r.text().catch(() => "");
