@@ -456,10 +456,10 @@ body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; 
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610292330"></script>
-<script src="lib.js?v=202610292330"></script>
-<script src="ai.js?v=202610292330"></script>
-<script src="coach.js?v=202610292330"></script>
+<script src="seed-abc.js?v=202610300000"></script>
+<script src="lib.js?v=202610300000"></script>
+<script src="ai.js?v=202610300000"></script>
+<script src="coach.js?v=202610300000"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -1600,7 +1600,7 @@ document.addEventListener("click", e => {
   else if (act === "undo") { const d = draft(activeDay()), s = d.sets[d.cur.id][d.cur.i]; s.done = false; saveDrafts(); render(); if (s.c) toast("Cardio da rifare", { sub: s.min + " minuti previsti" }); }
   else if (act === "t15") { if (S.timer) { S.timer.end = Math.max(Date.now(), S.timer.end) + 15000; S.timer.total += 15; renderBar(); } }
   else if (act === "tstop") { S.timer = null; renderBar(); }
-  else if (act === "finish") { S.fat = null; S.pain = false; S.confirmDiscard = false; openSheet("finish"); }
+  else if (act === "finish") { S.fat = null; S.pain = !!(activeDay() && draft(activeDay()).male); /* «Mi fa male» in seduta */ S.confirmDiscard = false; openSheet("finish"); }
   else if (act === "uppick") { const [i, on] = v.split(":"); if (S.ups && S.ups.list[+i]) { S.ups.list[+i].pick = on === "1"; renderSheet(); } }
   else if (act === "upsave") saveUps();
   else if (act === "upnot") { S.ups = null; S.sheet = null; render(); toast("Carichi invariati", { sub: "Riprovi gli stessi alla prossima seduta" }); }
@@ -1708,8 +1708,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610292330"></script>
-<script src="ux.js?v=202610292330"></script>
-<script src="hub.js?v=202610292330"></script><script src="board.js?v=202610292330"></script><script src="timer.js?v=202610292330"></script><script src="nutri.js?v=202610292330"></script><script src="photos.js?v=202610292330"></script><script src="coachui.js?v=202610292330"></script><script src="settings.js?v=202610292330"></script><script src="aikey.js?v=202610292330"></script><script src="tour.js?v=202610292330"></script><script src="gesture.js?v=202610292330"></script><script src="ds.js?v=202610292330"></script><script src="v3.js?v=202610292330"></script><script src="quiz.js?v=202610292330"></script><script src="cibo-base.js?v=202610292330"></script><script src="alimenti.js?v=202610292330"></script><script src="giorni.js?v=202610292330"></script><script src="sec-oggi.js?v=202610292330"></script><script src="sec-palestra.js?v=202610292330"></script><script src="sec-cibo.js?v=202610292330"></script><script src="storico.js?v=202610292330"></script><script src="report.js?v=202610292330"></script><script src="sec-progressi.js?v=202610292330"></script>
+<script src="exdb.js?v=202610300000"></script>
+<script src="ux.js?v=202610300000"></script>
+<script src="hub.js?v=202610300000"></script><script src="board.js?v=202610300000"></script><script src="timer.js?v=202610300000"></script><script src="nutri.js?v=202610300000"></script><script src="photos.js?v=202610300000"></script><script src="coachui.js?v=202610300000"></script><script src="settings.js?v=202610300000"></script><script src="aikey.js?v=202610300000"></script><script src="tour.js?v=202610300000"></script><script src="gesture.js?v=202610300000"></script><script src="ds.js?v=202610300000"></script><script src="v3.js?v=202610300000"></script><script src="quiz.js?v=202610300000"></script><script src="cibo-base.js?v=202610300000"></script><script src="alimenti.js?v=202610300000"></script><script src="giorni.js?v=202610300000"></script><script src="sec-oggi.js?v=202610300000"></script><script src="sec-palestra.js?v=202610300000"></script><script src="seduta.js?v=202610300000"></script><script src="sec-cibo.js?v=202610300000"></script><script src="storico.js?v=202610300000"></script><script src="report.js?v=202610300000"></script><script src="sec-progressi.js?v=202610300000"></script>
 
 </body></html>
