@@ -444,10 +444,10 @@ body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; 
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610290000"></script>
-<script src="lib.js?v=202610290000"></script>
-<script src="ai.js?v=202610290000"></script>
-<script src="coach.js?v=202610290000"></script>
+<script src="seed-abc.js?v=202610291200"></script>
+<script src="lib.js?v=202610291200"></script>
+<script src="ai.js?v=202610291200"></script>
+<script src="coach.js?v=202610291200"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -1316,7 +1316,7 @@ function renderSheet() {
       <button class="primary" data-act="savefinish" ${nDone ? "" : "disabled"}>Salva ${laSed()} nei progressi</button><button class="ghost" data-act="close">Torna ${allenW() ? "all'allenamento" : "alla seduta"}</button>
       <button class="link small" data-act="discard" style="align-self:center">${S.confirmDiscard ? `Sì, cancella ${laSed()} di oggi` : `Cancella ${laSed()} senza salvare`}</button>`;
   } else if (sh === "food") {
-    const f = S.food, lab = f.key === "extra" ? "Cibo fuori programma" : MEALS.find(m => m[0] === f.key)[1];
+    const f = S.food, lab = (f.key === "extra" ? "Cibo fuori programma" : MEALS.find(m => m[0] === f.key)[1]) + (f.iso && f.iso < localISO() ? " di " + ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"][new Date(f.iso + "T12:00:00").getDay()] : "");
     const items = f.items.map(scaleItem), tot = items.reduce(addN, ZERO());
     const lib = S.foods.slice().sort((x, y) => (y.used || 0) - (x.used || 0));
     html = `<div class="block-h"><h2>${lab}</h2><button class="link small" data-act="close" style="padding:0">Annulla</button></div>
@@ -1463,7 +1463,7 @@ async function readLabel(file) {
 }
 function saveFood() {
   try {
-    const f = S.food, d = dayLog(localISO()), text = ((($("#ftext") || {}).value) || f.text || "").trim();
+    const f = S.food, iso = f.iso && f.iso >= addDays(localISO(), -13) && f.iso < localISO() ? f.iso : localISO(), d = dayLog(iso), text = ((($("#ftext") || {}).value) || f.text || "").trim();
     const items = f.items.map(scaleItem); let e;
     if (items.length) { const tot = items.reduce(addN, ZERO()); e = { text: items.map(x => x.per100 ? `${x.nome} ${fmt(x.g)} g` : x.nome).join(", ") || text, ...tot }; }
     else { const k = num(($("#fk") || {}).value), p = num(($("#fp") || {}).value);
@@ -1474,7 +1474,7 @@ function saveFood() {
     if (f.items.some(x => x.fid)) persistFoods();
     if (f.key === "extra") d.extra.push({ id: Date.now(), ...e });
     else { d.custom[f.key] = e; d.meals[f.key] = false; delete d.skip[f.key]; }
-    saveDay(localISO()); S.sheet = null; S.food = null; render(); toast(`${f.key === "extra" ? "Cibo fuori programma" : MEALS.find(m => m[0] === f.key)[1]} segnato`, { sub: `${fmt(e.kcal)} calorie · ${fmt(e.p)} g di proteine` });
+    saveDay(iso); S.sheet = null; S.food = null; render(); toast(`${f.key === "extra" ? "Cibo fuori programma" : MEALS.find(m => m[0] === f.key)[1]} segnato`, { sub: `${fmt(e.kcal)} calorie · ${fmt(e.p)} g di proteine` });
   } catch (err) { toast("Pasto non segnato", { sub: "Memoria del telefono piena o bloccata. Riprova." }); console.error(err); }
 }
 /* ---------- events ---------- */
@@ -1631,8 +1631,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610290000"></script>
-<script src="ux.js?v=202610290000"></script>
-<script src="hub.js?v=202610290000"></script><script src="board.js?v=202610290000"></script><script src="timer.js?v=202610290000"></script><script src="nutri.js?v=202610290000"></script><script src="photos.js?v=202610290000"></script><script src="coachui.js?v=202610290000"></script><script src="settings.js?v=202610290000"></script><script src="aikey.js?v=202610290000"></script><script src="tour.js?v=202610290000"></script><script src="gesture.js?v=202610290000"></script><script src="ds.js?v=202610290000"></script><script src="v3.js?v=202610290000"></script><script src="quiz.js?v=202610290000"></script><script src="cibo-base.js?v=202610290000"></script><script src="alimenti.js?v=202610290000"></script><script src="sec-oggi.js?v=202610290000"></script><script src="sec-palestra.js?v=202610290000"></script><script src="sec-cibo.js?v=202610290000"></script><script src="sec-progressi.js?v=202610290000"></script>
+<script src="exdb.js?v=202610291200"></script>
+<script src="ux.js?v=202610291200"></script>
+<script src="hub.js?v=202610291200"></script><script src="board.js?v=202610291200"></script><script src="timer.js?v=202610291200"></script><script src="nutri.js?v=202610291200"></script><script src="photos.js?v=202610291200"></script><script src="coachui.js?v=202610291200"></script><script src="settings.js?v=202610291200"></script><script src="aikey.js?v=202610291200"></script><script src="tour.js?v=202610291200"></script><script src="gesture.js?v=202610291200"></script><script src="ds.js?v=202610291200"></script><script src="v3.js?v=202610291200"></script><script src="quiz.js?v=202610291200"></script><script src="cibo-base.js?v=202610291200"></script><script src="alimenti.js?v=202610291200"></script><script src="giorni.js?v=202610291200"></script><script src="sec-oggi.js?v=202610291200"></script><script src="sec-palestra.js?v=202610291200"></script><script src="sec-cibo.js?v=202610291200"></script><script src="sec-progressi.js?v=202610291200"></script>
 
 </body></html>

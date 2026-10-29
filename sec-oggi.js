@@ -135,6 +135,7 @@
   function dayPage() {
     const items = timeline(), meals = items.filter(x => x.kind === "meal"), done = meals.filter(x => x.done).length, up = upcoming(items), cur = up[0];
     const verdict = meals.length ? `${done} di ${meals.length} pasti segnati` : "Nessun pasto in programma";
+    if (window.V3Giorni) return V3Giorni.render({ title: ui.dateSub(), verdict, rows: items.map(x => rowOf(x, x === cur)).join("") }); // 29/10 modifica 3: diario con i giorni passati
     return ui.back() + `<div class="v3-oggi-ttl"><h1 class="v3-t1">La tua giornata</h1><p class="v3-sub">${ui.esc(verdict)}</p></div>` +
       `<div class="v3-oggi-tl">${items.map(x => rowOf(x, x === cur)).join("")}</div>` +
       ui.end("Segnare i pasti ti fa vedere cosa mangi davvero", { act: "sap", arg: "pro", leoQ: "Perché segnare i pasti?" });
@@ -203,13 +204,15 @@
   }
 
   V3.register("oggi", {
+    enter(o) { if (o && o.day && window.V3Giorni) { V3Giorni.reset(o.day); sub = "giornata"; V3.page(() => { sub = null; }); } }, // da Palestra › La mia settimana
     render(el) {
       el.innerHTML = sub === "giornata" ? dayPage() : sub === "settimana" ? weekPage() : mainPage();
     },
     on: {
       pasto(k) { openMeal(k); },
       seduta() { V3.go("palestra"); },
-      giornata() { sub = "giornata"; V3.page(() => { sub = null; }); },
+      giornata() { if (window.V3Giorni) V3Giorni.reset(); sub = "giornata"; V3.page(() => { sub = null; }); },
+      ...(window.V3Giorni ? V3Giorni.on : {}),
       riepilogo() { const prev = sub; sub = "settimana"; wOff = 0; V3.page(() => { sub = prev; }); },
       wsel(i) { wOff = +i; V3.refresh(); },
       acqua() { waterSheet(); },

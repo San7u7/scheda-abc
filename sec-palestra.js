@@ -351,7 +351,7 @@
     const wk = data.week(), h = data.history("week"), map = has("weekDone") ? weekDone() : {};
     const G = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
     const rows = wk.days.map((d, i) => { const k = map[i];
-      if (k) return ui.row({ title: G[i], sub: (P[k] ? dname(k) : tv("Seduta", "Allenamento")) + " ✓", on: d.today });
+      if (k) return ui.row({ title: G[i], sub: (P[k] ? dname(k) : tv("Seduta", "Allenamento")) + " ✓", on: d.today, act: window.V3Giorni ? "giorno" : null, arg: d.iso, apri: "Apri" });
       if (d.today) return ui.row({ title: G[i] + " · oggi", sub: d.train ? "Giorno di palestra" : "Riposo", on: true });
       if (d.future && d.train) return ui.row({ title: G[i], sub: tv("Seduta prevista", "Allenamento previsto") });
       return ""; }).join("");
@@ -598,6 +598,7 @@
       "q-seduta"() { if (window.V3Quiz) open("quiz", () => V3Quiz.start(V3Quiz.cfg.seduta())); },
       "apri-seduta"(k) { if (P[k]) open("seduta", () => { selDay = k; }); },
       settimana() { open("settimana"); },
+      giorno(iso) { V3.go("oggi", { day: iso }); }, // 29/10: giorno della settimana → diario in Oggi
       "cardio-fuori"() { if (typeof cardioFuori === "function") cardioFuori(); },
       routine() { open("routine"); },
       modifica() { if (!DAYS.length) return V3.legacy({ tab: "piano", hub: "train" }); const ts = data.todaySession(); open("scheda", () => { selDay = ts.day && P[ts.day] ? ts.day : DAYS[0]; }); },
