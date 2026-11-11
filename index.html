@@ -456,10 +456,10 @@ body.no-anim .cdo-ring #cdo-arc, body.no-anim .cd-ring .arc { transition: none; 
 <div id="overlay"></div>
 <div id="hello"></div>
 
-<script src="seed-abc.js?v=202610291900"></script>
-<script src="lib.js?v=202610291900"></script>
-<script src="ai.js?v=202610291900"></script>
-<script src="coach.js?v=202610291900"></script>
+<script src="seed-abc.js?v=202611111200"></script>
+<script src="lib.js?v=202611111200"></script>
+<script src="ai.js?v=202611111200"></script>
+<script src="coach.js?v=202611111200"></script>
 <script>
 "use strict";
 /* ---------- the program (from the user's imported or generated plan) ---------- */
@@ -637,7 +637,13 @@ function baseline(it) {
    up = carico nuovo accettato negli ultimi 7 giorni (segno lime «Nuovo carico»): b.kg diventa il carico di prima, così kg − b.kg = aumento */
 const NEW_MS = 7 * 864e5;
 function withNew(r, st) { if (st && st.upAt && st.upFrom != null && Date.now() - new Date(st.upAt) < NEW_MS && r.kg != null && r.kg > st.upFrom) { r.up = true; r.b = { ...r.b, kg: st.upFrom }; } return r; }
-function plan(it) {
+/* rientro una tantum (11/11/2026, dopo lo stop per il certificato): APP.rientro = [{dal, al, pct, taglio}] in seed-abc.js.
+   Scala solo i carichi proposti (e, con taglio, toglie 1 serie da 3+); la scheda non cambia e finish() non tocca i progressi. */
+function rientro() { const t = localISO(); return ((window.APP && APP.rientro) || []).find(r => t >= r.dal && t <= r.al) || null; }
+const rKg = (kg, p) => kg == null || !(+kg > 0) ? kg : kg * p >= 10 ? Math.round(kg * p / 2.5) * 2.5 : Math.round(kg * p * 2) / 2;
+function plan(it) { const r = plan0(it), ph = rientro(); if (!ph || it.unit === "none" || it.unit === "zavorra") return r;
+  return { ...r, kg: rKg(r.kg, ph.pct), up: false, ready: false, rientro: ph }; }
+function plan0(it) {
   if (tipoOf(it) !== "uguali" && exName(it) === it.name) { // schemi: si parte da kg1; dopo una seduta con lo schema, +salto se tutte le serie di lavoro hanno fatto le ripetizioni previste
     const sc = it.schema, st = S.state.ex[exKey(it)], fresh = st && st.kg1 != null && st.tipo === sc.tipo && (!sc.da || (st.at || "") > sc.da);
     const kg1 = it.unit === "none" ? null : fresh ? st.kg1 : (sc.kg1 != null ? +sc.kg1 : it.kg);
@@ -682,7 +688,7 @@ function draftSets(it, d) {
   const reps = uq ? Array.from({ length: x.sets }, (_, i) => ls && ls.length ? (ls[i] ?? ls[0]) : x.min) : null;
   return targetSets(x, { kg1, reps }).map(s => ({ kg: s.kg, reps: s.reps, done: false, ...(uq && !s.w && !s.dr ? {} : { t: [s.kg, s.reps] }), ...(s.w ? { w: 1 } : {}), ...(s.dr ? { dr: 1 } : {}) }));
 }
-const itOf = (it, d) => { const o = d && d.sch && d.sch[it.id]; if (!o) return it; const x = { ...it, ...o }; if (o.schema) x.sets = o.schema.tipo === "5x5" ? 5 : +o.schema.serie || it.sets; return x; };
+const itOf = (it, d) => { const o = d && d.sch && d.sch[it.id], ph = rientro(); if (!o) return ph && ph.taglio && it.sets >= 3 ? { ...it, sets: it.sets - 1 } : it; const x = { ...it, ...o }; if (o.schema) x.sets = o.schema.tipo === "5x5" ? 5 : +o.schema.serie || it.sets; return x; };
 function firstOpen(day, d) {
   const L = flowOrder(P[day].items);
   for (const it of L) { const i = d.sets[it.id].findIndex(s => !s.done); if (i >= 0) return { id: it.id, i }; }
@@ -1424,6 +1430,7 @@ async function finish(meta) {
     const done = raw.map(s => ({ kg: kgOf(s), reps: +s.reps || 0, ...(s.dr ? { dr: 1 } : {}) }));
     if (!done.length) continue;
     const name = exName(it); items.push({ id: it.id, name, sets: done });
+    if (rientro()) continue; // rientro: la seduta va nello storico, i carichi di riferimento restano quelli di prima
     const wk = raw.filter(s => !s.dr), kgs = wk.map(kgOf).filter(x => x != null);
     const key = exKey(it), old = S.state.ex[key];
     if (tipoOf(X) !== "uguali" && !(d.sch && d.sch[it.id]) && name === it.name) { // schema della scheda: ricorda kg1, ripetizioni fatte e previste
@@ -1708,8 +1715,8 @@ render();
   render();
 })();
 </script>
-<script src="exdb.js?v=202610291900"></script>
-<script src="ux.js?v=202610291900"></script>
-<script src="hub.js?v=202610291900"></script><script src="board.js?v=202610291900"></script><script src="timer.js?v=202610291900"></script><script src="nutri.js?v=202610291900"></script><script src="photos.js?v=202610291900"></script><script src="coachui.js?v=202610291900"></script><script src="settings.js?v=202610291900"></script><script src="aikey.js?v=202610291900"></script><script src="tour.js?v=202610291900"></script><script src="gesture.js?v=202610291900"></script><script src="ds.js?v=202610291900"></script><script src="v3.js?v=202610291900"></script><script src="quiz.js?v=202610291900"></script><script src="cibo-base.js?v=202610291900"></script><script src="alimenti.js?v=202610291900"></script><script src="giorni.js?v=202610291900"></script><script src="sec-oggi.js?v=202610291900"></script><script src="sec-palestra.js?v=202610291900"></script><script src="seduta.js?v=202610291900"></script><script src="piatti.js?v=202610291900"></script><script src="sec-cibo.js?v=202610291900"></script><script src="storico.js?v=202610291900"></script><script src="report.js?v=202610291900"></script><script src="sec-progressi.js?v=202610291900"></script>
+<script src="exdb.js?v=202611111200"></script>
+<script src="ux.js?v=202611111200"></script>
+<script src="hub.js?v=202611111200"></script><script src="board.js?v=202611111200"></script><script src="timer.js?v=202611111200"></script><script src="nutri.js?v=202611111200"></script><script src="photos.js?v=202611111200"></script><script src="coachui.js?v=202611111200"></script><script src="settings.js?v=202611111200"></script><script src="aikey.js?v=202611111200"></script><script src="tour.js?v=202611111200"></script><script src="gesture.js?v=202611111200"></script><script src="ds.js?v=202611111200"></script><script src="v3.js?v=202611111200"></script><script src="quiz.js?v=202611111200"></script><script src="cibo-base.js?v=202611111200"></script><script src="alimenti.js?v=202611111200"></script><script src="giorni.js?v=202611111200"></script><script src="sec-oggi.js?v=202611111200"></script><script src="sec-palestra.js?v=202611111200"></script><script src="seduta.js?v=202611111200"></script><script src="piatti.js?v=202611111200"></script><script src="sec-cibo.js?v=202611111200"></script><script src="storico.js?v=202611111200"></script><script src="report.js?v=202611111200"></script><script src="sec-progressi.js?v=202611111200"></script>
 
 </body></html>

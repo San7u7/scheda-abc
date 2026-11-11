@@ -78,6 +78,7 @@
       const tgt = Math.min(it.max, Math.min(...b.lastSets.slice(0, it.sets).map(Number)) + (tmp ? 5 : 1));
       why = `Oggi: <b>${tgt} ${tmp ? "secondi" : "ripetizioni"}${b.kg != null && !none ? " con " + fmt(b.kg) + " kg" : ""}</b>. ${b.from === "scheda" ? "Dalla scheda" : "L'ultima volta"} ${b.lastSets.slice(0, it.sets).join(", ")}.`; // obiettivo prima (revisione copy 30/10)
     } else if (!up) why = `Prima volta: scegli un carico con cui fai ${it.min === it.max ? it.min : it.min + "–" + it.max} ${tmp ? "secondi" : "ripetizioni"} pulite.`;
+    if (pl.rientro && !k) why = `Settimana di rientro: <b>${fmt(pl.kg)} kg</b>, il ${Math.round(pl.rientro.pct * 100)}% del solito. Lascia 3 ripetizioni di margine, niente cedimento.`;
     if (it.warm && !X.risc && i === 0 && !s.done && !k && !tmp) why += `${why ? " " : ""}Prima fai 1 serie leggera: metà del carico, 6–8 ripetizioni.`;
     if (sub) why += `${why ? " " : ""}Al posto di ${esc(short(it.name))}.`;
 
